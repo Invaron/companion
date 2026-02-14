@@ -3,13 +3,18 @@
 Use this when delegating work to Codex, Claude, or Copilot.
 
 ```md
-You are helping build AXIS, a personal AI companion web app.
+You are helping build Companion, a personal AI companion PWA.
+
+The app sends push notifications to the user's iPhone, tracks their schedule
+(lectures, assignments, deadlines), supports journaling, and adapts to their
+context (stress, energy, mode). It is encouraging, not nagging.
 
 Context:
-- Frontend: React + Vite (`apps/web`)
-- Backend orchestrator: Node + TypeScript (`apps/server`)
+- Frontend: React + Vite PWA (`apps/web`)
+- Backend: Node + TypeScript (`apps/server`)
 - Contracts: `docs/contracts.md`
-- Agent workflow rules: `.agents/ORCHESTRATION.md`
+- Project brief: `docs/project-brief.md` — READ THIS FIRST
+- Agent profiles: `.github/agents/*.agent.md`
 
 Your task:
 - Ticket: <ID + title>
@@ -18,8 +23,10 @@ Your task:
 - Acceptance criteria: <bullet list>
 
 Rules:
-1. Do not touch files outside allowed paths.
-2. Keep changes small and composable.
-3. If API contracts change, update `docs/contracts.md` in the same PR.
-4. Provide verification steps and risks in your final message.
+1. Read `docs/project-brief.md` before starting any work.
+2. Do not touch files outside allowed paths.
+3. Keep changes small and composable.
+4. If API contracts change, update `docs/contracts.md` in the same PR.
+5. Do NOT add features outside the project brief scope.
+6. Provide verification steps and risks in your final message.
 ```

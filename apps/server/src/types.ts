@@ -2,9 +2,6 @@ export type AgentName =
   | "notes"
   | "lecture-plan"
   | "assignment-tracker"
-  | "food-tracking"
-  | "social-highlights"
-  | "video-editor"
   | "orchestrator";
 
 export type Priority = "low" | "medium" | "high" | "critical";

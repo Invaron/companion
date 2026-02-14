@@ -1,42 +1,59 @@
-# AXIS Project Brief (Polished)
+# Companion — Project Brief
 
-## Product Statement
+## What It Is
 
-Build a personal web app called **AXIS** that acts as a proactive AI companion for day-to-day life management.
+A personal AI companion app that knows about your life and proactively helps you stay on track. It runs as a mobile-friendly PWA on your iPhone, sends push notifications, and adapts dynamically to your schedule, goals, and habits.
 
-## Primary Goals
+## Core Experience
 
-- Centralize notes, lecture planning, assignments, nutrition, and social highlights.
-- Run specialized agents in parallel under one orchestrator.
-- Push useful reminders and daily summaries automatically.
-- Deliver a morning/evening digest, including a short video summary of social highlights.
+You tell Companion about yourself — your lecture schedule, assignments, exams, habits, goals. It remembers everything and nudges you throughout the day:
 
-## Experience Constraints
+- **Morning**: "You have Algorithms at 10am, then a 2hr gap — good time for Problem Set 4."
+- **Midday**: "How's the focus session going? You said you'd finish the report by 3pm."
+- **Evening**: "Ready to journal? Here's what you did today..."
 
-- AXIS is a personal app, not for App Store launch.
-- It must run as a mobile-friendly web app and be launchable from iPhone Shortcuts/Home Screen.
-- UX should be encouraging and low-friction, not nagging.
+You can journal to it anytime (voice or text). It tracks what you're doing, what you should be doing, and gently nudges you. It's encouraging, not nagging.
 
-## Agent Modules
+## Key Features
 
-1. Notes Agent
-2. Lecture Plan Agent
-3. Assignment Tracker Agent
-4. Food Tracking Agent
-5. Social Media Highlights Agent
-6. Video Editor Agent
-7. Orchestrator Agent
+1. **Push Notifications (iPhone)** — Nudges, reminders, check-ins based on your schedule and context. Uses web push via the PWA.
+2. **Dynamic Schedule Awareness** — Feed it your lecture plan, assignment deadlines, exam dates. It incorporates them and notifies you.
+3. **Journaling** — Quick text entries anytime. Evening reflection prompts. The app remembers and references past entries.
+4. **Context Tracking** — Update your stress/energy/mode. The app adapts its tone and suggestions.
+5. **Assignment & Deadline Tracking** — Knows what's due, reminds you with increasing urgency.
+6. **Lecture Plan Integration** — Upload or paste your schedule. It builds around it.
+7. **Extensible via APIs** — You can connect external data sources (e.g., food tracking from your "food" repo) in the future.
 
-## Technical Requirements
+## What It Is NOT
 
-- Stateful agents with memory.
-- Tool-using agents (APIs, file readers, scrapers where legal and compliant).
-- Structured message passing with source/type/priority/timestamp.
-- Async parallel execution with centralized conflict resolution.
-- User-controlled data and privacy-first defaults.
+- Not an App Store app — it's a personal PWA for your phone
+- Not a social media aggregator (removed from scope)
+- Not a video editor (removed from scope)
+- Agents should not add features "just because" — keep it concise and purposeful
+
+## Architecture
+
+- **Frontend**: React + Vite PWA (`apps/web`) — mobile-first, installable on iPhone home screen
+- **Backend**: Node + TypeScript (`apps/server`) — API server with agent runtime
+- **Data**: In-memory store (RuntimeStore) — can evolve to persistent storage later
+- **Notifications**: Web Push API (VAPID keys) for iPhone push notifications
+
+## Agent Modules (Server-Side)
+
+1. **Notes Agent** — Stores and retrieves journal entries and quick notes
+2. **Lecture Plan Agent** — Manages class schedule, generates time-aware reminders
+3. **Assignment Tracker Agent** — Tracks deadlines, sends escalating reminders
+4. **Orchestrator Agent** — Coordinates all agents, generates daily summaries, manages notification priority
+
+### Removed from Scope
+- ~~Food Tracking Agent~~ (handled by separate "food" repo for now)
+- ~~Social Media Highlights Agent~~ (not needed)
+- ~~Video Editor Agent~~ (not needed)
 
 ## Success Criteria
 
-- No missed assignment deadlines or lecture reminders.
-- Social digest consumable in under 3 minutes.
-- Autonomous operation after setup with minimal manual intervention.
+- Push notifications actually arrive on your iPhone
+- No missed assignment deadlines or lecture reminders
+- Journaling feels quick and natural
+- App adapts to your schedule without manual babysitting
+- Autonomous operation after initial setup

@@ -185,9 +185,7 @@ function findMissingTests() {
 function findDocGaps() {
   const issues = [];
   const wantedDocs = [
-    { path: 'docs/api.md', title: 'Document API endpoints and contracts' },
-    { path: 'docs/architecture.md', title: 'Document system architecture and data flow' },
-    { path: 'docs/deployment.md', title: 'Document deployment and hosting guide' },
+    { path: 'docs/api.md', title: 'Document API endpoints and request/response examples' },
   ];
 
   for (const doc of wantedDocs) {
@@ -196,7 +194,8 @@ function findDocGaps() {
         title: doc.title,
         body: [
           '## Scope',
-          `Create \`${doc.path}\` with comprehensive documentation.`,
+          `Create \`${doc.path}\` based on the actual code in \`apps/server/src/index.ts\`.`,
+          'Read `docs/project-brief.md` first to understand what the app does.',
           '',
           '## Deliverable',
           'A well-structured markdown document covering the topic.',
@@ -429,10 +428,9 @@ async function main() {
     console.log(`\nCreated ${created}/${batch.length} issues`);
   }
 
-  // Create next orchestrator issue (recursive loop)
-  if (process.env.RECURSIVE !== 'false') {
-    await createRecursiveIssue();
-  }
+  // Recursive loop is handled by the cron schedule in orchestrator.yml
+  // No need to create a recursive issue that Copilot can't action
+  console.log('\nOrchestrator will re-run on next cron schedule.');
 
   console.log('\n' + '='.repeat(60));
   console.log('Orchestrator complete');

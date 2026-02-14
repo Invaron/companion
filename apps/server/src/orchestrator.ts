@@ -83,33 +83,6 @@ export class OrchestratorRuntime {
         });
         break;
       }
-      case "food.nudge": {
-        this.store.pushNotification({
-          source: "food-tracking",
-          title: "Nutrition nudge",
-          message: asText(event.payload, "reminder"),
-          priority: event.priority
-        });
-        break;
-      }
-      case "social.highlight": {
-        this.store.pushNotification({
-          source: "social-highlights",
-          title: "New highlight",
-          message: `${asText(event.payload, "platform")}: ${asText(event.payload, "title")}`,
-          priority: "low"
-        });
-        break;
-      }
-      case "video.digest-ready": {
-        this.store.pushNotification({
-          source: "video-editor",
-          title: "Digest ready",
-          message: `Daily reel generated with ${asText(event.payload, "clips")} clips.`,
-          priority: "medium"
-        });
-        break;
-      }
       case "note.prompt": {
         this.store.pushNotification({
           source: "notes",
