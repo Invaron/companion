@@ -109,5 +109,3 @@ jobs:
             const result = await github.graphql(query, { pullRequestId: pr.node_id });
             core.info(`✅ Auto-merge enabled for PR #${pr.number}`);
             core.info(`Enabled at: ${result.enablePullRequestAutoMerge.pullRequest.autoMergeRequest.enabledAt}`);
-              }
-            }
