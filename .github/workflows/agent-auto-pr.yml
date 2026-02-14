@@ -189,6 +189,17 @@ jobs:
               body: commentBody
             });
 
+      - name: Trigger PR automation
+        if: steps.check-pr.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: trigger PR automation workflows
+
+          This empty commit triggers the synchronize event to activate
+          agent-pr-automation.yml (auto-rebase, auto-approve, auto-merge)."
+          git push origin ${{ steps.extract.outputs.branch }}
+
       - name: Summary
         if: steps.check-pr.outputs.exists == 'false'
         run: |
