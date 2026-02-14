@@ -5,6 +5,9 @@ const agentNames: AgentName[] = [
   "notes",
   "lecture-plan",
   "assignment-tracker",
+  "food-tracking",
+  "social-highlights",
+  "video-editor",
   "orchestrator"
 ];
 
