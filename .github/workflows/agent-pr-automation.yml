@@ -65,10 +65,16 @@ jobs:
               
               core.info(`Poll ${i + 1}/${maxAttempts}: mergeable=${currentPR.mergeable}, mergeable_state=${currentPR.mergeable_state}`);
               
-              // Wait for mergeable to be true or clean
-              if (currentPR.mergeable === true && currentPR.mergeable_state === 'clean') {
-                core.info(`✅ PR is now stable and mergeable!`);
+              // Accept mergeable=true with clean or unstable state
+              // (unstable is expected while this workflow is running)
+              if (currentPR.mergeable === true && (currentPR.mergeable_state === 'clean' || currentPR.mergeable_state === 'unstable')) {
+                core.info(`✅ PR is mergeable (state: ${currentPR.mergeable_state}), proceeding with auto-merge!`);
                 return;
+              }
+              
+              // Stop if there are conflicts
+              if (currentPR.mergeable === false) {
+                throw new Error(`PR has merge conflicts and cannot be auto-merged`);
               }
               
               if (i < maxAttempts - 1) {
