@@ -1,5 +1,7 @@
 # Companion
 
+> **🤖 Automated Agent Workflow**: Push to `agent/*` branches auto-creates PRs with full automation
+
 This repository uses an **agent coordination workflow** for ongoing development.
 
 ## Working model
