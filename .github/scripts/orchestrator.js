@@ -17,11 +17,15 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.AGENT_PAT;
+// AGENT_PAT = user PAT (required to trigger Copilot agent sessions)
+// GITHUB_TOKEN = Actions token (can create issues but NOT trigger agents)
+const AGENT_PAT = process.env.AGENT_PAT || '';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || AGENT_PAT;
 const REPO = process.env.GITHUB_REPOSITORY || 'lucyscript/companion';
 const [OWNER, REPO_NAME] = REPO.split('/');
 const DRY_RUN = process.env.DRY_RUN === 'true';
 const API = 'https://api.github.com';
+const CAN_ASSIGN_AGENTS = Boolean(AGENT_PAT);
 
 // ── Agent routing rules ─────────────────────────────────────────────
 // Maps keywords → preferred agent identifier for custom_agent field.
@@ -38,12 +42,12 @@ const AGENT_RULES = {
 
 // ── GitHub REST API helper ──────────────────────────────────────────
 
-async function githubAPI(endpoint, method = 'GET', body = null) {
+async function githubAPI(endpoint, method = 'GET', body = null, token = GITHUB_TOKEN) {
   const res = await fetch(`${API}${endpoint}`, {
     method,
     headers: {
       'Accept': 'application/vnd.github+json',
-      'Authorization': `Bearer ${GITHUB_TOKEN}`,
+      'Authorization': `Bearer ${token}`,
       'X-GitHub-Api-Version': '2022-11-28',
     },
     body: body ? JSON.stringify(body) : undefined,
@@ -236,7 +240,10 @@ function findCodeImprovements() {
   return issues;
 }
 
-// ── Core: Create issue and assign to Copilot coding agent ───────────
+// ── Core: Create issue, then assign agent in a separate step ────────
+// Step 1: Create issue with GITHUB_TOKEN (always works)
+// Step 2: Assign copilot-swe-agent[bot] with AGENT_PAT (user token required)
+//         GitHub docs: "authenticate with a user token" to trigger agent sessions
 
 async function createAndAssignIssue(issue, customAgent) {
   const agentLabel = customAgent || 'copilot';
@@ -245,45 +252,52 @@ async function createAndAssignIssue(issue, customAgent) {
   console.log(`   Agent: ${agentLabel}`);
 
   if (DRY_RUN) {
-    console.log('   [DRY RUN] Would create issue');
+    console.log(`   [DRY RUN] Would create issue (can_assign=${CAN_ASSIGN_AGENTS})`);
     return true;
   }
 
-  const payload = {
-    title: issue.title,
-    body: issue.body,
-    labels: ['agent-task'],
-    assignees: ['copilot-swe-agent[bot]'],
-    agent_assignment: {
-      target_repo: `${OWNER}/${REPO_NAME}`,
-      base_branch: 'main',
-      custom_instructions: '',
-      custom_agent: customAgent || '',
-      model: '',
-    },
-  };
-
+  // Step 1: Create the issue (works with any token)
+  let created;
   try {
-    const created = await githubAPI(
-      `/repos/${OWNER}/${REPO_NAME}/issues`, 'POST', payload
+    created = await githubAPI(
+      `/repos/${OWNER}/${REPO_NAME}/issues`, 'POST',
+      { title: issue.title, body: issue.body, labels: ['agent-task'] }
     );
     console.log(`   Created: ${created.html_url}`);
-    return true;
   } catch (e) {
-    // If assignment fails (agent not enabled), retry without assignee
-    console.log(`   Assignment failed (${e.message}), creating without assignee...`);
-    try {
-      const fallback = await githubAPI(
-        `/repos/${OWNER}/${REPO_NAME}/issues`, 'POST',
-        { title: issue.title, body: issue.body, labels: ['agent-task'] }
-      );
-      console.log(`   Created (unassigned): ${fallback.html_url}`);
-      return true;
-    } catch (e2) {
-      console.error(`   Failed to create issue: ${e2.message}`);
-      return false;
-    }
+    console.error(`   Failed to create issue: ${e.message}`);
+    return false;
   }
+
+  // Step 2: Assign to Copilot agent (requires user PAT)
+  if (!CAN_ASSIGN_AGENTS) {
+    console.log('   Skipping agent assignment (no AGENT_PAT configured)');
+    return true;
+  }
+
+  try {
+    await githubAPI(
+      `/repos/${OWNER}/${REPO_NAME}/issues/${created.number}/assignees`,
+      'POST',
+      {
+        assignees: ['copilot-swe-agent[bot]'],
+        agent_assignment: {
+          target_repo: `${OWNER}/${REPO_NAME}`,
+          base_branch: 'main',
+          custom_instructions: '',
+          custom_agent: customAgent || '',
+          model: '',
+        },
+      },
+      AGENT_PAT  // Must use user token for agent assignment
+    );
+    console.log(`   Assigned to ${agentLabel} via copilot-swe-agent[bot]`);
+  } catch (e) {
+    console.log(`   Assignment failed: ${e.message}`);
+    console.log('   Issue created but agent not assigned - assign manually from GitHub UI');
+  }
+
+  return true;
 }
 
 // ── Recursive: Create the next orchestrator issue ───────────────────
@@ -321,6 +335,30 @@ async function createRecursiveIssue() {
       { title, body, labels: ['agent-task'] }
     );
     console.log(`   Recursive issue created: ${created.html_url}`);
+
+    // Assign to copilot if we have a user PAT
+    if (CAN_ASSIGN_AGENTS) {
+      try {
+        await githubAPI(
+          `/repos/${OWNER}/${REPO_NAME}/issues/${created.number}/assignees`,
+          'POST',
+          {
+            assignees: ['copilot-swe-agent[bot]'],
+            agent_assignment: {
+              target_repo: `${OWNER}/${REPO_NAME}`,
+              base_branch: 'main',
+              custom_instructions: 'Run the orchestrator workflow to discover and assign new work.',
+              custom_agent: '',
+              model: '',
+            },
+          },
+          AGENT_PAT
+        );
+        console.log('   Assigned to copilot-swe-agent[bot]');
+      } catch (e) {
+        console.log(`   Recursive issue created but assignment failed: ${e.message}`);
+      }
+    }
   } catch (e) {
     console.error(`   Failed to create recursive issue: ${e.message}`);
   }
@@ -334,6 +372,12 @@ async function main() {
   console.log('='.repeat(60));
   console.log(`Repository: ${OWNER}/${REPO_NAME}`);
   console.log(`Dry run: ${DRY_RUN}`);
+  console.log(`Agent assignment: ${CAN_ASSIGN_AGENTS ? 'enabled (AGENT_PAT)' : 'DISABLED (no AGENT_PAT)'}`);
+  if (!CAN_ASSIGN_AGENTS) {
+    console.log('  -> Issues will be created but agents will NOT be assigned.');
+    console.log('  -> To enable: add a Fine-Grained PAT as AGENT_PAT repo secret.');
+    console.log('  -> PAT needs: metadata(r), actions(rw), contents(rw), issues(rw), pull-requests(rw)');
+  }
   console.log('');
 
   // Get existing issues to avoid duplicates

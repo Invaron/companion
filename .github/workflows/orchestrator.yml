@@ -55,8 +55,13 @@ jobs:
 
       - name: Run orchestrator
         env:
-          GITHUB_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN: Actions token for basic operations (create issues, list)
+          # AGENT_PAT: User PAT required to trigger Copilot coding agent sessions.
+          #   Create a Fine-Grained PAT with permissions:
+          #   metadata(read), actions(rw), contents(rw), issues(rw), pull-requests(rw)
+          #   Store as AGENT_PAT repository secret.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_PAT: ${{ secrets.AGENT_PAT }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           RECURSIVE: ${{ github.event.inputs.recursive || 'true' }}
