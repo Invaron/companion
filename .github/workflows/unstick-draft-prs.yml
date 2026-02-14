@@ -1,8 +1,11 @@
 name: Unstick Draft PRs
 
-# One-shot workflow to mark all Copilot draft PRs as ready, approve, and merge.
-# Run manually when draft PRs are stuck.
+# Runs every 5 minutes to catch Copilot draft PRs and process them.
+# Also available as manual dispatch.
+# Needed because pull_request_target workflows require approval for bot PRs.
 on:
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -36,7 +39,21 @@ jobs:
             core.info(`Found ${copilotPRs.length} open Copilot PRs`);
 
             for (const pr of copilotPRs) {
-              core.info(`\n--- Processing PR #${pr.number}: ${pr.title} (draft: ${pr.draft}) ---`);
+              core.info(`\n--- PR #${pr.number}: ${pr.title} (draft: ${pr.draft}) ---`);
+
+              // Skip PRs where Copilot is still actively working
+              // Check if there are actual file changes
+              const { data: files } = await github.rest.pulls.listFiles({
+                owner, repo,
+                pull_number: pr.number,
+              });
+
+              if (files.length === 0) {
+                core.info(`  Skipping: 0 files changed — agent is still working`);
+                continue;
+              }
+
+              core.info(`  ${files.length} file(s) changed — processing`);
 
               // Step 1: Mark ready for review if draft
               if (pr.draft) {
@@ -115,8 +132,10 @@ jobs:
                 core.info(`  Merged PR #${pr.number}`);
               } catch (err) {
                 core.warning(`  Merge not ready: ${err.message}`);
-                core.info(`  PR will be merged by copilot-auto-approve on next event.`);
+                core.info(`  Will retry on next scheduled run.`);
               }
             }
+
+            core.info(`\nDone. Processed ${copilotPRs.length} Copilot PRs.`);
 
             core.info(`\nDone. Processed ${copilotPRs.length} Copilot PRs.`);
