@@ -1,8 +1,9 @@
-import { DashboardSnapshot, UserContext } from "../types";
+import { DashboardSnapshot, UserContext, JournalEntry } from "../types";
 
 const STORAGE_KEYS = {
   dashboard: "companion:dashboard",
   context: "companion:context",
+  journal: "companion:journal",
 } as const;
 
 const defaultContext: UserContext = {
@@ -57,4 +58,30 @@ export function loadContext(): UserContext {
 
 export function saveContext(ctx: UserContext): void {
   localStorage.setItem(STORAGE_KEYS.context, JSON.stringify(ctx));
+}
+
+export function loadJournalEntries(): JournalEntry[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.journal);
+    if (raw) return JSON.parse(raw) as JournalEntry[];
+  } catch {
+    // corrupted — fall through
+  }
+  return [];
+}
+
+export function saveJournalEntries(entries: JournalEntry[]): void {
+  localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(entries));
+}
+
+export function addJournalEntry(text: string): JournalEntry {
+  const entry: JournalEntry = {
+    id: crypto.randomUUID(),
+    text,
+    timestamp: new Date().toISOString(),
+  };
+  const entries = loadJournalEntries();
+  entries.unshift(entry); // newest first
+  saveJournalEntries(entries);
+  return entry;
 }

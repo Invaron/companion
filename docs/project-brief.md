@@ -65,7 +65,7 @@ Features are built in priority order. The orchestrator reads this section to dec
 | Status | Feature | Agent | Description |
 |--------|---------|-------|-------------|
 | ⬜ todo | `journal-api` | backend-engineer | POST/GET /api/journal endpoints, RuntimeStore storage |
-| ⬜ todo | `journal-ui` | frontend-engineer | JournalView component, localStorage persistence |
+| ✅ done | `journal-ui` | frontend-engineer | JournalView component, localStorage persistence |
 | ⬜ todo | `schedule-api` | backend-engineer | Schedule + deadline CRUD endpoints |
 | ⬜ todo | `schedule-ui` | frontend-engineer | ScheduleView + DeadlineList components |
 | ⬜ todo | `push-notifications` | backend-engineer | VAPID keys, push subscription, service worker |

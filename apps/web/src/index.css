@@ -201,3 +201,86 @@ button:hover {
 .error {
   color: var(--danger);
 }
+
+/* Journal Styles */
+.journal-panel {
+  margin-bottom: 12px;
+}
+
+.journal-count {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.journal-input-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.journal-textarea {
+  font: inherit;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px;
+  background: rgba(3, 7, 11, 0.45);
+  color: var(--text);
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.journal-textarea:focus {
+  outline: none;
+  border-color: rgba(246, 195, 127, 0.6);
+}
+
+.journal-textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.journal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.journal-entry {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(7, 14, 20, 0.3);
+}
+
+.journal-entry-text {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.journal-entry-time {
+  font-size: 0.75rem;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.journal-empty {
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  opacity: 0.7;
+  font-size: 0.9rem;
+}

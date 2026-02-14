@@ -1,5 +1,6 @@
 import { AgentStatusList } from "./components/AgentStatusList";
 import { ContextControls } from "./components/ContextControls";
+import { JournalView } from "./components/JournalView";
 import { NotificationFeed } from "./components/NotificationFeed";
 import { SummaryTiles } from "./components/SummaryTiles";
 import { useDashboard } from "./hooks/useDashboard";
@@ -29,6 +30,7 @@ export default function App(): JSX.Element {
             activeAgents={data.summary.activeAgents}
             journalStreak={data.summary.journalStreak}
           />
+          <JournalView />
           <div className="grid-two">
             <AgentStatusList states={data.agentStates} />
             <NotificationFeed notifications={data.notifications} />
