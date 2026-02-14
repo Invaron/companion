@@ -49,18 +49,36 @@ jobs:
       - name: Enable auto-merge (squash)
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           script: |
             const pr = context.payload.pull_request;
+            
+            // Log PR details for debugging
+            core.info(`PR #${pr.number}: ${pr.title}`);
+            core.info(`PR node_id: ${pr.node_id}`);
+            core.info(`PR state: ${pr.state}`);
+            core.info(`PR mergeable: ${pr.mergeable}`);
+            
             const query = `mutation($pullRequestId: ID!) {
               enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: SQUASH}) {
-                pullRequest { number }
+                pullRequest { 
+                  number 
+                  autoMergeRequest {
+                    enabledAt
+                    enabledBy {
+                      login
+                    }
+                  }
+                }
               }
             }`;
 
             try {
-              await github.graphql(query, { pullRequestId: pr.node_id });
-              core.info(`Auto-merge enabled for PR #${pr.number}`);
+              const result = await github.graphql(query, { pullRequestId: pr.node_id });
+              core.info(`✅ Auto-merge enabled for PR #${pr.number}`);
+              core.info(`Enabled at: ${result.enablePullRequestAutoMerge.pullRequest.autoMergeRequest.enabledAt}`);
             } catch (error) {
-              core.warning(`Auto-merge could not be enabled yet: ${error.message}`);
+              core.error(`❌ Auto-merge failed: ${error.message}`);
+              core.error(`Error details: ${JSON.stringify(error, null, 2)}`);
+              throw error; // Fail the job instead of just warning
             }
