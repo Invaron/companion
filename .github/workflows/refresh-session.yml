@@ -1,0 +1,48 @@
+name: Refresh Session Cookie
+
+on:
+  schedule:
+    # Run every 3 days at 04:00 UTC
+    - cron: '0 4 */3 * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm i -D playwright@latest
+          npx playwright install chromium --with-deps
+
+      - name: Check and refresh session
+        id: session
+        env:
+          GH_SESSION_COOKIE: ${{ secrets.GH_SESSION_COOKIE }}
+        run: node .github/scripts/refresh-session-ci.mjs
+
+      - name: Update secret if cookie changed
+        if: steps.session.outputs.cookie_changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          echo "${{ steps.session.outputs.cookie_value }}" | gh secret set GH_SESSION_COOKIE
+          echo "✓ Secret updated with refreshed cookie"
+
+      - name: Report status
+        if: always()
+        run: |
+          if [ "${{ steps.session.outcome }}" = "success" ]; then
+            echo "✓ Session valid — ${{ steps.session.outputs.days_left }} days remaining"
+            echo "  Cookie changed: ${{ steps.session.outputs.cookie_changed }}"
+          else
+            echo "✗ Session expired or invalid!"
+            echo "  Run locally: node .github/scripts/refresh-session.mjs"
+          fi
