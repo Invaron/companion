@@ -7,6 +7,9 @@ dist/
 .vscode/*.log
 apps/server/data/
 
+# Playwright saved browser state (contains session cookies)
+.github/.playwright-state.json
+
 # tsc emit artifacts (Vite handles compilation)
 apps/web/src/**/*.js
 apps/web/vite.config.js
