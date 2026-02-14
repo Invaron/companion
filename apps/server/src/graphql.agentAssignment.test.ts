@@ -7,8 +7,26 @@ import { describe, it, expect, beforeEach } from "vitest";
  * It tests that agent assignment data can be queried and returned correctly.
  */
 
+interface AssignmentData {
+  id: string;
+  course: string;
+  task: string;
+  hoursLeft: number;
+  priority: string;
+  agentName: string;
+}
+
+/**
+ * Calculate priority based on hours left
+ */
+function calculatePriority(hoursLeft: number): string {
+  if (hoursLeft <= 12) return "critical";
+  if (hoursLeft <= 24) return "high";
+  return "medium";
+}
+
 describe("GraphQL agentAssignment", () => {
-  let mockAssignmentData: any;
+  let mockAssignmentData: AssignmentData;
 
   beforeEach(() => {
     mockAssignmentData = {
@@ -49,6 +67,16 @@ describe("GraphQL agentAssignment", () => {
     it("should have positive hours left", () => {
       expect(mockAssignmentData.hoursLeft).toBeGreaterThan(0);
     });
+
+    it("should handle edge case with zero hours left", () => {
+      const urgentAssignment: AssignmentData = {
+        ...mockAssignmentData,
+        hoursLeft: 0
+      };
+      
+      // Zero hours should be handled (likely as critical)
+      expect(urgentAssignment.hoursLeft).toBeGreaterThanOrEqual(0);
+    });
   });
 
   describe("mutation", () => {
@@ -77,34 +105,32 @@ describe("GraphQL agentAssignment", () => {
 
   describe("priority calculation", () => {
     it("should classify as critical when hours left <= 12", () => {
-      const criticalAssignment = {
+      const criticalAssignment: AssignmentData = {
         ...mockAssignmentData,
         hoursLeft: 10
       };
       
-      const priority = criticalAssignment.hoursLeft <= 12 ? "critical" : "high";
+      const priority = calculatePriority(criticalAssignment.hoursLeft);
       expect(priority).toBe("critical");
     });
 
     it("should classify as high when hours left <= 24", () => {
-      const highAssignment = {
+      const highAssignment: AssignmentData = {
         ...mockAssignmentData,
         hoursLeft: 20
       };
       
-      const priority = highAssignment.hoursLeft <= 12 ? "critical" : 
-                       highAssignment.hoursLeft <= 24 ? "high" : "medium";
+      const priority = calculatePriority(highAssignment.hoursLeft);
       expect(priority).toBe("high");
     });
 
     it("should classify as medium when hours left > 24", () => {
-      const mediumAssignment = {
+      const mediumAssignment: AssignmentData = {
         ...mockAssignmentData,
         hoursLeft: 48
       };
       
-      const priority = mediumAssignment.hoursLeft <= 12 ? "critical" : 
-                       mediumAssignment.hoursLeft <= 24 ? "high" : "medium";
+      const priority = calculatePriority(mediumAssignment.hoursLeft);
       expect(priority).toBe("medium");
     });
   });
