@@ -1,0 +1,102 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+describe("config", () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  describe("default values", () => {
+    it("should use default PORT when not provided", async () => {
+      delete process.env.PORT;
+      const { config } = await import("./config.js");
+      expect(config.PORT).toBe(8787);
+    });
+
+    it("should use default AXIS_TIMEZONE when not provided", async () => {
+      delete process.env.AXIS_TIMEZONE;
+      const { config } = await import("./config.js");
+      expect(config.AXIS_TIMEZONE).toBe("America/New_York");
+    });
+
+    it("should use default AXIS_USER_NAME when not provided", async () => {
+      delete process.env.AXIS_USER_NAME;
+      const { config } = await import("./config.js");
+      expect(config.AXIS_USER_NAME).toBe("friend");
+    });
+  });
+
+  describe("custom values", () => {
+    it("should parse PORT from environment", async () => {
+      process.env.PORT = "3000";
+      const { config } = await import("./config.js");
+      expect(config.PORT).toBe(3000);
+    });
+
+    it("should parse AXIS_TIMEZONE from environment", async () => {
+      process.env.AXIS_TIMEZONE = "Europe/London";
+      const { config } = await import("./config.js");
+      expect(config.AXIS_TIMEZONE).toBe("Europe/London");
+    });
+
+    it("should parse AXIS_USER_NAME from environment", async () => {
+      process.env.AXIS_USER_NAME = "Alice";
+      const { config } = await import("./config.js");
+      expect(config.AXIS_USER_NAME).toBe("Alice");
+    });
+
+    it("should handle all custom values at once", async () => {
+      process.env.PORT = "5000";
+      process.env.AXIS_TIMEZONE = "Asia/Tokyo";
+      process.env.AXIS_USER_NAME = "Bob";
+
+      const { config } = await import("./config.js");
+
+      expect(config.PORT).toBe(5000);
+      expect(config.AXIS_TIMEZONE).toBe("Asia/Tokyo");
+      expect(config.AXIS_USER_NAME).toBe("Bob");
+    });
+  });
+
+  describe("type coercion", () => {
+    it("should coerce string PORT to number", async () => {
+      process.env.PORT = "9999";
+      const { config } = await import("./config.js");
+      expect(typeof config.PORT).toBe("number");
+      expect(config.PORT).toBe(9999);
+    });
+
+    it("should handle numeric string with leading zeros", async () => {
+      process.env.PORT = "08080";
+      const { config } = await import("./config.js");
+      expect(config.PORT).toBe(8080);
+    });
+  });
+
+  describe("validation", () => {
+    it("should handle invalid PORT gracefully", async () => {
+      process.env.PORT = "not-a-number";
+      await expect(async () => {
+        await import("./config.js");
+      }).rejects.toThrow();
+    });
+
+    it("should accept empty string for AXIS_TIMEZONE", async () => {
+      process.env.AXIS_TIMEZONE = "";
+      const { config } = await import("./config.js");
+      expect(config.AXIS_TIMEZONE).toBe("");
+    });
+
+    it("should accept empty string for AXIS_USER_NAME", async () => {
+      process.env.AXIS_USER_NAME = "";
+      const { config } = await import("./config.js");
+      expect(config.AXIS_USER_NAME).toBe("");
+    });
+  });
+});
