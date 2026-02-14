@@ -4,9 +4,25 @@ Thank you for your interest in contributing to Companion!
 
 ## Agent Workflow
 
-This project uses an **agent coordination workflow** where GitHub Copilot and Codex-style agents collaborate on tasks.
+This project uses two modes of agent collaboration:
 
-### Getting Started
+### 🤖 Autonomous Agent Loop (NEW)
+
+Agents now work **completely autonomously**:
+
+1. **Create an issue** using the [Copilot Agent Task template](.github/ISSUE_TEMPLATE/copilot-agent-task.yml)
+2. **Add the `agent-task` label**
+3. **Wait** - that's it! The agent loop will:
+   - Pick up your issue automatically (every 15 minutes)
+   - Analyze requirements and implement changes
+   - Create a PR and auto-merge it
+   - Close the issue when complete
+
+See [docs/agent-loop.md](docs/agent-loop.md) for details on the autonomous system.
+
+### 👤 Manual Agent Workflow
+
+You can also work on agent tasks manually:
 
 1. **Pick a task** from [docs/agent-backlog.md](docs/agent-backlog.md) or create a new issue using the [Copilot Agent Task template](.github/ISSUE_TEMPLATE/copilot-agent-task.yml)
 

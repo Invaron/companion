@@ -1,15 +1,58 @@
 # Companion
 
-This repository uses an **agent coordination workflow** for ongoing development.
+This repository uses an **autonomous agent loop** for continuous development.
+
+## 🤖 Autonomous Development
+
+This project features a **self-improving agent loop** that continuously works on issues:
+
+- **🔄 Continuous Loop**: Agents check for work every 15 minutes
+- **🎯 Auto-Pick Issues**: Tasks labeled `agent-task` are automatically selected
+- **🛠️ Autonomous Work**: Agents analyze issues and implement solutions
+- **✅ Auto-Merge**: Changes are automatically merged when checks pass
+- **♾️ Recursive Iteration**: The loop runs indefinitely, constantly improving the project
+
+### How It Works
+
+1. **Orchestrator** ([`.github/workflows/agent-orchestrator.yml`](.github/workflows/agent-orchestrator.yml))
+   - Runs every 15 minutes (or on-demand)
+   - Checks for open issues with `agent-task` label
+   - Picks the oldest ready issue
+   - Triggers agent executor
+
+2. **Agent Executor** ([`.github/workflows/agent-executor.yml`](.github/workflows/agent-executor.yml))
+   - Analyzes issue content and determines task type
+   - Creates a working branch (`agent/<issue-number>-<slug>`)
+   - Executes appropriate handler (docs, features, bugs, etc.)
+   - Commits changes with `[automerge]` tag
+   - Pushes to trigger auto-PR creation
+
+3. **Auto-PR Creation** ([`.github/workflows/agent-auto-pr.yml`](.github/workflows/agent-auto-pr.yml))
+   - Detects new `agent/*` branches
+   - Creates PR with appropriate labels
+   - Adds `agent-automerge` label if `[automerge]` in commit
+
+4. **Auto-Merge** ([`.github/workflows/agent-pr-automation.yml`](.github/workflows/agent-pr-automation.yml))
+   - Rebases PR onto latest main
+   - Merges PR with `agent-automerge` label
+   - Deletes branch after merge
 
 ## Working model
-- Use GitHub Issues as the source of truth for tasks.
-- Use `.github/ISSUE_TEMPLATE/copilot-agent-task.yml` for agent-assignable work.
-- Use `docs/agent-backlog.md` to keep a lightweight assignment board.
-- Follow `.github/copilot-instructions.md` for execution and handoff rules.
+- Use GitHub Issues as the source of truth for tasks
+- Label issues with `agent-task` for autonomous processing
+- Use `.github/ISSUE_TEMPLATE/copilot-agent-task.yml` template
+- Follow `.github/copilot-instructions.md` for agent collaboration protocol
 
-## Quick start for maintainers
-1. Create issues from the Copilot Agent Task template.
-2. Assign each issue to `github-copilot`, `codex`, or `pair`.
-3. Require one PR per issue and include verification output.
-4. Merge or create a follow-up issue to continue the chain.
+## Quick start
+
+### For Creating Agent Tasks
+1. Create an issue using the **Copilot Agent Task** template
+2. Add the `agent-task` label
+3. Wait for the next orchestrator cycle (max 15 minutes)
+4. Agent picks up issue, implements changes, and auto-merges
+
+### For Manual Contributions
+1. Create issues without `agent-task` label
+2. Work on them manually in feature branches
+3. Create PRs normally
+4. Manual review and merge
