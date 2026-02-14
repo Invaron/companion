@@ -1,4 +1,5 @@
 import { DashboardSnapshot, UserContext } from "../types";
+import { loadDashboard, saveDashboard, loadContext, saveContext } from "./storage";
 
 async function jsonOrThrow<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(input, {
@@ -16,13 +17,28 @@ async function jsonOrThrow<T>(input: RequestInfo | URL, init?: RequestInit): Pro
   return (await response.json()) as T;
 }
 
-export function getDashboard(): Promise<DashboardSnapshot> {
-  return jsonOrThrow<DashboardSnapshot>("/api/dashboard");
+export async function getDashboard(): Promise<DashboardSnapshot> {
+  try {
+    const snapshot = await jsonOrThrow<DashboardSnapshot>("/api/dashboard");
+    saveDashboard(snapshot);
+    return snapshot;
+  } catch {
+    // Server unreachable (e.g. GitHub Pages) — use localStorage
+    return loadDashboard();
+  }
 }
 
-export function updateContext(payload: Partial<UserContext>): Promise<{ context: UserContext }> {
-  return jsonOrThrow<{ context: UserContext }>("/api/context", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
+export async function updateContext(payload: Partial<UserContext>): Promise<{ context: UserContext }> {
+  try {
+    return await jsonOrThrow<{ context: UserContext }>("/api/context", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    // Server unreachable — persist locally
+    const current = loadContext();
+    const merged = { ...current, ...payload };
+    saveContext(merged);
+    return { context: merged };
+  }
 }

@@ -6,3 +6,7 @@ dist/
 .DS_Store
 .vscode/*.log
 apps/server/data/
+
+# tsc emit artifacts (Vite handles compilation)
+apps/web/src/**/*.js
+apps/web/vite.config.js

@@ -11,8 +11,8 @@ export default function App(): JSX.Element {
     <main className="app-shell">
       <header className="hero">
         <div>
-          <p className="eyebrow">AXIS Companion</p>
-          <h1>Personal AI Orchestrator</h1>
+          <p className="eyebrow">Companion</p>
+          <h1>Personal AI Assistant</h1>
         </div>
         <button type="button" onClick={() => void refresh()}>
           Refresh
@@ -26,8 +26,8 @@ export default function App(): JSX.Element {
           <SummaryTiles
             todayFocus={data.summary.todayFocus}
             pendingDeadlines={data.summary.pendingDeadlines}
-            mealCompliance={data.summary.mealCompliance}
-            digestReady={data.summary.digestReady}
+            activeAgents={data.summary.activeAgents}
+            journalStreak={data.summary.journalStreak}
           />
           <div className="grid-two">
             <AgentStatusList states={data.agentStates} />

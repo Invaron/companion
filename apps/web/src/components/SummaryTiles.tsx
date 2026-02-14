@@ -1,8 +1,8 @@
 interface SummaryTilesProps {
   todayFocus: string;
   pendingDeadlines: number;
-  mealCompliance: number;
-  digestReady: boolean;
+  activeAgents: number;
+  journalStreak: number;
 }
 
 export function SummaryTiles(props: SummaryTilesProps): JSX.Element {
@@ -17,12 +17,12 @@ export function SummaryTiles(props: SummaryTilesProps): JSX.Element {
         <p>{props.pendingDeadlines}</p>
       </article>
       <article className="tile">
-        <h2>Meal Compliance</h2>
-        <p>{props.mealCompliance}%</p>
+        <h2>Active Agents</h2>
+        <p>{props.activeAgents}</p>
       </article>
       <article className="tile">
-        <h2>Digest</h2>
-        <p>{props.digestReady ? "Ready" : "Pending"}</p>
+        <h2>Journal Streak</h2>
+        <p>{props.journalStreak} days</p>
       </article>
     </section>
   );
