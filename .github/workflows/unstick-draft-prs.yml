@@ -1,8 +1,8 @@
-name: Unstick Draft PRs
+name: Unstick Agent Draft PRs
 
-# Runs every 5 minutes to catch Copilot draft PRs and process them.
+# Runs every 5 minutes to catch agent draft PRs and process them.
+# Handles PRs from Claude (Anthropic), Codex (OpenAI), and Copilot (GitHub).
 # Also available as manual dispatch.
-# Needed because pull_request_target workflows require approval for bot PRs.
 on:
   schedule:
     - cron: '*/5 * * * *'
@@ -19,13 +19,23 @@ jobs:
     env:
       AGENT_PAT: ${{ secrets.AGENT_PAT }}
     steps:
-      - name: Process all Copilot draft PRs
+      - name: Process all agent draft PRs
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
+
+            // All known AI coding agent bot logins
+            const AGENT_BOTS = new Set(['Copilot', 'copilot-swe-agent[bot]', 'Claude', 'anthropic-code-agent[bot]', 'Codex', 'openai-code-agent[bot]']);
+
+            // Map display names to their [bot] usernames for reassignment
+            const AGENT_REASSIGN = [
+              { botUser: 'anthropic-code-agent[bot]', name: 'Claude' },
+              { botUser: 'openai-code-agent[bot]',    name: 'Codex' },
+              { botUser: 'copilot-swe-agent[bot]',    name: 'Copilot' },
+            ];
 
             // List all open PRs
             const { data: prs } = await github.rest.pulls.list({
@@ -34,14 +44,12 @@ jobs:
               per_page: 100,
             });
 
-            const copilotPRs = prs.filter(pr =>
-              pr.user.login === 'Copilot' || pr.user.login === 'copilot-swe-agent[bot]'
-            );
+            const agentPRs = prs.filter(pr => AGENT_BOTS.has(pr.user.login));
 
-            core.info(`Found ${copilotPRs.length} open Copilot PRs`);
+            core.info(`Found ${agentPRs.length} open agent PRs`);
 
-            for (const pr of copilotPRs) {
-              core.info(`\n--- PR #${pr.number}: ${pr.title} (draft: ${pr.draft}) ---`);
+            for (const pr of agentPRs) {
+              core.info(`\n--- PR #${pr.number}: ${pr.title} (by ${pr.user.login}, draft: ${pr.draft}) ---`);
 
               // Skip PRs where Copilot is still actively working
               // Check if there are actual file changes
@@ -144,35 +152,51 @@ jobs:
                     // Wait for unassign event to register
                     await new Promise(r => setTimeout(r, 2000));
 
-                    // Re-assign via agent_assignment API (requires AGENT_PAT)
+                    // Re-assign via agent API — try Claude, then Codex, then Copilot
                     const token = process.env.AGENT_PAT || process.env.GITHUB_TOKEN;
-                    const response = await fetch(
-                      `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/assignees`,
-                      {
-                        method: 'POST',
-                        headers: {
-                          'Authorization': `token ${token}`,
-                          'Accept': 'application/vnd.github+json',
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          assignees: ['copilot-swe-agent[bot]'],
-                          agent_assignment: {
+                    let reassigned = false;
+                    for (const provider of AGENT_REASSIGN) {
+                      try {
+                        const body = { assignees: [provider.botUser] };
+                        if (provider.name === 'Copilot') {
+                          body.agent_assignment = {
                             target_repo: `${owner}/${repo}`,
                             base_branch: 'main',
-                          },
-                        }),
+                          };
+                        }
+                        const response = await fetch(
+                          `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/assignees`,
+                          {
+                            method: 'POST',
+                            headers: {
+                              'Authorization': `token ${token}`,
+                              'Accept': 'application/vnd.github+json',
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(body),
+                          }
+                        );
+                        if (response.ok) {
+                          const data = await response.json();
+                          const logins = (data.assignees || []).map(a => a.login);
+                          if (logins.includes(provider.name)) {
+                            core.info(`  Reassigned to ${provider.name}`);
+                            reassigned = true;
+                            await github.rest.issues.createComment({
+                              owner, repo,
+                              issue_number: issueNumber,
+                              body: `PR #${pr.number} was closed due to merge conflicts. Reassigning to ${provider.name} for a fresh attempt.`,
+                            });
+                            break;
+                          }
+                        }
+                      } catch (err) {
+                        core.warning(`  ${provider.name} reassignment failed: ${err.message}`);
                       }
-                    );
-                    if (!response.ok) {
-                      core.warning(`  Agent assignment API returned ${response.status}`);
                     }
-                    await github.rest.issues.createComment({
-                      owner, repo,
-                      issue_number: issueNumber,
-                      body: `PR #${pr.number} was closed due to merge conflicts. Reassigning to Copilot for a fresh attempt.`,
-                    });
-                    core.info(`  Reassigned issue #${issueNumber}`);
+                    if (!reassigned) {
+                      core.warning(`  Could not reassign issue #${issueNumber} to any agent`);
+                    }
                   } catch (err) {
                     core.warning(`  Could not reassign issue: ${err.message}`);
                   }
@@ -188,7 +212,7 @@ jobs:
                   owner, repo,
                   pull_number: pr.number,
                   event: 'APPROVE',
-                  body: 'Auto-approved: unsticking Copilot draft PR.',
+                  body: `Auto-approved: unsticking ${pr.user.login} agent draft PR.`,
                 });
                 core.info(`  Approved PR #${pr.number}`);
               } catch (err) {
@@ -210,4 +234,4 @@ jobs:
               }
             }
 
-            core.info(`\nDone. Processed ${copilotPRs.length} Copilot PRs.`);
+            core.info(`\nDone. Processed ${agentPRs.length} agent PRs.`);

@@ -7,7 +7,10 @@
  *   | ⬜ todo | `feature-id` | agent-name | Description |
  *
  * For each "⬜ todo" row without a matching open issue, creates a GitHub issue
- * and assigns it to Copilot with the specified agent profile.
+ * and assigns it to an AI coding agent with fallback:
+ *   Claude (anthropic-code-agent) → Codex (openai-code-agent) → Copilot (copilot-swe-agent)
+ *
+ * Issues are distributed round-robin across providers to spread load.
  *
  * When there are few todo items remaining, creates an "idea generation" issue
  * asking an agent to propose new roadmap items — so work never runs out.
@@ -31,6 +34,14 @@ const API = 'https://api.github.com';
 const CAN_ASSIGN_AGENTS = Boolean(AGENT_PAT);
 const MAX_ISSUES_PER_RUN = 3;
 const LOW_TODO_THRESHOLD = 2; // When <= this many todos remain, generate ideas
+
+// ── AI Agent providers (round-robin order) ──────────────────────────
+
+const AGENT_PROVIDERS = [
+  { name: 'Claude',  botUser: 'anthropic-code-agent[bot]',  display: 'Claude (Anthropic)' },
+  { name: 'Codex',   botUser: 'openai-code-agent[bot]',     display: 'Codex (OpenAI)' },
+  { name: 'Copilot', botUser: 'copilot-swe-agent[bot]',     display: 'Copilot (GitHub)' },
+];
 
 // ── GitHub REST API helper ──────────────────────────────────────────
 
@@ -171,11 +182,44 @@ async function getExistingIssueTitles() {
   }
 }
 
+// ── Agent assignment with fallback ──────────────────────────────────
+
+async function tryAssignAgent(issueNumber, provider, agentProfile) {
+  const body = {
+    assignees: [provider.botUser],
+  };
+
+  // Copilot needs agent_assignment payload; Claude & Codex just need the assignee
+  if (provider.name === 'Copilot') {
+    body.agent_assignment = {
+      target_repo: `${OWNER}/${REPO_NAME}`,
+      base_branch: 'main',
+      custom_instructions: `Use the ${agentProfile} agent profile. Follow its instructions strictly. After completing the work, update docs/project-brief.md to reflect your changes.`,
+      custom_agent: agentProfile,
+      model: '',
+    };
+  }
+
+  const result = await githubAPI(
+    `/repos/${OWNER}/${REPO_NAME}/issues/${issueNumber}/assignees`,
+    'POST',
+    body,
+    AGENT_PAT
+  );
+
+  // Check if the bot was actually added to assignees
+  const assigneeLogins = (result.assignees || []).map(a => a.login);
+  const expectedLogin = provider.name; // Claude, Codex, or Copilot
+  return assigneeLogins.includes(expectedLogin);
+}
+
 // ── Issue creation ──────────────────────────────────────────────────
+
+let providerIndex = 0; // round-robin counter
 
 async function createAndAssignIssue(title, body, agent) {
   console.log(`\n  Creating: "${title}"`);
-  console.log(`   Agent: ${agent}`);
+  console.log(`   Agent profile: ${agent}`);
 
   if (DRY_RUN) {
     console.log(`   [DRY RUN] Would create issue`);
@@ -199,26 +243,31 @@ async function createAndAssignIssue(title, body, agent) {
     return true;
   }
 
-  try {
-    await githubAPI(
-      `/repos/${OWNER}/${REPO_NAME}/issues/${created.number}/assignees`,
-      'POST',
-      {
-        assignees: ['copilot-swe-agent[bot]'],
-        agent_assignment: {
-          target_repo: `${OWNER}/${REPO_NAME}`,
-          base_branch: 'main',
-          custom_instructions: `Use the ${agent} agent profile. Follow its instructions strictly. After completing the work, update docs/project-brief.md to reflect your changes.`,
-          custom_agent: agent,
-          model: '',
-        },
-      },
-      AGENT_PAT
-    );
-    console.log(`   Assigned to copilot-swe-agent[bot] with agent: ${agent}`);
-  } catch (e) {
-    console.log(`   Assignment failed: ${e.message}`);
-    console.log('   Issue created but agent not assigned — assign manually');
+  // Round-robin across providers, with fallback on failure
+  const startIdx = providerIndex % AGENT_PROVIDERS.length;
+  providerIndex++;
+  let assigned = false;
+
+  for (let i = 0; i < AGENT_PROVIDERS.length; i++) {
+    const provider = AGENT_PROVIDERS[(startIdx + i) % AGENT_PROVIDERS.length];
+    console.log(`   Trying ${provider.display}...`);
+
+    try {
+      const ok = await tryAssignAgent(created.number, provider, agent);
+      if (ok) {
+        console.log(`   ✅ Assigned to ${provider.display}`);
+        assigned = true;
+        break;
+      } else {
+        console.log(`   ⚠  ${provider.name} assignment silently failed — trying next`);
+      }
+    } catch (e) {
+      console.log(`   ⚠  ${provider.name} error: ${e.message}`);
+    }
+  }
+
+  if (!assigned) {
+    console.log('   ❌ All providers failed — issue created but unassigned');
   }
 
   return true;

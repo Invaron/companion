@@ -1,7 +1,8 @@
-name: Auto-approve Copilot Agent PRs
+name: Auto-approve Agent PRs
 
-# Triggers when Copilot coding agent opens/updates PRs (including drafts).
-# Uses pull_request_target to get write permissions for PRs from copilot/ branches.
+# Triggers when any AI coding agent opens/updates PRs (including drafts).
+# Handles Claude (Anthropic), Codex (OpenAI), and Copilot (GitHub) bots.
+# Uses pull_request_target to get write permissions for PRs from agent branches.
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
@@ -14,8 +15,14 @@ permissions:
 
 jobs:
   approve-agent-work:
-    # Run for PRs created by Copilot bot
-    if: github.event.pull_request.user.login == 'Copilot' || github.event.pull_request.user.login == 'copilot-swe-agent[bot]'
+    # Run for PRs created by any AI coding agent bot
+    if: |
+      github.event.pull_request.user.login == 'Copilot' ||
+      github.event.pull_request.user.login == 'copilot-swe-agent[bot]' ||
+      github.event.pull_request.user.login == 'Claude' ||
+      github.event.pull_request.user.login == 'anthropic-code-agent[bot]' ||
+      github.event.pull_request.user.login == 'Codex' ||
+      github.event.pull_request.user.login == 'openai-code-agent[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Approve pending workflow runs
@@ -27,7 +34,7 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            core.info(`Processing Copilot agent PR #${pr.number}: ${pr.title}`);
+            core.info(`Processing agent PR #${pr.number}: ${pr.title}`);
             core.info(`PR author: ${pr.user.login}, draft: ${pr.draft}`);
 
             // Approve any pending workflow runs on this PR's head SHA
@@ -117,7 +124,7 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: pr.number,
                 event: 'APPROVE',
-                body: 'Auto-approved: PR from copilot-swe-agent[bot].',
+                  body: `Auto-approved: PR from ${pr.user.login} agent.`,
               });
               core.info(`Approved PR #${pr.number}`);
             } catch (err) {
