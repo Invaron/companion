@@ -65,7 +65,6 @@ describe("GitHub API - createIssue with agentAssignment", () => {
         },
       };
 
-      expect(payload.agent_assignment.target_repo).toMatch(/^[^\/]+\/[^\/]+$/);
       expect(payload.agent_assignment.target_repo).toBe("lucyscript/companion");
     });
 
