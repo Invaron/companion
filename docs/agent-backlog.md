@@ -6,8 +6,8 @@ Use this backlog to coordinate work between GitHub Copilot and Codex-style agent
 1. Create an issue from **Copilot Agent Task** template.
 2. Assign the issue to an agent.
 3. Agent creates a branch: `agent/<issue-number>-<slug>`.
-4. Agent ships one PR per issue.
-5. Reviewer either merges or returns a follow-up issue.
+4. Agent pushes changes → **PR automatically created** with `agent-task` label.
+5. Automation handles rebase, approval, and merge (if `agent-automerge` label present).
 
 ## Suggested initial tasks
 

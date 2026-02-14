@@ -10,10 +10,14 @@ Keep work moving asynchronously by assigning small, verifiable tasks to agents a
 2. Restate acceptance criteria before coding.
 3. Make minimal, focused changes.
 4. Run relevant checks locally.
-5. Open a PR that references the issue and includes:
-   - Summary of change
-   - Validation steps + results
-   - Follow-up tasks (if any)
+5. Push to an `agent/<issue-number>-<description>` branch.
+   - A PR is **automatically created** with the `agent-task` label
+   - The PR template is pre-populated
+   - The linked issue receives an update comment
+6. Automated workflows then handle:
+   - Auto-rebase onto latest `main`
+   - Auto-approval via `github-actions[bot]`
+   - Auto-merge (if `agent-automerge` label is present)
 
 ## Task decomposition rules
 - Prefer tasks that can be completed in one PR.
