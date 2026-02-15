@@ -38,6 +38,91 @@ app.get("/api/export", (_req, res) => {
   return res.json(exportData);
 });
 
+// Import validation schemas
+const journalImportSchema = z.object({
+  id: z.string().min(1),
+  content: z.string().min(1).max(10000),
+  timestamp: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  version: z.number().int().positive(),
+  clientEntryId: z.string().min(1).optional()
+});
+
+const lectureImportSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().trim().min(1).max(200),
+  startTime: z.string().datetime(),
+  durationMinutes: z.number().int().positive().max(24 * 60),
+  workload: z.enum(["low", "medium", "high"])
+});
+
+const deadlineImportSchema = z.object({
+  id: z.string().min(1),
+  course: z.string().trim().min(1).max(200),
+  task: z.string().trim().min(1).max(300),
+  dueDate: z.string().datetime(),
+  priority: z.enum(["low", "medium", "high", "critical"]),
+  completed: z.boolean()
+});
+
+const habitImportSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1).max(120),
+  cadence: z.enum(["daily", "weekly"]),
+  targetPerWeek: z.number().int().min(1).max(7),
+  motivation: z.string().trim().max(300).optional(),
+  createdAt: z.string().datetime()
+});
+
+const goalImportSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().trim().min(1).max(120),
+  cadence: z.enum(["daily", "weekly"]),
+  targetCount: z.number().int().positive(),
+  dueDate: z.string().datetime().nullable(),
+  motivation: z.string().trim().max(300).optional(),
+  createdAt: z.string().datetime()
+});
+
+const userContextImportSchema = z.object({
+  stressLevel: z.enum(["low", "medium", "high"]).optional(),
+  energyLevel: z.enum(["low", "medium", "high"]).optional(),
+  mode: z.enum(["focus", "balanced", "recovery"]).optional()
+});
+
+const notificationPreferencesImportSchema = z.object({
+  quietHours: z.object({
+    enabled: z.boolean().optional(),
+    startHour: z.number().int().min(0).max(23).optional(),
+    endHour: z.number().int().min(0).max(23).optional()
+  }).optional(),
+  minimumPriority: z.enum(["low", "medium", "high", "critical"]).optional(),
+  allowCriticalInQuietHours: z.boolean().optional(),
+  categoryToggles: z.record(z.string(), z.boolean()).optional()
+});
+
+const importDataSchema = z.object({
+  version: z.string().optional(),
+  journals: z.array(journalImportSchema).optional(),
+  schedule: z.array(lectureImportSchema).optional(),
+  deadlines: z.array(deadlineImportSchema).optional(),
+  habits: z.array(habitImportSchema).optional(),
+  goals: z.array(goalImportSchema).optional(),
+  userContext: userContextImportSchema.optional(),
+  notificationPreferences: notificationPreferencesImportSchema.optional()
+});
+
+app.post("/api/import", (req, res) => {
+  const parsed = importDataSchema.safeParse(req.body ?? {});
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid import data", issues: parsed.error.issues });
+  }
+
+  const result = store.importData(parsed.data);
+  return res.json(result);
+});
+
 const contextSchema = z.object({
   stressLevel: z.enum(["low", "medium", "high"]).optional(),
   energyLevel: z.enum(["low", "medium", "high"]).optional(),

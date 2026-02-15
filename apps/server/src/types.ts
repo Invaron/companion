@@ -235,3 +235,28 @@ export interface ExportData {
   userContext: UserContext;
   notificationPreferences: NotificationPreferences;
 }
+
+export interface ImportData {
+  version?: string;
+  journals?: JournalEntry[];
+  schedule?: LectureEvent[];
+  deadlines?: Deadline[];
+  habits?: Habit[];
+  goals?: Goal[];
+  userContext?: Partial<UserContext>;
+  notificationPreferences?: NotificationPreferencesPatch;
+}
+
+export interface ImportResult {
+  imported: {
+    journals: number;
+    schedule: number;
+    deadlines: number;
+    habits: number;
+    goals: number;
+  };
+  conflicts: {
+    journals: JournalEntry[];
+  };
+  warnings: string[];
+}

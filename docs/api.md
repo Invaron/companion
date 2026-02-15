@@ -502,3 +502,133 @@ Response `200`:
 ```
 
 The response includes the `Content-Disposition` header with filename `companion-export.json` to trigger a download in browsers.
+
+## Import
+
+### `POST /api/import`
+
+Imports user data from JSON export format with conflict resolution for existing records. Accepts partial imports (any subset of data can be provided).
+
+Request Body:
+
+```json
+{
+  "version": "1.0",
+  "journals": [
+    {
+      "id": "journal-1739570000000-1",
+      "content": "Finished algorithms homework",
+      "timestamp": "2026-02-15T15:00:00.000Z",
+      "updatedAt": "2026-02-15T15:00:00.000Z",
+      "version": 1,
+      "clientEntryId": "optional-client-id"
+    }
+  ],
+  "schedule": [
+    {
+      "id": "lecture-1739570000000-2",
+      "title": "Algorithms Lecture",
+      "startTime": "2026-02-16T10:00:00.000Z",
+      "durationMinutes": 90,
+      "workload": "high"
+    }
+  ],
+  "deadlines": [
+    {
+      "id": "deadline-1739570000000-3",
+      "course": "Systems",
+      "task": "Lab Report",
+      "dueDate": "2026-02-20T23:59:00.000Z",
+      "priority": "high",
+      "completed": false
+    }
+  ],
+  "habits": [
+    {
+      "id": "habit-1",
+      "name": "Evening review",
+      "cadence": "daily",
+      "targetPerWeek": 6,
+      "motivation": "Close the loop on the day",
+      "createdAt": "2026-02-10T00:00:00.000Z"
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-1",
+      "title": "Ship portfolio draft",
+      "cadence": "daily",
+      "targetCount": 4,
+      "dueDate": "2026-02-25T00:00:00.000Z",
+      "createdAt": "2026-02-10T00:00:00.000Z"
+    }
+  ],
+  "userContext": {
+    "stressLevel": "medium",
+    "energyLevel": "high",
+    "mode": "focus"
+  },
+  "notificationPreferences": {
+    "quietHours": {
+      "enabled": true,
+      "startHour": 22,
+      "endHour": 7
+    },
+    "minimumPriority": "medium",
+    "allowCriticalInQuietHours": true,
+    "categoryToggles": {
+      "notes": true,
+      "lecture-plan": true,
+      "assignment-tracker": true,
+      "orchestrator": true
+    }
+  }
+}
+```
+
+All fields are optional. You can import any subset of data (e.g., only journals, or only schedule events).
+
+**Conflict Resolution**:
+- **Journals**: Uses existing sync logic. If an entry with the same ID exists, it will be updated and version incremented.
+- **Schedule, Deadlines, Habits, Goals**: If a record with the same ID exists, it will be updated with the imported data. Otherwise, a new record is created with the provided ID.
+- **User Context & Preferences**: Merged with existing values (partial updates supported).
+
+Response `200`:
+
+```json
+{
+  "imported": {
+    "journals": 1,
+    "schedule": 1,
+    "deadlines": 1,
+    "habits": 1,
+    "goals": 1
+  },
+  "conflicts": {
+    "journals": []
+  },
+  "warnings": []
+}
+```
+
+**Response Fields**:
+- `imported`: Count of successfully imported items per category
+- `conflicts.journals`: Array of journal entries that had version conflicts (not imported)
+- `warnings`: Array of warning messages (e.g., version incompatibility, failed imports)
+
+Error Response `400`:
+
+```json
+{
+  "error": "Invalid import data",
+  "issues": [
+    {
+      "code": "invalid_type",
+      "expected": "string",
+      "received": "number",
+      "path": ["journals", 0, "content"],
+      "message": "Expected string, received number"
+    }
+  ]
+}
+```

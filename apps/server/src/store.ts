@@ -8,6 +8,8 @@ import {
   DeadlineReminderState,
   DeadlineStatusConfirmation,
   ExportData,
+  ImportData,
+  ImportResult,
   JournalEntry,
   JournalSyncPayload,
   LectureEvent,
@@ -1653,6 +1655,203 @@ export class RuntimeStore {
       userContext: this.getUserContext(),
       notificationPreferences: this.getNotificationPreferences()
     };
+  }
+
+  importData(data: ImportData): ImportResult {
+    const result: ImportResult = {
+      imported: {
+        journals: 0,
+        schedule: 0,
+        deadlines: 0,
+        habits: 0,
+        goals: 0
+      },
+      conflicts: {
+        journals: []
+      },
+      warnings: []
+    };
+
+    // Version compatibility check
+    if (data.version && data.version !== "1.0") {
+      result.warnings.push(`Import version ${data.version} may not be fully compatible with current version 1.0`);
+    }
+
+    // Import journals using existing sync logic for conflict resolution
+    if (data.journals && data.journals.length > 0) {
+      const syncPayloads: JournalSyncPayload[] = data.journals.map((journal) => ({
+        id: journal.id,
+        clientEntryId: journal.clientEntryId ?? `import-${journal.id}`,
+        content: journal.content,
+        timestamp: journal.timestamp,
+        baseVersion: undefined // No base version for import = always apply if no conflict
+      }));
+
+      const syncResult = this.syncJournalEntries(syncPayloads);
+      result.imported.journals = syncResult.applied.length;
+      result.conflicts.journals = syncResult.conflicts;
+    }
+
+    // Import schedule events - use INSERT OR REPLACE to handle conflicts
+    if (data.schedule && data.schedule.length > 0) {
+      for (const event of data.schedule) {
+        try {
+          // Check if event already exists
+          const existing = this.db.prepare("SELECT id FROM schedule_events WHERE id = ?").get(event.id);
+
+          if (existing) {
+            // Update existing event
+            this.db
+              .prepare("UPDATE schedule_events SET title = ?, startTime = ?, durationMinutes = ?, workload = ? WHERE id = ?")
+              .run(event.title, event.startTime, event.durationMinutes, event.workload, event.id);
+          } else {
+            // Insert new event
+            this.db
+              .prepare("INSERT INTO schedule_events (id, title, startTime, durationMinutes, workload) VALUES (?, ?, ?, ?, ?)")
+              .run(event.id, event.title, event.startTime, event.durationMinutes, event.workload);
+          }
+
+          result.imported.schedule += 1;
+        } catch (error) {
+          result.warnings.push(`Failed to import schedule event ${event.id}: ${error}`);
+        }
+      }
+
+      // Trim to maxScheduleEvents
+      const count = (this.db.prepare("SELECT COUNT(*) as count FROM schedule_events").get() as { count: number }).count;
+      if (count > this.maxScheduleEvents) {
+        this.db
+          .prepare(
+            `DELETE FROM schedule_events WHERE id IN (
+              SELECT id FROM schedule_events ORDER BY insertOrder ASC LIMIT ?
+            )`
+          )
+          .run(count - this.maxScheduleEvents);
+      }
+    }
+
+    // Import deadlines
+    if (data.deadlines && data.deadlines.length > 0) {
+      for (const deadline of data.deadlines) {
+        try {
+          const existing = this.db.prepare("SELECT id FROM deadlines WHERE id = ?").get(deadline.id);
+
+          if (existing) {
+            // Update existing deadline
+            this.db
+              .prepare("UPDATE deadlines SET course = ?, task = ?, dueDate = ?, priority = ?, completed = ? WHERE id = ?")
+              .run(deadline.course, deadline.task, deadline.dueDate, deadline.priority, deadline.completed ? 1 : 0, deadline.id);
+          } else {
+            // Insert new deadline
+            this.db
+              .prepare("INSERT INTO deadlines (id, course, task, dueDate, priority, completed) VALUES (?, ?, ?, ?, ?, ?)")
+              .run(deadline.id, deadline.course, deadline.task, deadline.dueDate, deadline.priority, deadline.completed ? 1 : 0);
+          }
+
+          result.imported.deadlines += 1;
+        } catch (error) {
+          result.warnings.push(`Failed to import deadline ${deadline.id}: ${error}`);
+        }
+      }
+
+      // Trim to maxDeadlines
+      const count = (this.db.prepare("SELECT COUNT(*) as count FROM deadlines").get() as { count: number }).count;
+      if (count > this.maxDeadlines) {
+        this.db
+          .prepare(
+            `DELETE FROM deadlines WHERE id IN (
+              SELECT id FROM deadlines ORDER BY insertOrder ASC LIMIT ?
+            )`
+          )
+          .run(count - this.maxDeadlines);
+      }
+    }
+
+    // Import habits
+    if (data.habits && data.habits.length > 0) {
+      for (const habit of data.habits) {
+        try {
+          const existing = this.db.prepare("SELECT id FROM habits WHERE id = ?").get(habit.id);
+
+          if (existing) {
+            // Update existing habit
+            this.db
+              .prepare("UPDATE habits SET name = ?, cadence = ?, targetPerWeek = ?, motivation = ?, createdAt = ? WHERE id = ?")
+              .run(habit.name, habit.cadence, habit.targetPerWeek, habit.motivation ?? null, habit.createdAt, habit.id);
+          } else {
+            // Insert new habit
+            this.db
+              .prepare("INSERT INTO habits (id, name, cadence, targetPerWeek, motivation, createdAt) VALUES (?, ?, ?, ?, ?, ?)")
+              .run(habit.id, habit.name, habit.cadence, habit.targetPerWeek, habit.motivation ?? null, habit.createdAt);
+          }
+
+          result.imported.habits += 1;
+        } catch (error) {
+          result.warnings.push(`Failed to import habit ${habit.id}: ${error}`);
+        }
+      }
+
+      // Trim to maxHabits
+      const count = (this.db.prepare("SELECT COUNT(*) as count FROM habits").get() as { count: number }).count;
+      if (count > this.maxHabits) {
+        this.db
+          .prepare(
+            `DELETE FROM habits WHERE id IN (
+              SELECT id FROM habits ORDER BY insertOrder ASC LIMIT ?
+            )`
+          )
+          .run(count - this.maxHabits);
+      }
+    }
+
+    // Import goals
+    if (data.goals && data.goals.length > 0) {
+      for (const goal of data.goals) {
+        try {
+          const existing = this.db.prepare("SELECT id FROM goals WHERE id = ?").get(goal.id);
+
+          if (existing) {
+            // Update existing goal
+            this.db
+              .prepare("UPDATE goals SET title = ?, cadence = ?, targetCount = ?, dueDate = ?, motivation = ?, createdAt = ? WHERE id = ?")
+              .run(goal.title, goal.cadence, goal.targetCount, goal.dueDate, goal.motivation ?? null, goal.createdAt, goal.id);
+          } else {
+            // Insert new goal
+            this.db
+              .prepare("INSERT INTO goals (id, title, cadence, targetCount, dueDate, motivation, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
+              .run(goal.id, goal.title, goal.cadence, goal.targetCount, goal.dueDate, goal.motivation ?? null, goal.createdAt);
+          }
+
+          result.imported.goals += 1;
+        } catch (error) {
+          result.warnings.push(`Failed to import goal ${goal.id}: ${error}`);
+        }
+      }
+
+      // Trim to maxGoals
+      const count = (this.db.prepare("SELECT COUNT(*) as count FROM goals").get() as { count: number }).count;
+      if (count > this.maxGoals) {
+        this.db
+          .prepare(
+            `DELETE FROM goals WHERE id IN (
+              SELECT id FROM goals ORDER BY insertOrder ASC LIMIT ?
+            )`
+          )
+          .run(count - this.maxGoals);
+      }
+    }
+
+    // Import user context (merge with existing)
+    if (data.userContext) {
+      this.setUserContext(data.userContext);
+    }
+
+    // Import notification preferences (merge with existing)
+    if (data.notificationPreferences) {
+      this.setNotificationPreferences(data.notificationPreferences);
+    }
+
+    return result;
   }
 
   private getAgentStates(): AgentState[] {
