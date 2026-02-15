@@ -1,5 +1,12 @@
-import { DashboardSnapshot, UserContext } from "../types";
-import { loadDashboard, saveDashboard, loadContext, saveContext } from "./storage";
+import { DashboardSnapshot, NotificationPreferences, UserContext } from "../types";
+import {
+  loadContext,
+  loadDashboard,
+  loadNotificationPreferences,
+  saveContext,
+  saveDashboard,
+  saveNotificationPreferences
+} from "./storage";
 
 async function jsonOrThrow<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(input, {
@@ -23,7 +30,6 @@ export async function getDashboard(): Promise<DashboardSnapshot> {
     saveDashboard(snapshot);
     return snapshot;
   } catch {
-    // Server unreachable (e.g. GitHub Pages) — use localStorage
     return loadDashboard();
   }
 }
@@ -35,10 +41,48 @@ export async function updateContext(payload: Partial<UserContext>): Promise<{ co
       body: JSON.stringify(payload)
     });
   } catch {
-    // Server unreachable — persist locally
     const current = loadContext();
     const merged = { ...current, ...payload };
     saveContext(merged);
     return { context: merged };
+  }
+}
+
+export async function getNotificationPreferences(): Promise<NotificationPreferences> {
+  try {
+    const response = await jsonOrThrow<{ preferences: NotificationPreferences }>("/api/notification-preferences");
+    saveNotificationPreferences(response.preferences);
+    return response.preferences;
+  } catch {
+    return loadNotificationPreferences();
+  }
+}
+
+export async function updateNotificationPreferences(
+  payload: Partial<NotificationPreferences>
+): Promise<NotificationPreferences> {
+  try {
+    const response = await jsonOrThrow<{ preferences: NotificationPreferences }>("/api/notification-preferences", {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    saveNotificationPreferences(response.preferences);
+    return response.preferences;
+  } catch {
+    const current = loadNotificationPreferences();
+    const merged: NotificationPreferences = {
+      ...current,
+      ...payload,
+      quietHours: {
+        ...current.quietHours,
+        ...(payload.quietHours ?? {})
+      },
+      categoryToggles: {
+        ...current.categoryToggles,
+        ...(payload.categoryToggles ?? {})
+      }
+    };
+    saveNotificationPreferences(merged);
+    return merged;
   }
 }

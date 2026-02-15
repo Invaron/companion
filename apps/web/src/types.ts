@@ -71,3 +71,14 @@ export interface Deadline {
   priority: Priority;
   completed: boolean;
 }
+
+export interface NotificationPreferences {
+  quietHours: {
+    enabled: boolean;
+    startHour: number;
+    endHour: number;
+  };
+  minimumPriority: Priority;
+  allowCriticalInQuietHours: boolean;
+  categoryToggles: Record<AgentName, boolean>;
+}

@@ -4,6 +4,7 @@ import { ContextControls } from "./components/ContextControls";
 import { DeadlineList } from "./components/DeadlineList";
 import { JournalView } from "./components/JournalView";
 import { NotificationFeed } from "./components/NotificationFeed";
+import { NotificationSettings } from "./components/NotificationSettings";
 import { ScheduleView } from "./components/ScheduleView";
 import { SummaryTiles } from "./components/SummaryTiles";
 import { useDashboard } from "./hooks/useDashboard";
@@ -103,6 +104,7 @@ export default function App(): JSX.Element {
             <NotificationFeed notifications={data.notifications} />
           </div>
           <ContextControls onUpdated={refresh} />
+          <NotificationSettings />
         </>
       )}
     </main>

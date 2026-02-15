@@ -1,4 +1,4 @@
-import { DashboardSnapshot, UserContext, JournalEntry, LectureEvent, Deadline } from "../types";
+import { DashboardSnapshot, Deadline, JournalEntry, LectureEvent, NotificationPreferences, UserContext } from "../types";
 
 const STORAGE_KEYS = {
   dashboard: "companion:dashboard",
@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   journal: "companion:journal",
   schedule: "companion:schedule",
   deadlines: "companion:deadlines",
+  notificationPreferences: "companion:notification-preferences",
 } as const;
 
 const defaultContext: UserContext = {
@@ -13,6 +14,37 @@ const defaultContext: UserContext = {
   energyLevel: "medium",
   mode: "balanced",
 };
+
+
+const defaultNotificationPreferences: NotificationPreferences = {
+  quietHours: {
+    enabled: false,
+    startHour: 22,
+    endHour: 7
+  },
+  minimumPriority: "low",
+  allowCriticalInQuietHours: true,
+  categoryToggles: {
+    notes: true,
+    "lecture-plan": true,
+    "assignment-tracker": true,
+    orchestrator: true
+  }
+};
+
+export function loadNotificationPreferences(): NotificationPreferences {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.notificationPreferences);
+    if (raw) return JSON.parse(raw) as NotificationPreferences;
+  } catch {
+    // corrupted
+  }
+  return defaultNotificationPreferences;
+}
+
+export function saveNotificationPreferences(preferences: NotificationPreferences): void {
+  localStorage.setItem(STORAGE_KEYS.notificationPreferences, JSON.stringify(preferences));
+}
 
 function defaultDashboard(): DashboardSnapshot {
   return {
