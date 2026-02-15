@@ -71,4 +71,4 @@ Features are built in priority order. The orchestrator reads this section to dec
 | ✅ done | `push-notifications` | backend-engineer | VAPID keys, push subscription, service worker |
 | ✅ done | `nudge-engine` | backend-engineer | Context-aware notification generation |
 | ✅ done | `api-docs` | docs-writer | Document all API endpoints in docs/api.md |
-| ⬜ todo | `test-coverage` | test-engineer | Add tests for store, orchestrator, and agent modules |
+| ✅ done | `test-coverage` | test-engineer | Add tests for store, orchestrator, and agent modules |
