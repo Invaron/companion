@@ -97,3 +97,8 @@ Features are built in priority order. The orchestrator reads this section to dec
 | ✅ done | `focus-session-timer` | frontend-engineer | Add a Pomodoro-style focus timer component with configurable duration, break intervals, and integration with context tracking for flow state sessions. |
 | ✅ done | `journal-tags-api` | backend-engineer | Extend journal entries with tags array field, add tag CRUD endpoints, and update search endpoint to filter by tags for better organization. |
 | ⬜ todo | `journal-tags-ui` | frontend-engineer | Add tag input with autocomplete to journal form, tag pills on entries, and tag filtering to search UI backed by journal tags API. |
+| ⬜ todo | `pwa-install-prompt` | frontend-engineer | Add "Add to Home Screen" prompt detection and custom install UI for iPhone Safari to improve first-time PWA installation experience. |
+| ⬜ todo | `deadline-smart-suggestions` | backend-engineer | Add GET /api/deadlines/suggestions endpoint that analyzes schedule gaps and recommends optimal work time blocks for upcoming deadlines. |
+| ⬜ todo | `quick-capture-widget` | frontend-engineer | Build a floating quick-capture button that persists across views for instant journal/deadline entry without navigating away from current context. |
+| ⬜ todo | `notification-interaction-history` | backend-engineer | Track notification tap/dismiss actions with timestamps to improve smart timing algorithm and measure notification effectiveness. |
+| ⬜ todo | `energy-mood-trends` | backend-engineer | Add GET /api/trends endpoint that analyzes historical context updates to identify energy/stress patterns by time of day and day of week for better nudge timing. |
