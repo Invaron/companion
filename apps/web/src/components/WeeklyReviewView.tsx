@@ -14,7 +14,9 @@ export function WeeklyReviewView(): JSX.Element {
 
     const next: string[] = [];
 
-    if (summary.completionRate < 50) {
+    if (summary.deadlinesDue === 0) {
+      next.push("Plan one or two priorities for next week so the assistant can track them.");
+    } else if (summary.completionRate < 50) {
       next.push("Reduce this week to one or two high-impact deadlines first.");
     } else if (summary.completionRate < 80) {
       next.push("Protect one daily focus block to raise completion consistency.");
