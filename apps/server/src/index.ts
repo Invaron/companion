@@ -810,6 +810,50 @@ app.get("/api/notification-interactions/metrics", (req, res) => {
   return res.json({ metrics });
 });
 
+const emailDigestConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  email: z.string().email().optional(),
+  frequency: z.enum(["daily", "weekly"]).optional(),
+  fallbackEnabled: z.boolean().optional(),
+  fallbackThresholdHours: z.number().int().min(1).max(168).optional()
+});
+
+app.get("/api/email-digest/config", (_req, res) => {
+  return res.json({ config: store.getEmailDigestConfig() });
+});
+
+app.put("/api/email-digest/config", (req, res) => {
+  const parsed = emailDigestConfigSchema.safeParse(req.body ?? {});
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid email digest config payload", issues: parsed.error.issues });
+  }
+
+  const config = store.updateEmailDigestConfig(parsed.data);
+  return res.json({ config });
+});
+
+app.post("/api/email-digest/send", async (req, res) => {
+  const { sendEmailDigest, isEmailConfigured } = await import("./email-digest.js");
+  
+  if (!isEmailConfigured()) {
+    return res.status(400).json({ error: "Email not configured. Set SMTP environment variables." });
+  }
+
+  const digestConfig = store.getEmailDigestConfig();
+  if (!digestConfig.enabled) {
+    return res.status(400).json({ error: "Email digest is not enabled" });
+  }
+
+  const result = await sendEmailDigest(store, digestConfig.frequency);
+  
+  if (!result.sent) {
+    return res.status(500).json({ error: result.error || "Failed to send email digest" });
+  }
+
+  return res.json({ success: true, message: "Email digest sent successfully" });
+});
+
 app.post("/api/push/subscribe", (req, res) => {
   const parsed = pushSubscriptionSchema.safeParse(req.body ?? {});
 

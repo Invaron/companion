@@ -8,6 +8,7 @@ import {
   DeadlineReminderState,
   DeadlineStatusConfirmation,
   ContextTrends,
+  EmailDigestConfig,
   ExportData,
   ImportData,
   ImportResult,
@@ -279,6 +280,16 @@ export class RuntimeStore {
         insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000)
       );
 
+      CREATE TABLE IF NOT EXISTS email_digest_config (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        enabled INTEGER NOT NULL DEFAULT 0,
+        email TEXT,
+        frequency TEXT NOT NULL DEFAULT 'daily',
+        fallbackEnabled INTEGER NOT NULL DEFAULT 1,
+        fallbackThresholdHours INTEGER NOT NULL DEFAULT 24,
+        lastSentAt TEXT
+      );
+
       CREATE INDEX IF NOT EXISTS idx_notification_interactions_timestamp 
         ON notification_interactions(timestamp);
       CREATE INDEX IF NOT EXISTS idx_notification_interactions_type 
@@ -336,6 +347,18 @@ export class RuntimeStore {
       this.db
         .prepare(
           "INSERT INTO push_delivery_metrics (id, attempted, delivered, failed, droppedSubscriptions, totalRetries) VALUES (1, 0, 0, 0, 0, 0)"
+        )
+        .run();
+    }
+
+    // Initialize email digest config
+    const digestConfigExists = this.db.prepare("SELECT id FROM email_digest_config WHERE id = 1").get();
+    if (!digestConfigExists) {
+      this.db
+        .prepare(
+          `INSERT INTO email_digest_config 
+           (id, enabled, email, frequency, fallbackEnabled, fallbackThresholdHours, lastSentAt) 
+           VALUES (1, 0, NULL, 'daily', 1, 24, NULL)`
         )
         .run();
     }
@@ -2753,6 +2776,60 @@ export class RuntimeStore {
       interactionsBySource,
       recentInteractions: interactions.slice(0, 20)
     };
+  }
+
+  /**
+   * Get email digest configuration
+   */
+  getEmailDigestConfig(): EmailDigestConfig {
+    const row = this.db
+      .prepare(
+        `SELECT enabled, email, frequency, fallbackEnabled, fallbackThresholdHours, lastSentAt
+         FROM email_digest_config WHERE id = 1`
+      )
+      .get() as {
+      enabled: number;
+      email: string | null;
+      frequency: string;
+      fallbackEnabled: number;
+      fallbackThresholdHours: number;
+      lastSentAt: string | null;
+    };
+
+    return {
+      enabled: Boolean(row.enabled),
+      email: row.email ?? "",
+      frequency: row.frequency as EmailDigestConfig["frequency"],
+      fallbackEnabled: Boolean(row.fallbackEnabled),
+      fallbackThresholdHours: row.fallbackThresholdHours,
+      lastSentAt: row.lastSentAt
+    };
+  }
+
+  /**
+   * Update email digest configuration
+   */
+  updateEmailDigestConfig(config: Partial<EmailDigestConfig>): EmailDigestConfig {
+    const current = this.getEmailDigestConfig();
+    const updated = { ...current, ...config };
+
+    this.db
+      .prepare(
+        `UPDATE email_digest_config 
+         SET enabled = ?, email = ?, frequency = ?, fallbackEnabled = ?, 
+             fallbackThresholdHours = ?, lastSentAt = ?
+         WHERE id = 1`
+      )
+      .run(
+        updated.enabled ? 1 : 0,
+        updated.email || null,
+        updated.frequency,
+        updated.fallbackEnabled ? 1 : 0,
+        updated.fallbackThresholdHours,
+        updated.lastSentAt
+      );
+
+    return updated;
   }
 }
 

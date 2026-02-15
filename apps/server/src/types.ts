@@ -353,3 +353,32 @@ export interface NotificationInteractionMetrics {
   interactionsBySource: Record<AgentName, number>;
   recentInteractions: NotificationInteraction[];
 }
+
+export type DigestFrequency = "daily" | "weekly";
+
+export interface EmailDigestConfig {
+  enabled: boolean;
+  email: string;
+  frequency: DigestFrequency;
+  fallbackEnabled: boolean;
+  fallbackThresholdHours: number;
+  lastSentAt: string | null;
+}
+
+export interface DigestContent {
+  type: DigestFrequency;
+  generatedAt: string;
+  summary: {
+    greeting: string;
+    upcomingDeadlines: Deadline[];
+    todaySchedule: LectureEvent[];
+    recentJournalHighlights: JournalEntry[];
+    pendingHabits: HabitWithStatus[];
+    weeklyStats?: {
+      deadlinesCompleted: number;
+      journalEntries: number;
+      habitsCompleted: number;
+    };
+  };
+  fallbackReason?: "push_failures" | "user_inactive";
+}

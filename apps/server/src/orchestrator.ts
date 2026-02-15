@@ -62,6 +62,13 @@ export class OrchestratorRuntime {
       this.processScheduledNotifications();
     }, this.scheduledNotificationCheckIntervalMs);
     this.timers.push(scheduledNotifTimer);
+
+    // Check email digest (scheduled and fallback)
+    this.checkEmailDigest();
+    const emailDigestTimer = setInterval(() => {
+      this.checkEmailDigest();
+    }, 300_000); // Check every 5 minutes
+    this.timers.push(emailDigestTimer);
   }
 
   stop(): void {
@@ -161,5 +168,52 @@ export class OrchestratorRuntime {
       // Remove from scheduled queue
       this.store.removeScheduledNotification(scheduled.id);
     }
+  }
+
+  /**
+   * Check if email digest should be sent (scheduled or fallback)
+   */
+  private checkEmailDigest(): void {
+    void (async () => {
+      const { 
+        isEmailConfigured, 
+        sendEmailDigest, 
+        shouldSendScheduledDigest, 
+        shouldSendFallbackDigest 
+      } = await import("./email-digest.js");
+
+      if (!isEmailConfigured()) {
+        return; // Email not configured, skip
+      }
+
+      const digestConfig = this.store.getEmailDigestConfig();
+      if (!digestConfig.enabled) {
+        return; // Digest disabled
+      }
+
+      // Check for scheduled digest
+      if (shouldSendScheduledDigest(this.store)) {
+        const result = await sendEmailDigest(this.store, digestConfig.frequency);
+        if (!result.sent) {
+          console.error("[orchestrator] Failed to send scheduled email digest:", result.error);
+        } else {
+          console.log(`[orchestrator] Sent scheduled ${digestConfig.frequency} email digest`);
+        }
+        return;
+      }
+
+      // Check for fallback digest
+      if (digestConfig.fallbackEnabled) {
+        const fallbackCheck = shouldSendFallbackDigest(this.store);
+        if (fallbackCheck.shouldSend) {
+          const result = await sendEmailDigest(this.store, digestConfig.frequency, fallbackCheck.reason);
+          if (!result.sent) {
+            console.error("[orchestrator] Failed to send fallback email digest:", result.error);
+          } else {
+            console.log(`[orchestrator] Sent fallback email digest (reason: ${fallbackCheck.reason})`);
+          }
+        }
+      }
+    })();
   }
 }
