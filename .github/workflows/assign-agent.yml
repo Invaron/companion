@@ -43,6 +43,6 @@ jobs:
           ISSUE_NODE_ID: ${{ inputs.issue_node_id }}
           AGENT_BOT_ID: ${{ inputs.agent_bot_id }}
           AGENT_DISPLAY_NAME: ${{ inputs.agent_display_name }}
-          GH_SESSION_COOKIE: ${{ secrets.GH_SESSION_COOKIE }}
+          GH_SESSION_COOKIE: ${{ secrets.GH_SESSION_COOKIE_COLLAB || secrets.GH_SESSION_COOKIE }}
           REPO_NWO: ${{ github.repository }}
         run: node .github/scripts/assign-agent.mjs
