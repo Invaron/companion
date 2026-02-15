@@ -7,16 +7,19 @@ import {
   loadJournalQueue
 } from "../lib/storage";
 import { JournalEntry } from "../types";
+import { TagInput } from "./TagInput";
 
 export function JournalView(): JSX.Element {
   const [entries, setEntries] = useState<JournalEntry[]>(loadJournalEntries());
   const [displayedEntries, setDisplayedEntries] = useState<JournalEntry[]>(loadJournalEntries());
   const [text, setText] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [filterTags, setFilterTags] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -46,7 +49,7 @@ export function JournalView(): JSX.Element {
 
   useEffect(() => {
     applyFilters(entries);
-  }, [searchQuery, startDate, endDate, entries]);
+  }, [searchQuery, startDate, endDate, filterTags, entries]);
 
   const applyFilters = (entriesList: JournalEntry[]): void => {
     let filtered = [...entriesList];
@@ -71,11 +74,17 @@ export function JournalView(): JSX.Element {
       filtered = filtered.filter((entry) => new Date(entry.timestamp) <= end);
     }
 
+    if (filterTags.length > 0) {
+      filtered = filtered.filter((entry) => 
+        filterTags.every((tag) => entry.tags?.includes(tag))
+      );
+    }
+
     setDisplayedEntries(filtered);
   };
 
   const handleSearch = async (): Promise<void> => {
-    if (!searchQuery.trim() && !startDate && !endDate) {
+    if (!searchQuery.trim() && !startDate && !endDate && filterTags.length === 0) {
       setDisplayedEntries(entries);
       return;
     }
@@ -85,7 +94,8 @@ export function JournalView(): JSX.Element {
       const results = await searchJournalEntries(
         searchQuery.trim() || undefined,
         startDate || undefined,
-        endDate || undefined
+        endDate || undefined,
+        filterTags.length > 0 ? filterTags : undefined
       );
 
       if (results) {
@@ -108,6 +118,7 @@ export function JournalView(): JSX.Element {
     setSearchQuery("");
     setStartDate("");
     setEndDate("");
+    setFilterTags([]);
     setDisplayedEntries(entries);
   };
 
@@ -117,13 +128,14 @@ export function JournalView(): JSX.Element {
 
     setBusy(true);
     try {
-      const entry = addJournalEntry(text.trim());
+      const entry = addJournalEntry(text.trim(), tags);
       const updated = [entry, ...entries];
       setEntries(updated);
       applyFilters(updated);
       setText("");
+      setTags([]);
 
-      const submitted = await submitJournalEntry(entry.text, entry.clientEntryId ?? entry.id);
+      const submitted = await submitJournalEntry(entry.text, entry.clientEntryId ?? entry.id, tags);
       if (!submitted) {
         enqueueJournalEntry(entry);
         setSyncMessage("Saved offline. Will sync when connection returns.");
@@ -257,6 +269,7 @@ export function JournalView(): JSX.Element {
             {isListening ? "⏹" : "🎤"}
           </button>
         </div>
+        <TagInput tags={tags} onTagsChange={setTags} disabled={busy} />
         <button type="submit" disabled={busy || !text.trim()}>
           {busy ? "Saving..." : "Add Entry"}
         </button>
@@ -288,6 +301,10 @@ export function JournalView(): JSX.Element {
             aria-label="End date"
           />
         </div>
+        <div className="journal-tag-filter">
+          <label className="journal-filter-label">Filter by tags:</label>
+          <TagInput tags={filterTags} onTagsChange={setFilterTags} disabled={false} />
+        </div>
         <div className="journal-filter-actions">
           <button
             type="button"
@@ -297,7 +314,7 @@ export function JournalView(): JSX.Element {
           >
             {isSearching ? "Searching..." : "Search"}
           </button>
-          {(searchQuery || startDate || endDate) && (
+          {(searchQuery || startDate || endDate || filterTags.length > 0) && (
             <button
               type="button"
               onClick={handleClearFilters}
@@ -314,13 +331,20 @@ export function JournalView(): JSX.Element {
           {displayedEntries.map((entry) => (
             <li key={entry.id} className="journal-entry">
               <p className="journal-entry-text">{entry.text}</p>
+              {entry.tags && entry.tags.length > 0 && (
+                <div className="journal-entry-tags">
+                  {entry.tags.map((tag) => (
+                    <span key={tag} className="journal-tag-pill">{tag}</span>
+                  ))}
+                </div>
+              )}
               <time className="journal-entry-time">{formatDate(entry.timestamp)}</time>
             </li>
           ))}
         </ul>
       ) : (
         <p className="journal-empty">
-          {searchQuery || startDate || endDate
+          {searchQuery || startDate || endDate || filterTags.length > 0
             ? "No entries found matching your filters."
             : "No entries yet. Start journaling to track your thoughts."}
         </p>

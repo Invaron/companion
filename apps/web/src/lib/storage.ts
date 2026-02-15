@@ -31,6 +31,7 @@ export interface JournalQueueItem {
   content: string;
   timestamp: string;
   baseVersion?: number;
+  tags?: string[];
 }
 
 const defaultContext: UserContext = {
@@ -166,7 +167,7 @@ export function saveJournalEntries(entries: JournalEntry[]): void {
   localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(entries));
 }
 
-export function addJournalEntry(text: string): JournalEntry {
+export function addJournalEntry(text: string, tags?: string[]): JournalEntry {
   const clientEntryId = crypto.randomUUID();
   const entry: JournalEntry = {
     id: clientEntryId,
@@ -174,7 +175,8 @@ export function addJournalEntry(text: string): JournalEntry {
     text,
     content: text,
     timestamp: new Date().toISOString(),
-    syncStatus: navigator.onLine ? "synced" : "queued"
+    syncStatus: navigator.onLine ? "synced" : "queued",
+    tags: tags || []
   };
   const entries = loadJournalEntries();
   entries.unshift(entry);
@@ -203,7 +205,8 @@ export function enqueueJournalEntry(entry: JournalEntry): void {
     clientEntryId: entry.clientEntryId ?? entry.id,
     content: entry.text,
     timestamp: entry.timestamp,
-    baseVersion: entry.version
+    baseVersion: entry.version,
+    tags: entry.tags
   });
   saveJournalQueue(queue);
 }

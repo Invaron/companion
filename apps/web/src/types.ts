@@ -58,6 +58,7 @@ export interface JournalEntry {
   version?: number;
   clientEntryId?: string;
   syncStatus?: "queued" | "synced";
+  tags?: string[];
 }
 
 export interface WeeklySummary {
@@ -74,6 +75,7 @@ export interface JournalSyncPayload {
   content: string;
   timestamp: string;
   baseVersion?: number;
+  tags?: string[];
 }
 
 export interface LectureEvent {

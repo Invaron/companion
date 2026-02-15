@@ -72,11 +72,11 @@ export async function updateContext(payload: Partial<UserContext>): Promise<{ co
   }
 }
 
-export async function submitJournalEntry(content: string, clientEntryId: string): Promise<JournalEntry | null> {
+export async function submitJournalEntry(content: string, clientEntryId: string, tags?: string[]): Promise<JournalEntry | null> {
   try {
     const response = await jsonOrThrow<{ entry: JournalEntry }>("/api/journal", {
       method: "POST",
-      body: JSON.stringify({ content, clientEntryId })
+      body: JSON.stringify({ content, clientEntryId, tags })
     });
     return response.entry;
   } catch {
@@ -94,7 +94,8 @@ export async function syncQueuedJournalEntries(queue: JournalQueueItem[]): Promi
       clientEntryId: item.clientEntryId,
       content: item.content,
       timestamp: item.timestamp,
-      baseVersion: item.baseVersion
+      baseVersion: item.baseVersion,
+      tags: item.tags
     }));
 
     const response = await jsonOrThrow<{ applied: Array<JournalEntry>; conflicts: Array<JournalEntry> }>(
@@ -237,7 +238,8 @@ export async function getWeeklySummary(referenceDate?: string): Promise<WeeklySu
 export async function searchJournalEntries(
   query?: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  tags?: string[]
 ): Promise<JournalEntry[] | null> {
   const params = new URLSearchParams();
   if (query) {
@@ -249,6 +251,9 @@ export async function searchJournalEntries(
   if (endDate) {
     params.set("endDate", endDate);
   }
+  if (tags && tags.length > 0) {
+    params.set("tags", tags.join(","));
+  }
 
   const queryString = params.toString();
   const endpoint = queryString ? `/api/journal/search?${queryString}` : "/api/journal/search";
@@ -258,6 +263,15 @@ export async function searchJournalEntries(
     return response.entries;
   } catch {
     return null;
+  }
+}
+
+export async function getAllJournalTags(): Promise<string[]> {
+  try {
+    const response = await jsonOrThrow<{ tags: string[] }>("/api/journal/tags");
+    return response.tags;
+  } catch {
+    return [];
   }
 }
 

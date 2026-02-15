@@ -485,6 +485,147 @@ button:disabled {
   font-size: 0.85rem;
 }
 
+/* Tag Input Styles */
+.tag-input-container {
+  position: relative;
+  margin: 10px 0;
+}
+
+.tag-input-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  min-height: 42px;
+}
+
+.tag-input-wrapper:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-surface);
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--accent-surface);
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  font-size: 1.1rem;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.tag-remove:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+.tag-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.tag-input {
+  flex: 1;
+  min-width: 120px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+  padding: 4px;
+}
+
+.tag-input::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  margin-top: 4px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.tag-suggestion {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.tag-suggestion:hover,
+.tag-suggestion.selected {
+  background: var(--accent-surface);
+  color: var(--accent);
+}
+
+.tag-suggestion:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.tag-suggestion:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.journal-tag-filter {
+  margin-top: 12px;
+}
+
+.journal-filter-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.journal-entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.journal-tag-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  background: var(--accent-surface);
+  border: 1px solid var(--accent-border);
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
 /* Schedule Styles */
 .schedule-panel {
   margin-bottom: 12px;
