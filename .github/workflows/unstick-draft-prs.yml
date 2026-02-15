@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
   actions: write
 
@@ -28,7 +29,18 @@ jobs:
             const repo = context.repo.repo;
 
             // All known AI coding agent bot logins
-            const AGENT_BOTS = new Set(['Copilot', 'copilot-swe-agent[bot]', 'Claude', 'anthropic-code-agent[bot]', 'Codex', 'openai-code-agent[bot]', 'chatgpt-codex-connector[bot]']);
+            const AGENT_BOTS = new Set([
+              'Copilot',
+              'copilot-swe-agent[bot]',
+              'app/copilot-swe-agent',
+              'Claude',
+              'anthropic-code-agent[bot]',
+              'app/anthropic-code-agent',
+              'Codex',
+              'openai-code-agent[bot]',
+              'app/openai-code-agent',
+              'chatgpt-codex-connector[bot]'
+            ]);
 
             // Map display names to their [bot] usernames for reassignment
             const AGENT_REASSIGN = [
@@ -42,18 +54,29 @@ jobs:
             const MIN_AGE_MINUTES = 30;
             // Minimum time since last update before we assume agent is stale
             const MIN_STALE_MINUTES = 15;
+            // After this many stale minutes with no active runtime, force-progress draft PRs
+            const MIN_RUNTIME_STALL_MINUTES = 45;
 
             // Map PR author to their expected runtime workflow name
             const RUNTIME_WORKFLOWS = {
               'Claude': 'Running Claude',
+              'anthropic-code-agent[bot]': 'Running Claude',
+              'app/anthropic-code-agent': 'Running Claude',
               'Codex': 'Running OpenAI Codex',
+              'openai-code-agent[bot]': 'Running OpenAI Codex',
+              'app/openai-code-agent': 'Running OpenAI Codex',
+              'chatgpt-codex-connector[bot]': 'Running OpenAI Codex',
               'Copilot': 'Running Copilot coding agent',
+              'copilot-swe-agent[bot]': 'Running Copilot coding agent',
+              'app/copilot-swe-agent': 'Running Copilot coding agent',
             };
 
-            // Check if an agent's runtime workflow has completed for this PR's head SHA
-            async function isAgentRuntimeDone(prAuthor, headSha) {
+            // Check if an agent's runtime workflow has completed or is still active for this PR
+            async function getAgentRuntimeState(prAuthor, prNumber, headSha) {
               const workflowName = RUNTIME_WORKFLOWS[prAuthor];
-              if (!workflowName) return false;
+              if (!workflowName) {
+                return { done: false, active: false, seen: false };
+              }
               try {
                 const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
                   owner, repo,
@@ -63,12 +86,29 @@ jobs:
                 // Also check runs not filtered by SHA (agent runtimes may not set head_sha)
                 const { data: recentRuns } = await github.rest.actions.listWorkflowRunsForRepo({
                   owner, repo,
-                  per_page: 20,
+                  per_page: 50,
                 });
                 const allRuns = [...runs.workflow_runs, ...recentRuns.workflow_runs];
-                return allRuns.some(r => r.name === workflowName && r.status === 'completed');
+                const runtimeRuns = allRuns.filter((run) => {
+                  if (run.name !== workflowName) {
+                    return false;
+                  }
+                  if (run.head_sha === headSha) {
+                    return true;
+                  }
+                  if (Array.isArray(run.pull_requests)) {
+                    return run.pull_requests.some((linkedPr) => linkedPr.number === prNumber);
+                  }
+                  return false;
+                });
+
+                return {
+                  done: runtimeRuns.some((run) => run.status === 'completed'),
+                  active: runtimeRuns.some((run) => run.status !== 'completed'),
+                  seen: runtimeRuns.length > 0
+                };
               } catch {
-                return false;
+                return { done: false, active: false, seen: false };
               }
             }
 
@@ -94,12 +134,14 @@ jobs:
               core.info(`  Age: ${ageMinutes}m, last updated: ${staleMins}m ago`);
 
               // Check if the agent's runtime has finished
-              const runtimeDone = await isAgentRuntimeDone(pr.user.login, pr.head.sha);
-              core.info(`  Agent runtime completed: ${runtimeDone}`);
+              const runtime = await getAgentRuntimeState(pr.user.login, pr.number, pr.head.sha);
+              core.info(
+                `  Agent runtime state: done=${runtime.done}, active=${runtime.active}, seen=${runtime.seen}`
+              );
 
               // Skip PRs that were recently updated AND whose runtime is still going
-              if (staleMins < MIN_STALE_MINUTES && !runtimeDone) {
-                core.info(`  Skipping: updated ${staleMins}m ago (< ${MIN_STALE_MINUTES}m) and runtime still active`);
+              if (staleMins < MIN_STALE_MINUTES && !runtime.done) {
+                core.info(`  Skipping: updated ${staleMins}m ago (< ${MIN_STALE_MINUTES}m) and still in progress`);
                 continue;
               }
 
@@ -120,7 +162,7 @@ jobs:
 
               // If the agent pushed a new head, clear stale completion marker.
               // This prevents auto-merge of work that is no longer current.
-              if (!runtimeDone && labels.includes('agent-work-done')) {
+              if (!runtime.done && labels.includes('agent-work-done')) {
                 try {
                   await github.rest.issues.removeLabel({
                     owner,
@@ -132,65 +174,6 @@ jobs:
                 } catch (err) {
                   core.warning(`  Could not remove stale agent-work-done label: ${err.message}`);
                 }
-              }
-
-              // Hard gate: only move drafts to review/merge path once runtime has finished.
-              if (!runtimeDone) {
-                core.info(`  Runtime not completed yet — keeping PR in in-progress state`);
-                continue;
-              }
-
-              // Step 1: Mark ready for review if draft
-              if (pr.draft) {
-                try {
-                  const mutation = `mutation($id: ID!) {
-                    markPullRequestReadyForReview(input: { pullRequestId: $id }) {
-                      pullRequest { id number isDraft }
-                    }
-                  }`;
-                  await github.graphql(mutation, { id: pr.node_id });
-                  core.info(`  Marked PR #${pr.number} as ready for review`);
-                } catch (err) {
-                  core.warning(`  Could not mark ready: ${err.message}`);
-                  continue;
-                }
-              }
-
-              // Step 2: Approve workflow runs
-              try {
-                const runs = await github.rest.actions.listWorkflowRunsForRepo({
-                  owner, repo,
-                  head_sha: pr.head.sha,
-                  status: 'action_required',
-                });
-                for (const run of runs.data.workflow_runs) {
-                  try {
-                    await github.rest.actions.approveWorkflowRun({ owner, repo, run_id: run.id });
-                    core.info(`  Approved workflow run ${run.id}`);
-                  } catch (err) {
-                    core.warning(`  Could not approve run ${run.id}: ${err.message}`);
-                  }
-                }
-              } catch (err) {
-                core.warning(`  Failed listing runs: ${err.message}`);
-              }
-
-              // Step 3: Add labels
-              try {
-                const toAdd = [];
-                if (!labels.includes('agent-task')) toAdd.push('agent-task');
-                if (!labels.includes('agent-work-done')) toAdd.push('agent-work-done');
-                if (!labels.includes('agent-automerge')) toAdd.push('agent-automerge');
-                if (toAdd.length > 0) {
-                  await github.rest.issues.addLabels({
-                    owner, repo,
-                    issue_number: pr.number,
-                    labels: toAdd,
-                  });
-                  core.info(`  Added labels: ${toAdd.join(', ')}`);
-                }
-              } catch (err) {
-                core.warning(`  Label error: ${err.message}`);
               }
 
               // Step 4: Check for merge conflicts — only close if old + stale
@@ -303,6 +286,75 @@ jobs:
               if (prDetail.mergeable === null) {
                 core.info(`  Mergeability not yet computed — will retry next run`);
                 continue;
+              }
+
+              const runtimeStalled = !runtime.done && !runtime.active && staleMins >= MIN_RUNTIME_STALL_MINUTES;
+
+              // Hard gate: move drafts only when runtime is complete, or when runtime appears stalled.
+              if (!runtime.done && !runtimeStalled) {
+                core.info(
+                  `  Runtime not completed yet (stale ${staleMins}m < ${MIN_RUNTIME_STALL_MINUTES}m stall threshold) — keeping draft in progress`
+                );
+                continue;
+              }
+              if (runtimeStalled) {
+                core.warning(
+                  `  Runtime appears stalled for ${staleMins}m with no active run — force progressing draft to review`
+                );
+              }
+
+              // Step 1: Mark ready for review if draft
+              if (pr.draft) {
+                try {
+                  const mutation = `mutation($id: ID!) {
+                    markPullRequestReadyForReview(input: { pullRequestId: $id }) {
+                      pullRequest { id number isDraft }
+                    }
+                  }`;
+                  await github.graphql(mutation, { id: pr.node_id });
+                  core.info(`  Marked PR #${pr.number} as ready for review`);
+                } catch (err) {
+                  core.warning(`  Could not mark ready: ${err.message}`);
+                  continue;
+                }
+              }
+
+              // Step 2: Approve workflow runs
+              try {
+                const runs = await github.rest.actions.listWorkflowRunsForRepo({
+                  owner, repo,
+                  head_sha: pr.head.sha,
+                  status: 'action_required',
+                });
+                for (const run of runs.data.workflow_runs) {
+                  try {
+                    await github.rest.actions.approveWorkflowRun({ owner, repo, run_id: run.id });
+                    core.info(`  Approved workflow run ${run.id}`);
+                  } catch (err) {
+                    core.warning(`  Could not approve run ${run.id}: ${err.message}`);
+                  }
+                }
+              } catch (err) {
+                core.warning(`  Failed listing runs: ${err.message}`);
+              }
+
+              // Step 3: Add labels
+              try {
+                const toAdd = [];
+                if (!labels.includes('agent-task')) toAdd.push('agent-task');
+                if (!labels.includes('agent-automerge')) toAdd.push('agent-automerge');
+                if (runtime.done && !labels.includes('agent-work-done')) toAdd.push('agent-work-done');
+                if (runtimeStalled && !labels.includes('agent-runtime-timeout')) toAdd.push('agent-runtime-timeout');
+                if (toAdd.length > 0) {
+                  await github.rest.issues.addLabels({
+                    owner, repo,
+                    issue_number: pr.number,
+                    labels: toAdd,
+                  });
+                  core.info(`  Added labels: ${toAdd.join(', ')}`);
+                }
+              } catch (err) {
+                core.warning(`  Label error: ${err.message}`);
               }
 
               core.info(`  PR is ready; merge is delegated to agent-pr-automation.yml`);
