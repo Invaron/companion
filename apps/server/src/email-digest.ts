@@ -79,7 +79,7 @@ export function generateDigestContent(
   const recentJournalHighlights = allJournals.slice(0, 3);
 
   // Get pending habits for today
-  const habits = store.getHabits();
+  const habits = store.getHabitsWithStatus();
   const pendingHabits = habits.filter(h => !h.todayCompleted).slice(0, 5);
 
   let weeklyStats;
@@ -92,7 +92,7 @@ export function generateDigestContent(
         return entryDate >= new Date(weeklySummary.windowStart);
       }).length,
       habitsCompleted: habits.reduce((sum, h) => {
-        const completedLast7d = (h.recentCheckIns || []).filter(c => c.completed).length;
+        const completedLast7d = (h.recentCheckIns || []).filter((c: { completed: boolean }) => c.completed).length;
         return sum + completedLast7d;
       }, 0)
     };

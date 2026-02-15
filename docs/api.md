@@ -810,3 +810,138 @@ Error Response `400`:
   ]
 }
 ```
+
+## Email Digest
+
+### `GET /api/email-digest/config`
+
+Get the email digest configuration.
+
+Response `200`:
+
+```json
+{
+  "config": {
+    "enabled": false,
+    "email": "user@example.com",
+    "frequency": "daily",
+    "fallbackEnabled": true,
+    "fallbackThresholdHours": 24,
+    "lastSentAt": "2026-02-15T08:00:00.000Z"
+  }
+}
+```
+
+### `PUT /api/email-digest/config`
+
+Update email digest configuration. All fields are optional.
+
+Request:
+
+```json
+{
+  "enabled": true,
+  "email": "user@example.com",
+  "frequency": "weekly",
+  "fallbackEnabled": true,
+  "fallbackThresholdHours": 48
+}
+```
+
+Response `200`:
+
+```json
+{
+  "config": {
+    "enabled": true,
+    "email": "user@example.com",
+    "frequency": "weekly",
+    "fallbackEnabled": true,
+    "fallbackThresholdHours": 48,
+    "lastSentAt": null
+  }
+}
+```
+
+### `POST /api/email-digest/send`
+
+Manually trigger an email digest. Requires email to be configured via environment variables (`AXIS_SMTP_*` and `AXIS_DIGEST_EMAIL`).
+
+Response `200` on success:
+
+```json
+{
+  "success": true,
+  "message": "Email digest sent successfully"
+}
+```
+
+Response `400` if email not configured:
+
+```json
+{
+  "error": "Email not configured. Set SMTP environment variables."
+}
+```
+
+Response `400` if digest disabled:
+
+```json
+{
+  "error": "Email digest is not enabled"
+}
+```
+
+Response `500` on send failure:
+
+```json
+{
+  "error": "Failed to send email: <error message>"
+}
+```
+
+## Email Digest Setup
+
+To enable email digests, configure the following environment variables:
+
+```bash
+AXIS_SMTP_HOST=smtp.gmail.com
+AXIS_SMTP_PORT=587
+AXIS_SMTP_USER=your-email@gmail.com
+AXIS_SMTP_PASSWORD=your-app-password
+AXIS_SMTP_FROM=Companion <noreply@companion.app>
+AXIS_DIGEST_EMAIL=recipient@example.com
+```
+
+Then enable via API:
+
+```bash
+curl -X PUT http://localhost:8787/api/email-digest/config \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": true, "email": "recipient@example.com", "frequency": "daily"}'
+```
+
+### Digest Behavior
+
+- **Scheduled Digests**: 
+  - Daily digests sent at 8am local time
+  - Weekly digests sent on Sunday at 8am
+  
+- **Fallback Digests**: 
+  - Triggered when 3+ push notification failures occur within the threshold period
+  - Triggered when user has no notification interactions within the threshold period
+  - Only sent if `fallbackEnabled` is true
+
+### Digest Content
+
+**Daily Digest** includes:
+- Upcoming deadlines (next 7 days)
+- Today's schedule
+- Pending habits
+- Recent journal entries (last 3)
+
+**Weekly Digest** includes:
+- Upcoming deadlines (next 14 days)
+- Pending habits
+- Recent journal entries (last 3)
+- Weekly stats (deadlines completed, journal entries, habits completed)
