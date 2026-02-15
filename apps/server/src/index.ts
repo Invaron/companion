@@ -136,8 +136,13 @@ async function broadcastNotification(notification: Notification): Promise<void> 
   );
 
   for (let i = 0; i < subscriptions.length; i += 1) {
-    if (deliveryResults[i].shouldDropSubscription) {
-      store.removePushSubscription(subscriptions[i].endpoint);
+    const endpoint = subscriptions[i].endpoint;
+    const result = deliveryResults[i];
+
+    store.recordPushDeliveryResult(endpoint, notification, result);
+
+    if (result.shouldDropSubscription) {
+      store.removePushSubscription(endpoint);
     }
   }
 }
@@ -295,6 +300,10 @@ app.get("/api/push/vapid-public-key", (_req, res) => {
     source: hasStaticVapidKeys() ? "configured" : "generated",
     subject: config.AXIS_VAPID_SUBJECT
   });
+});
+
+app.get("/api/push/delivery-metrics", (_req, res) => {
+  return res.json({ metrics: store.getPushDeliveryMetrics() });
 });
 
 app.get("/api/notification-preferences", (_req, res) => {

@@ -98,6 +98,29 @@ export interface PushSubscriptionRecord {
   };
 }
 
+
+export interface PushDeliveryFailureRecord {
+  id: string;
+  endpoint: string;
+  notificationId: string;
+  notificationTitle: string;
+  source: AgentName;
+  priority: Priority;
+  statusCode?: number;
+  error: string;
+  attempts: number;
+  failedAt: string;
+}
+
+export interface PushDeliveryMetrics {
+  attempted: number;
+  delivered: number;
+  failed: number;
+  droppedSubscriptions: number;
+  totalRetries: number;
+  recentFailures: PushDeliveryFailureRecord[];
+}
+
 export type NotificationCategory = AgentName;
 
 export interface NotificationPreferences {

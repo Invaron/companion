@@ -22,6 +22,15 @@ export interface PushSendResult {
   shouldDropSubscription: boolean;
   statusCode?: number;
   error?: string;
+  attempts: number;
+  retries: number;
+}
+
+interface PushRetryOptions {
+  maxRetries?: number;
+  baseDelayMs?: number;
+  send?: (subscription: PushSubscriptionRecord, payload: string) => Promise<void>;
+  sleep?: (ms: number) => Promise<void>;
 }
 
 export function getVapidPublicKey(): string {
@@ -34,7 +43,8 @@ export function hasStaticVapidKeys(): boolean {
 
 export async function sendPushNotification(
   subscription: PushSubscriptionRecord,
-  notification: Pick<Notification, "title" | "message" | "priority" | "source" | "timestamp">
+  notification: Pick<Notification, "title" | "message" | "priority" | "source" | "timestamp">,
+  options: PushRetryOptions = {}
 ): Promise<PushSendResult> {
   const payload = JSON.stringify({
     title: notification.title,
@@ -44,22 +54,53 @@ export async function sendPushNotification(
     timestamp: notification.timestamp
   });
 
-  try {
-    await webpush.sendNotification(subscription, payload);
-    return {
-      delivered: true,
-      shouldDropSubscription: false
-    };
-  } catch (error) {
-    const statusCode = readStatusCode(error);
+  const maxRetries = options.maxRetries ?? 2;
+  const baseDelayMs = options.baseDelayMs ?? 250;
+  const sender = options.send ?? ((target: PushSubscriptionRecord, body: string) => webpush.sendNotification(target, body));
+  const sleep = options.sleep ?? defaultSleep;
 
-    return {
-      delivered: false,
-      shouldDropSubscription: statusCode === 404 || statusCode === 410,
-      statusCode,
-      error: error instanceof Error ? error.message : "Failed to deliver push notification"
-    };
+  let attempt = 0;
+  let lastError: unknown = undefined;
+
+  while (attempt <= maxRetries) {
+    attempt += 1;
+
+    try {
+      await sender(subscription, payload);
+      return {
+        delivered: true,
+        shouldDropSubscription: false,
+        attempts: attempt,
+        retries: attempt - 1
+      };
+    } catch (error) {
+      lastError = error;
+      const statusCode = readStatusCode(error);
+      const shouldDropSubscription = statusCode === 404 || statusCode === 410;
+
+      if (shouldDropSubscription || attempt > maxRetries) {
+        return {
+          delivered: false,
+          shouldDropSubscription,
+          statusCode,
+          error: error instanceof Error ? error.message : "Failed to deliver push notification",
+          attempts: attempt,
+          retries: attempt - 1
+        };
+      }
+
+      const delay = baseDelayMs * 2 ** (attempt - 1);
+      await sleep(delay);
+    }
   }
+
+  return {
+    delivered: false,
+    shouldDropSubscription: false,
+    error: lastError instanceof Error ? lastError.message : "Failed to deliver push notification",
+    attempts: maxRetries + 1,
+    retries: maxRetries
+  };
 }
 
 function readStatusCode(error: unknown): number | undefined {
@@ -72,4 +113,10 @@ function readStatusCode(error: unknown): number | undefined {
   }
 
   return undefined;
+}
+
+function defaultSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }

@@ -10,6 +10,8 @@ import {
   Notification,
   NotificationPreferences,
   NotificationPreferencesPatch,
+  PushDeliveryFailureRecord,
+  PushDeliveryMetrics,
   PushSubscriptionRecord,
   UserContext,
   WeeklySummary
@@ -36,6 +38,15 @@ export class RuntimeStore {
   private scheduleEvents: LectureEvent[] = [];
   private deadlines: Deadline[] = [];
   private pushSubscriptions: PushSubscriptionRecord[] = [];
+  private readonly maxPushFailures = 100;
+  private pushDeliveryMetricsBase = {
+    attempted: 0,
+    delivered: 0,
+    failed: 0,
+    droppedSubscriptions: 0,
+    totalRetries: 0
+  };
+  private pushDeliveryFailures: PushDeliveryFailureRecord[] = [];
   private notificationListeners: Array<(notification: Notification) => void> = [];
   private agentStates: AgentState[] = agentNames.map((name) => ({
     name,
@@ -338,6 +349,60 @@ export class RuntimeStore {
     const before = this.pushSubscriptions.length;
     this.pushSubscriptions = this.pushSubscriptions.filter((subscription) => subscription.endpoint !== endpoint);
     return this.pushSubscriptions.length < before;
+  }
+
+
+  recordPushDeliveryResult(
+    endpoint: string,
+    notification: Notification,
+    result: {
+      delivered: boolean;
+      shouldDropSubscription: boolean;
+      statusCode?: number;
+      error?: string;
+      retries?: number;
+      attempts?: number;
+    }
+  ): void {
+    this.pushDeliveryMetricsBase.attempted += 1;
+    this.pushDeliveryMetricsBase.totalRetries += result.retries ?? 0;
+
+    if (result.delivered) {
+      this.pushDeliveryMetricsBase.delivered += 1;
+      return;
+    }
+
+    this.pushDeliveryMetricsBase.failed += 1;
+
+    if (result.shouldDropSubscription) {
+      this.pushDeliveryMetricsBase.droppedSubscriptions += 1;
+    }
+
+    const failure: PushDeliveryFailureRecord = {
+      id: makeId("push-failure"),
+      endpoint,
+      notificationId: notification.id,
+      notificationTitle: notification.title,
+      source: notification.source,
+      priority: notification.priority,
+      statusCode: result.statusCode,
+      error: result.error ?? "Unknown push delivery error",
+      attempts: result.attempts ?? (result.retries ?? 0) + 1,
+      failedAt: nowIso()
+    };
+
+    this.pushDeliveryFailures = [failure, ...this.pushDeliveryFailures].slice(0, this.maxPushFailures);
+  }
+
+  getPushDeliveryMetrics(): PushDeliveryMetrics {
+    return {
+      attempted: this.pushDeliveryMetricsBase.attempted,
+      delivered: this.pushDeliveryMetricsBase.delivered,
+      failed: this.pushDeliveryMetricsBase.failed,
+      droppedSubscriptions: this.pushDeliveryMetricsBase.droppedSubscriptions,
+      totalRetries: this.pushDeliveryMetricsBase.totalRetries,
+      recentFailures: this.pushDeliveryFailures
+    };
   }
 
   onNotification(listener: (notification: Notification) => void): () => void {
