@@ -437,3 +437,68 @@ Response `200`:
   }
 }
 ```
+
+## Export
+
+### `GET /api/export`
+
+Returns all user data as downloadable JSON for backup and portability. The response includes journals, schedule events, deadlines, user context, and notification preferences.
+
+Response `200`:
+
+```json
+{
+  "exportedAt": "2026-02-15T15:00:00.000Z",
+  "version": "1.0",
+  "journals": [
+    {
+      "id": "journal-1739570000000-1",
+      "content": "Finished algorithms homework",
+      "timestamp": "2026-02-15T15:00:00.000Z",
+      "updatedAt": "2026-02-15T15:00:00.000Z",
+      "version": 1
+    }
+  ],
+  "schedule": [
+    {
+      "id": "lecture-1739570000000-2",
+      "title": "Algorithms Lecture",
+      "startTime": "2026-02-16T10:00:00.000Z",
+      "durationMinutes": 90,
+      "workload": "high"
+    }
+  ],
+  "deadlines": [
+    {
+      "id": "deadline-1739570000000-3",
+      "course": "Systems",
+      "task": "Lab Report",
+      "dueDate": "2026-02-20T23:59:00.000Z",
+      "priority": "high",
+      "completed": false
+    }
+  ],
+  "userContext": {
+    "stressLevel": "medium",
+    "energyLevel": "high",
+    "mode": "focus"
+  },
+  "notificationPreferences": {
+    "quietHours": {
+      "enabled": true,
+      "startHour": 22,
+      "endHour": 7
+    },
+    "minimumPriority": "medium",
+    "allowCriticalInQuietHours": true,
+    "categoryToggles": {
+      "notes": true,
+      "lectures": true,
+      "deadlines": true,
+      "orchestrator": true
+    }
+  }
+}
+```
+
+The response includes the `Content-Disposition` header with filename `companion-export.json` to trigger a download in browsers.
