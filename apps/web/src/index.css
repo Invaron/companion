@@ -748,3 +748,147 @@ button:disabled {
   margin: 0;
   color: var(--muted);
 }
+
+.muted {
+  color: var(--muted);
+  margin: 0;
+}
+
+.muted-small {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.habit-goal-panel {
+  margin-bottom: 12px;
+}
+
+.habit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.habit-card {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--surface);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.goal-card {
+  border-color: var(--accent-border);
+}
+
+.habit-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.pill-button {
+  border-radius: 999px;
+  padding: 8px 12px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-surface);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pill-button:hover {
+  border-color: var(--accent-border-strong);
+}
+
+.pill-active {
+  background: rgba(125, 211, 168, 0.18);
+  border-color: var(--ok-border);
+  color: var(--ok);
+}
+
+.pill-group {
+  display: flex;
+  gap: 8px;
+}
+
+.pill-muted {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.checkin-strip {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.checkin-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+}
+
+.checkin-dot-complete {
+  background: rgba(125, 211, 168, 0.35);
+  border-color: var(--ok-border);
+}
+
+.checkin-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.streak-pill,
+.completion-pill {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+.completion-pill {
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.goal-progress {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.goal-progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7dd3a8, #f6c37f);
+}
+
+.goal-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.warning-text {
+  color: var(--danger);
+  font-size: 0.9rem;
+  margin: 0 0 8px;
+}

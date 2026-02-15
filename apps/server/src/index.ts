@@ -96,6 +96,32 @@ const deadlineStatusConfirmSchema = z.object({
   completed: z.boolean()
 });
 
+const habitCreateSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  cadence: z.enum(["daily", "weekly"]).default("daily"),
+  targetPerWeek: z.number().int().min(1).max(7).default(5),
+  motivation: z.string().trim().max(240).optional()
+});
+
+const habitCheckInSchema = z.object({
+  completed: z.boolean().optional(),
+  date: z.string().datetime().optional(),
+  note: z.string().trim().max(240).optional()
+});
+
+const goalCreateSchema = z.object({
+  title: z.string().trim().min(1).max(160),
+  cadence: z.enum(["daily", "weekly"]).default("daily"),
+  targetCount: z.number().int().min(1).max(365),
+  dueDate: z.string().datetime().optional().nullable(),
+  motivation: z.string().trim().max(240).optional()
+});
+
+const goalCheckInSchema = z.object({
+  completed: z.boolean().optional(),
+  date: z.string().datetime().optional()
+});
+
 const pushSubscriptionSchema = z.object({
   endpoint: z.string().url(),
   expirationTime: z.number().nullable(),
@@ -398,6 +424,72 @@ app.delete("/api/deadlines/:id", (req, res) => {
   }
 
   return res.status(204).send();
+});
+
+app.get("/api/habits", (_req, res) => {
+  return res.json({ habits: store.getHabitsWithStatus() });
+});
+
+app.post("/api/habits", (req, res) => {
+  const parsed = habitCreateSchema.safeParse(req.body ?? {});
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid habit payload", issues: parsed.error.issues });
+  }
+
+  const habit = store.createHabit(parsed.data);
+  return res.status(201).json({ habit });
+});
+
+app.post("/api/habits/:id/check-ins", (req, res) => {
+  const parsed = habitCheckInSchema.safeParse(req.body ?? {});
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid habit check-in payload", issues: parsed.error.issues });
+  }
+
+  const habit = store.toggleHabitCheckIn(req.params.id, parsed.data);
+
+  if (!habit) {
+    return res.status(404).json({ error: "Habit not found" });
+  }
+
+  return res.json({ habit });
+});
+
+app.get("/api/goals", (_req, res) => {
+  return res.json({ goals: store.getGoalsWithStatus() });
+});
+
+app.post("/api/goals", (req, res) => {
+  const parsed = goalCreateSchema.safeParse(req.body ?? {});
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid goal payload", issues: parsed.error.issues });
+  }
+
+  const goal = store.createGoal({
+    ...parsed.data,
+    dueDate: parsed.data.dueDate ?? null
+  });
+
+  return res.status(201).json({ goal });
+});
+
+app.post("/api/goals/:id/check-ins", (req, res) => {
+  const parsed = goalCheckInSchema.safeParse(req.body ?? {});
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid goal check-in payload", issues: parsed.error.issues });
+  }
+
+  const goal = store.toggleGoalCheckIn(req.params.id, parsed.data);
+
+  if (!goal) {
+    return res.status(404).json({ error: "Goal not found" });
+  }
+
+  return res.json({ goal });
 });
 
 app.get("/api/push/vapid-public-key", (_req, res) => {

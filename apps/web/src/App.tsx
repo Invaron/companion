@@ -11,6 +11,7 @@ import { ScheduleView } from "./components/ScheduleView";
 import { SummaryTiles } from "./components/SummaryTiles";
 import { WeeklyReviewView } from "./components/WeeklyReviewView";
 import { AppearanceSettings } from "./components/AppearanceSettings";
+import { HabitsGoalsView } from "./components/HabitsGoalsView";
 import { useDashboard } from "./hooks/useDashboard";
 import { enablePushNotifications, isPushEnabled, supportsPushNotifications } from "./lib/push";
 import { applyTheme } from "./lib/theme";
@@ -138,6 +139,7 @@ export default function App(): JSX.Element {
             activeAgents={data.summary.activeAgents}
             journalStreak={data.summary.journalStreak}
           />
+          <HabitsGoalsView />
           <JournalView />
           <WeeklyReviewView />
           <CalendarImportView onImported={() => setScheduleRevision((revision) => revision + 1)} />

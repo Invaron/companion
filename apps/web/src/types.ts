@@ -106,6 +106,40 @@ export interface DeadlineStatusConfirmation {
   reminder: DeadlineReminderState;
 }
 
+export type Cadence = "daily" | "weekly";
+
+export interface CheckInDay {
+  date: string;
+  completed: boolean;
+}
+
+export interface Habit {
+  id: string;
+  name: string;
+  cadence: Cadence;
+  targetPerWeek: number;
+  motivation?: string;
+  streak: number;
+  completionRate7d: number;
+  todayCompleted: boolean;
+  recentCheckIns: CheckInDay[];
+}
+
+export interface Goal {
+  id: string;
+  title: string;
+  cadence: Cadence;
+  targetCount: number;
+  dueDate: string | null;
+  motivation?: string;
+  progressCount: number;
+  remaining: number;
+  streak: number;
+  completionRate7d: number;
+  todayCompleted: boolean;
+  recentCheckIns: CheckInDay[];
+}
+
 export interface CalendarImportPayload {
   ics?: string;
   url?: string;

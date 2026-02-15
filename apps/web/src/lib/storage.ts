@@ -1,6 +1,8 @@
 import {
   DashboardSnapshot,
   Deadline,
+  Goal,
+  Habit,
   JournalEntry,
   LectureEvent,
   NotificationPreferences,
@@ -16,6 +18,8 @@ const STORAGE_KEYS = {
   journalQueue: "companion:journal-queue",
   schedule: "companion:schedule",
   deadlines: "companion:deadlines",
+  habits: "companion:habits",
+  goals: "companion:goals",
   onboarding: "companion:onboarding",
   notificationPreferences: "companion:notification-preferences",
   theme: "companion:theme"
@@ -299,4 +303,151 @@ export function loadDeadlines(): Deadline[] {
 
 export function saveDeadlines(deadlines: Deadline[]): void {
   localStorage.setItem(STORAGE_KEYS.deadlines, JSON.stringify(deadlines));
+}
+
+function buildRecentCheckIns(offsets: number[]): Array<{ date: string; completed: boolean }> {
+  const recent: Array<{ date: string; completed: boolean }> = [];
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const day = new Date();
+    day.setDate(day.getDate() - offset);
+    const date = day.toISOString().slice(0, 10);
+    recent.push({
+      date,
+      completed: offsets.includes(offset)
+    });
+  }
+  return recent;
+}
+
+function completionRate(recent: Array<{ completed: boolean }>): number {
+  return recent.length === 0 ? 0 : Math.round((recent.filter((c) => c.completed).length / recent.length) * 100);
+}
+
+function streakFromRecent(recent: Array<{ completed: boolean }>): number {
+  let streak = 0;
+  for (let i = recent.length - 1; i >= 0; i -= 1) {
+    if (!recent[i].completed) break;
+    streak += 1;
+  }
+  return streak;
+}
+
+function defaultHabits(): Habit[] {
+  const seed = [
+    {
+      id: "habit-seed-1",
+      name: "Morning run",
+      cadence: "daily",
+      targetPerWeek: 5,
+      motivation: "Energy before lectures",
+      offsets: [0, 1, 2, 4]
+    },
+    {
+      id: "habit-seed-2",
+      name: "Deep work block",
+      cadence: "daily",
+      targetPerWeek: 6,
+      motivation: "Keep assignments moving",
+      offsets: [0, 1, 3]
+    },
+    {
+      id: "habit-seed-3",
+      name: "Wind-down reading",
+      cadence: "weekly",
+      targetPerWeek: 4,
+      motivation: "Better sleep and focus",
+      offsets: [1, 3, 5]
+    }
+  ];
+
+  return seed.map((habit) => {
+    const recentCheckIns = buildRecentCheckIns(habit.offsets);
+    const streak = streakFromRecent(recentCheckIns);
+    return {
+      id: habit.id,
+      name: habit.name,
+      cadence: habit.cadence as Habit["cadence"],
+      targetPerWeek: habit.targetPerWeek,
+      motivation: habit.motivation,
+      recentCheckIns,
+      completionRate7d: completionRate(recentCheckIns),
+      streak,
+      todayCompleted: recentCheckIns[recentCheckIns.length - 1]?.completed ?? false
+    };
+  });
+}
+
+function defaultGoals(): Goal[] {
+  const seed = [
+    {
+      id: "goal-seed-1",
+      title: "Publish portfolio draft",
+      cadence: "daily",
+      targetCount: 10,
+      dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+      motivation: "Prepare for internship interviews",
+      offsets: [0, 1, 2, 3]
+    },
+    {
+      id: "goal-seed-2",
+      title: "Finish algorithms PSET",
+      cadence: "daily",
+      targetCount: 6,
+      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+      motivation: "Stay ahead of class pace",
+      offsets: [0, 2, 4]
+    }
+  ];
+
+  return seed.map((goal) => {
+    const recentCheckIns = buildRecentCheckIns(goal.offsets);
+    const progressCount = goal.offsets.length;
+    const streak = streakFromRecent(recentCheckIns);
+    return {
+      id: goal.id,
+      title: goal.title,
+      cadence: goal.cadence as Goal["cadence"],
+      targetCount: goal.targetCount,
+      dueDate: goal.dueDate,
+      motivation: goal.motivation,
+      progressCount,
+      remaining: Math.max(goal.targetCount - progressCount, 0),
+      recentCheckIns,
+      completionRate7d: completionRate(recentCheckIns),
+      streak,
+      todayCompleted: recentCheckIns[recentCheckIns.length - 1]?.completed ?? false
+    };
+  });
+}
+
+export function loadHabits(): Habit[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.habits);
+    if (raw) return JSON.parse(raw) as Habit[];
+  } catch {
+    // corrupted — fall through
+  }
+  const habits = defaultHabits();
+  saveHabits(habits);
+  return habits;
+}
+
+export function saveHabits(habits: Habit[]): void {
+  localStorage.setItem(STORAGE_KEYS.habits, JSON.stringify(habits));
+}
+
+export function loadGoals(): Goal[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.goals);
+    if (raw) return JSON.parse(raw) as Goal[];
+  } catch {
+    // corrupted — fall through
+  }
+  const goals = defaultGoals();
+  saveGoals(goals);
+  return goals;
+}
+
+export function saveGoals(goals: Goal[]): void {
+  localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
 }

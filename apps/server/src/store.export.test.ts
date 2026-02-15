@@ -33,6 +33,22 @@ describe("RuntimeStore - export data", () => {
       completed: false
     });
 
+    const habit = store.createHabit({
+      name: "Evening review",
+      cadence: "daily",
+      targetPerWeek: 6,
+      motivation: "Close the loop on the day"
+    });
+    store.toggleHabitCheckIn(habit.id, { date: "2026-02-15T09:00:00.000Z", completed: true });
+
+    const goal = store.createGoal({
+      title: "Ship portfolio draft",
+      cadence: "daily",
+      targetCount: 4,
+      dueDate: "2026-02-25T00:00:00.000Z"
+    });
+    store.toggleGoalCheckIn(goal.id, { date: "2026-02-15T10:00:00.000Z", completed: true });
+
     store.setUserContext({
       stressLevel: "medium",
       energyLevel: "high",
@@ -54,6 +70,8 @@ describe("RuntimeStore - export data", () => {
     expect(exportData).toHaveProperty("journals");
     expect(exportData).toHaveProperty("schedule");
     expect(exportData).toHaveProperty("deadlines");
+    expect(exportData).toHaveProperty("habits");
+    expect(exportData).toHaveProperty("goals");
     expect(exportData).toHaveProperty("userContext");
     expect(exportData).toHaveProperty("notificationPreferences");
 
@@ -78,6 +96,11 @@ describe("RuntimeStore - export data", () => {
     expect(exportData.deadlines[0].course).toBe("Systems");
     expect(exportData.deadlines[0].completed).toBe(false);
 
+    expect(exportData.habits.length).toBeGreaterThan(0);
+    expect(exportData.habits[0]).toHaveProperty("recentCheckIns");
+    expect(exportData.goals.length).toBeGreaterThan(0);
+    expect(exportData.goals[0]).toHaveProperty("progressCount");
+
     // Verify user context
     expect(exportData.userContext.stressLevel).toBe("medium");
     expect(exportData.userContext.energyLevel).toBe("high");
@@ -95,6 +118,8 @@ describe("RuntimeStore - export data", () => {
     expect(exportData.journals).toEqual([]);
     expect(exportData.schedule).toEqual([]);
     expect(exportData.deadlines).toEqual([]);
+    expect(exportData.habits.length).toBeGreaterThan(0);
+    expect(exportData.goals.length).toBeGreaterThan(0);
     expect(exportData.userContext).toBeDefined();
     expect(exportData.notificationPreferences).toBeDefined();
   });

@@ -111,6 +111,58 @@ export interface DeadlineStatusConfirmation {
   reminder: DeadlineReminderState;
 }
 
+export type Cadence = "daily" | "weekly";
+
+export interface Habit {
+  id: string;
+  name: string;
+  cadence: Cadence;
+  targetPerWeek: number;
+  motivation?: string;
+  createdAt: string;
+}
+
+export interface HabitCheckIn {
+  id: string;
+  habitId: string;
+  date: string;
+  completed: boolean;
+  note?: string;
+}
+
+export interface HabitWithStatus extends Habit {
+  todayCompleted: boolean;
+  streak: number;
+  completionRate7d: number;
+  recentCheckIns: Array<{ date: string; completed: boolean }>;
+}
+
+export interface Goal {
+  id: string;
+  title: string;
+  cadence: Cadence;
+  targetCount: number;
+  dueDate: string | null;
+  motivation?: string;
+  createdAt: string;
+}
+
+export interface GoalCheckIn {
+  id: string;
+  goalId: string;
+  date: string;
+  completed: boolean;
+}
+
+export interface GoalWithStatus extends Goal {
+  progressCount: number;
+  remaining: number;
+  todayCompleted: boolean;
+  streak: number;
+  completionRate7d: number;
+  recentCheckIns: Array<{ date: string; completed: boolean }>;
+}
+
 export interface PushSubscriptionRecord {
   endpoint: string;
   expirationTime: number | null;
@@ -178,6 +230,8 @@ export interface ExportData {
   journals: JournalEntry[];
   schedule: LectureEvent[];
   deadlines: Deadline[];
+   habits: HabitWithStatus[];
+   goals: GoalWithStatus[];
   userContext: UserContext;
   notificationPreferences: NotificationPreferences;
 }

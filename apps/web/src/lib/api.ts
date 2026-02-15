@@ -4,6 +4,8 @@ import {
   CalendarImportResult,
   DashboardSnapshot,
   Deadline,
+  Goal,
+  Habit,
   DeadlineStatusConfirmation,
   JournalEntry,
   JournalSyncPayload,
@@ -16,12 +18,16 @@ import {
   loadContext,
   loadDashboard,
   loadDeadlines,
+  loadGoals,
+  loadHabits,
   loadJournalEntries,
   loadNotificationPreferences,
   removeJournalQueueItem,
   saveContext,
   saveDashboard,
   saveDeadlines,
+  saveGoals,
+  saveHabits,
   saveJournalEntries,
   saveNotificationPreferences
 } from "./storage";
@@ -252,5 +258,126 @@ export async function searchJournalEntries(
     return response.entries;
   } catch {
     return null;
+  }
+}
+
+function completionRate(recent: Array<{ completed: boolean }>): number {
+  return recent.length === 0 ? 0 : Math.round((recent.filter((c) => c.completed).length / recent.length) * 100);
+}
+
+function streakFromRecent(recent: Array<{ completed: boolean }>): number {
+  let streak = 0;
+  for (let i = recent.length - 1; i >= 0; i -= 1) {
+    if (!recent[i].completed) break;
+    streak += 1;
+  }
+  return streak;
+}
+
+export async function getHabits(): Promise<Habit[]> {
+  try {
+    const response = await jsonOrThrow<{ habits: Habit[] }>("/api/habits");
+    saveHabits(response.habits);
+    return response.habits;
+  } catch {
+    return loadHabits();
+  }
+}
+
+export async function toggleHabitCheckIn(habitId: string, completed?: boolean): Promise<Habit | null> {
+  const body: Record<string, boolean> = {};
+  if (completed !== undefined) {
+    body.completed = completed;
+  }
+
+  try {
+    const response = await jsonOrThrow<{ habit: Habit }>(`/api/habits/${habitId}/check-ins`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+    const nextHabits = loadHabits();
+    const merged = nextHabits.map((habit) => (habit.id === habitId ? response.habit : habit));
+    if (!merged.find((h) => h.id === habitId)) {
+      merged.push(response.habit);
+    }
+    saveHabits(merged);
+    return response.habit;
+  } catch {
+    const habits = loadHabits();
+    const index = habits.findIndex((habit) => habit.id === habitId);
+    if (index === -1) return null;
+
+    const habit = habits[index];
+    const desired = completed ?? !habit.todayCompleted;
+    const recentCheckIns = habit.recentCheckIns.map((day, idx) =>
+      idx === habit.recentCheckIns.length - 1 ? { ...day, completed: desired } : day
+    );
+    const offline: Habit = {
+      ...habit,
+      todayCompleted: desired,
+      recentCheckIns,
+      completionRate7d: completionRate(recentCheckIns),
+      streak: streakFromRecent(recentCheckIns)
+    };
+    const updated = [...habits];
+    updated[index] = offline;
+    saveHabits(updated);
+    return offline;
+  }
+}
+
+export async function getGoals(): Promise<Goal[]> {
+  try {
+    const response = await jsonOrThrow<{ goals: Goal[] }>("/api/goals");
+    saveGoals(response.goals);
+    return response.goals;
+  } catch {
+    return loadGoals();
+  }
+}
+
+export async function toggleGoalCheckIn(goalId: string, completed?: boolean): Promise<Goal | null> {
+  const body: Record<string, boolean> = {};
+  if (completed !== undefined) {
+    body.completed = completed;
+  }
+
+  try {
+    const response = await jsonOrThrow<{ goal: Goal }>(`/api/goals/${goalId}/check-ins`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+    const nextGoals = loadGoals();
+    const merged = nextGoals.map((goal) => (goal.id === goalId ? response.goal : goal));
+    if (!merged.find((g) => g.id === goalId)) {
+      merged.push(response.goal);
+    }
+    saveGoals(merged);
+    return response.goal;
+  } catch {
+    const goals = loadGoals();
+    const index = goals.findIndex((goal) => goal.id === goalId);
+    if (index === -1) return null;
+
+    const goal = goals[index];
+    const desired = completed ?? !goal.todayCompleted;
+    const progressDelta = desired === goal.todayCompleted ? 0 : desired ? 1 : -1;
+    const recentCheckIns = goal.recentCheckIns.map((day, idx) =>
+      idx === goal.recentCheckIns.length - 1 ? { ...day, completed: desired } : day
+    );
+    const progressCount = Math.max(0, goal.progressCount + progressDelta);
+    const offline: Goal = {
+      ...goal,
+      todayCompleted: desired,
+      recentCheckIns,
+      progressCount,
+      remaining: Math.max(goal.targetCount - progressCount, 0),
+      completionRate7d: completionRate(recentCheckIns),
+      streak: streakFromRecent(recentCheckIns)
+    };
+    const updated = [...goals];
+    updated[index] = offline;
+    saveGoals(updated);
+    return offline;
   }
 }

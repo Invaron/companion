@@ -19,7 +19,14 @@ import {
   PushSubscriptionRecord,
   ScheduledNotification,
   UserContext,
-  WeeklySummary
+  WeeklySummary,
+  Cadence,
+  Habit,
+  HabitCheckIn,
+  HabitWithStatus,
+  Goal,
+  GoalCheckIn,
+  GoalWithStatus
 } from "./types.js";
 import { makeId, nowIso } from "./utils.js";
 
@@ -36,6 +43,9 @@ export class RuntimeStore {
   private readonly maxJournalEntries = 100;
   private readonly maxScheduleEvents = 200;
   private readonly maxDeadlines = 200;
+  private readonly maxHabits = 100;
+  private readonly maxGoals = 100;
+  private readonly maxCheckInsPerItem = 400;
   private readonly maxPushSubscriptions = 50;
   private readonly maxPushFailures = 100;
   private notificationListeners: Array<(notification: Notification) => void> = [];
@@ -96,6 +106,46 @@ export class RuntimeStore {
         priority TEXT NOT NULL,
         completed INTEGER NOT NULL,
         insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000)
+      );
+
+      CREATE TABLE IF NOT EXISTS habits (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        cadence TEXT NOT NULL,
+        targetPerWeek INTEGER NOT NULL,
+        motivation TEXT,
+        createdAt TEXT NOT NULL,
+        insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000)
+      );
+
+      CREATE TABLE IF NOT EXISTS habit_check_ins (
+        id TEXT PRIMARY KEY,
+        habitId TEXT NOT NULL,
+        checkInDate TEXT NOT NULL,
+        completed INTEGER NOT NULL,
+        note TEXT,
+        insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000),
+        UNIQUE(habitId, checkInDate)
+      );
+
+      CREATE TABLE IF NOT EXISTS goals (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        cadence TEXT NOT NULL,
+        targetCount INTEGER NOT NULL,
+        dueDate TEXT,
+        motivation TEXT,
+        createdAt TEXT NOT NULL,
+        insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000)
+      );
+
+      CREATE TABLE IF NOT EXISTS goal_check_ins (
+        id TEXT PRIMARY KEY,
+        goalId TEXT NOT NULL,
+        checkInDate TEXT NOT NULL,
+        completed INTEGER NOT NULL,
+        insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000),
+        UNIQUE(goalId, checkInDate)
       );
 
       CREATE TABLE IF NOT EXISTS deadline_reminder_state (
@@ -226,6 +276,97 @@ export class RuntimeStore {
           "INSERT INTO push_delivery_metrics (id, attempted, delivered, failed, droppedSubscriptions, totalRetries) VALUES (1, 0, 0, 0, 0, 0)"
         )
         .run();
+    }
+
+    // Seed starter habits/goals for a fresh database
+    const dateKey = (offsetDays: number): string => {
+      const date = new Date();
+      date.setUTCHours(0, 0, 0, 0);
+      date.setUTCDate(date.getUTCDate() - offsetDays);
+      return date.toISOString().slice(0, 10);
+    };
+
+    const habitCount = (this.db.prepare("SELECT COUNT(*) as count FROM habits").get() as { count: number }).count;
+    if (habitCount === 0) {
+      const habits: Array<Omit<Habit, "id">> = [
+        {
+          name: "Morning run",
+          cadence: "daily",
+          targetPerWeek: 5,
+          motivation: "Energy before class",
+          createdAt: nowIso()
+        },
+        {
+          name: "Study sprint",
+          cadence: "daily",
+          targetPerWeek: 6,
+          motivation: "Keep assignments moving",
+          createdAt: nowIso()
+        },
+        {
+          name: "Wind-down reading",
+          cadence: "weekly",
+          targetPerWeek: 4,
+          motivation: "Better sleep and focus",
+          createdAt: nowIso()
+        }
+      ];
+
+      const insertHabit = this.db.prepare(
+        "INSERT INTO habits (id, name, cadence, targetPerWeek, motivation, createdAt) VALUES (?, ?, ?, ?, ?, ?)"
+      );
+      const insertHabitCheckIn = this.db.prepare(
+        "INSERT INTO habit_check_ins (id, habitId, checkInDate, completed, note) VALUES (?, ?, ?, ?, ?)"
+      );
+
+      habits.forEach((habit, index) => {
+        const habitId = makeId("habit");
+        insertHabit.run(habitId, habit.name, habit.cadence, habit.targetPerWeek, habit.motivation ?? null, habit.createdAt);
+
+        const completions = index === 0 ? [0, 1, 2, 4] : index === 1 ? [0, 1, 3] : [1, 3, 5];
+        for (const offset of completions) {
+          insertHabitCheckIn.run(makeId("habit-check"), habitId, dateKey(offset), 1, null);
+        }
+      });
+    }
+
+    const goalCount = (this.db.prepare("SELECT COUNT(*) as count FROM goals").get() as { count: number }).count;
+    if (goalCount === 0) {
+      const goals: Array<Omit<Goal, "id">> = [
+        {
+          title: "Publish portfolio draft",
+          cadence: "daily",
+          targetCount: 10,
+          dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+          motivation: "Finish before internship interviews",
+          createdAt: nowIso()
+        },
+        {
+          title: "Finish algorithms PSET",
+          cadence: "daily",
+          targetCount: 6,
+          dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+          motivation: "Stay ahead of class pace",
+          createdAt: nowIso()
+        }
+      ];
+
+      const insertGoal = this.db.prepare(
+        "INSERT INTO goals (id, title, cadence, targetCount, dueDate, motivation, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      );
+      const insertGoalCheckIn = this.db.prepare(
+        "INSERT INTO goal_check_ins (id, goalId, checkInDate, completed) VALUES (?, ?, ?, ?)"
+      );
+
+      goals.forEach((goal, index) => {
+        const goalId = makeId("goal");
+        insertGoal.run(goalId, goal.title, goal.cadence, goal.targetCount, goal.dueDate, goal.motivation ?? null, goal.createdAt);
+
+        const completions = index === 0 ? [0, 1, 2, 3] : [0, 2, 4];
+        for (const offset of completions) {
+          insertGoalCheckIn.run(makeId("goal-check"), goalId, dateKey(offset), 1);
+        }
+      });
     }
   }
 
@@ -841,6 +982,316 @@ export class RuntimeStore {
     return result.changes > 0;
   }
 
+  createHabit(entry: Omit<Habit, "id" | "createdAt"> & { createdAt?: string }): HabitWithStatus {
+    const habit: Habit = {
+      id: makeId("habit"),
+      createdAt: entry.createdAt ?? nowIso(),
+      ...entry
+    };
+
+    this.db
+      .prepare("INSERT INTO habits (id, name, cadence, targetPerWeek, motivation, createdAt) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(habit.id, habit.name, habit.cadence, habit.targetPerWeek, habit.motivation ?? null, habit.createdAt);
+
+    const count = (this.db.prepare("SELECT COUNT(*) as count FROM habits").get() as { count: number }).count;
+    if (count > this.maxHabits) {
+      const removeIds = this.db
+        .prepare("SELECT id FROM habits ORDER BY insertOrder ASC LIMIT ?")
+        .all(count - this.maxHabits) as Array<{ id: string }>;
+      const ids = removeIds.map((row) => row.id);
+      const deleteStmt = this.db.prepare("DELETE FROM habits WHERE id = ?");
+      const deleteCheckIns = this.db.prepare("DELETE FROM habit_check_ins WHERE habitId = ?");
+      ids.forEach((id) => {
+        deleteStmt.run(id);
+        deleteCheckIns.run(id);
+      });
+    }
+
+    return this.getHabitWithStatus(habit.id)!;
+  }
+
+  getHabits(): Habit[] {
+    const rows = this.db.prepare("SELECT * FROM habits ORDER BY insertOrder DESC").all() as Array<{
+      id: string;
+      name: string;
+      cadence: string;
+      targetPerWeek: number;
+      motivation: string | null;
+      createdAt: string;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      cadence: row.cadence as Cadence,
+      targetPerWeek: row.targetPerWeek,
+      motivation: row.motivation ?? undefined,
+      createdAt: row.createdAt
+    }));
+  }
+
+  getHabitById(id: string): Habit | null {
+    const row = this.db.prepare("SELECT * FROM habits WHERE id = ?").get(id) as
+      | {
+          id: string;
+          name: string;
+          cadence: string;
+          targetPerWeek: number;
+          motivation: string | null;
+          createdAt: string;
+        }
+      | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      name: row.name,
+      cadence: row.cadence as Cadence,
+      targetPerWeek: row.targetPerWeek,
+      motivation: row.motivation ?? undefined,
+      createdAt: row.createdAt
+    };
+  }
+
+  getHabitsWithStatus(): HabitWithStatus[] {
+    return this.getHabits()
+      .map((habit) => this.getHabitWithStatus(habit.id))
+      .filter((habit): habit is HabitWithStatus => Boolean(habit));
+  }
+
+  toggleHabitCheckIn(
+    habitId: string,
+    options: {
+      completed?: boolean;
+      date?: string;
+      note?: string;
+    } = {}
+  ): HabitWithStatus | null {
+    const habit = this.getHabitById(habitId);
+    if (!habit) {
+      return null;
+    }
+
+    const dateKey = this.toDateKey(options.date ?? nowIso());
+    const existing = this.db
+      .prepare("SELECT id, completed FROM habit_check_ins WHERE habitId = ? AND checkInDate = ?")
+      .get(habitId, dateKey) as { id: string; completed: number } | undefined;
+
+    const desired = options.completed ?? (existing ? !Boolean(existing.completed) : true);
+
+    if (existing) {
+      this.db.prepare("UPDATE habit_check_ins SET completed = ?, note = ? WHERE id = ?").run(desired ? 1 : 0, options.note ?? null, existing.id);
+    } else {
+      this.db
+        .prepare(
+          "INSERT INTO habit_check_ins (id, habitId, checkInDate, completed, note) VALUES (?, ?, ?, ?, ?)"
+        )
+        .run(makeId("habit-check"), habitId, dateKey, desired ? 1 : 0, options.note ?? null);
+    }
+
+    this.trimCheckIns("habit_check_ins", "habitId", habitId);
+
+    return this.getHabitWithStatus(habitId);
+  }
+
+  private getHabitWithStatus(id: string): HabitWithStatus | null {
+    const habit = this.getHabitById(id);
+    if (!habit) {
+      return null;
+    }
+
+    const checkIns = this.getHabitCheckIns(id);
+    const todayKey = this.toDateKey();
+    const recent = this.buildRecentCheckIns(checkIns);
+    const completionRate7d = recent.length === 0 ? 0 : Math.round((recent.filter((c) => c.completed).length / recent.length) * 100);
+    const streak = this.computeStreak(checkIns, todayKey);
+    const todayCompleted = recent.find((c) => c.date === todayKey)?.completed ?? false;
+
+    return {
+      ...habit,
+      todayCompleted,
+      streak,
+      completionRate7d,
+      recentCheckIns: recent
+    };
+  }
+
+  private getHabitCheckIns(habitId: string): HabitCheckIn[] {
+    const rows = this.db
+      .prepare("SELECT * FROM habit_check_ins WHERE habitId = ? ORDER BY checkInDate DESC")
+      .all(habitId) as Array<{
+      id: string;
+      habitId: string;
+      checkInDate: string;
+      completed: number;
+      note: string | null;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      habitId: row.habitId,
+      date: row.checkInDate,
+      completed: Boolean(row.completed),
+      note: row.note ?? undefined
+    }));
+  }
+
+  createGoal(entry: Omit<Goal, "id" | "createdAt"> & { createdAt?: string }): GoalWithStatus {
+    const goal: Goal = {
+      id: makeId("goal"),
+      createdAt: entry.createdAt ?? nowIso(),
+      ...entry
+    };
+
+    this.db
+      .prepare("INSERT INTO goals (id, title, cadence, targetCount, dueDate, motivation, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run(goal.id, goal.title, goal.cadence, goal.targetCount, goal.dueDate ?? null, goal.motivation ?? null, goal.createdAt);
+
+    const count = (this.db.prepare("SELECT COUNT(*) as count FROM goals").get() as { count: number }).count;
+    if (count > this.maxGoals) {
+      const removeIds = this.db
+        .prepare("SELECT id FROM goals ORDER BY insertOrder ASC LIMIT ?")
+        .all(count - this.maxGoals) as Array<{ id: string }>;
+      const deleteStmt = this.db.prepare("DELETE FROM goals WHERE id = ?");
+      const deleteCheckIns = this.db.prepare("DELETE FROM goal_check_ins WHERE goalId = ?");
+      removeIds.forEach((row) => {
+        deleteStmt.run(row.id);
+        deleteCheckIns.run(row.id);
+      });
+    }
+
+    return this.getGoalWithStatus(goal.id)!;
+  }
+
+  getGoals(): Goal[] {
+    const rows = this.db.prepare("SELECT * FROM goals ORDER BY insertOrder DESC").all() as Array<{
+      id: string;
+      title: string;
+      cadence: string;
+      targetCount: number;
+      dueDate: string | null;
+      motivation: string | null;
+      createdAt: string;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      cadence: row.cadence as Cadence,
+      targetCount: row.targetCount,
+      dueDate: row.dueDate,
+      motivation: row.motivation ?? undefined,
+      createdAt: row.createdAt
+    }));
+  }
+
+  getGoalById(id: string): Goal | null {
+    const row = this.db.prepare("SELECT * FROM goals WHERE id = ?").get(id) as
+      | {
+          id: string;
+          title: string;
+          cadence: string;
+          targetCount: number;
+          dueDate: string | null;
+          motivation: string | null;
+          createdAt: string;
+        }
+      | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      title: row.title,
+      cadence: row.cadence as Cadence,
+      targetCount: row.targetCount,
+      dueDate: row.dueDate,
+      motivation: row.motivation ?? undefined,
+      createdAt: row.createdAt
+    };
+  }
+
+  getGoalsWithStatus(): GoalWithStatus[] {
+    return this.getGoals()
+      .map((goal) => this.getGoalWithStatus(goal.id))
+      .filter((goal): goal is GoalWithStatus => Boolean(goal));
+  }
+
+  toggleGoalCheckIn(goalId: string, options: { completed?: boolean; date?: string } = {}): GoalWithStatus | null {
+    const goal = this.getGoalById(goalId);
+    if (!goal) {
+      return null;
+    }
+
+    const dateKey = this.toDateKey(options.date ?? nowIso());
+    const existing = this.db
+      .prepare("SELECT id, completed FROM goal_check_ins WHERE goalId = ? AND checkInDate = ?")
+      .get(goalId, dateKey) as { id: string; completed: number } | undefined;
+
+    const desired = options.completed ?? (existing ? !Boolean(existing.completed) : true);
+
+    if (existing) {
+      this.db.prepare("UPDATE goal_check_ins SET completed = ? WHERE id = ?").run(desired ? 1 : 0, existing.id);
+    } else {
+      this.db
+        .prepare("INSERT INTO goal_check_ins (id, goalId, checkInDate, completed) VALUES (?, ?, ?, ?)")
+        .run(makeId("goal-check"), goalId, dateKey, desired ? 1 : 0);
+    }
+
+    this.trimCheckIns("goal_check_ins", "goalId", goalId);
+
+    return this.getGoalWithStatus(goalId);
+  }
+
+  private getGoalWithStatus(id: string): GoalWithStatus | null {
+    const goal = this.getGoalById(id);
+    if (!goal) {
+      return null;
+    }
+
+    const checkIns = this.getGoalCheckIns(id);
+    const todayKey = this.toDateKey();
+    const recent = this.buildRecentCheckIns(checkIns);
+    const completionRate7d = recent.length === 0 ? 0 : Math.round((recent.filter((c) => c.completed).length / recent.length) * 100);
+    const streak = this.computeStreak(checkIns, todayKey);
+    const todayCompleted = recent.find((c) => c.date === todayKey)?.completed ?? false;
+    const progressCount = checkIns.filter((c) => c.completed).length;
+    const remaining = Math.max(goal.targetCount - progressCount, 0);
+
+    return {
+      ...goal,
+      progressCount,
+      remaining,
+      todayCompleted,
+      streak,
+      completionRate7d,
+      recentCheckIns: recent
+    };
+  }
+
+  private getGoalCheckIns(goalId: string): GoalCheckIn[] {
+    const rows = this.db
+      .prepare("SELECT * FROM goal_check_ins WHERE goalId = ? ORDER BY checkInDate DESC")
+      .all(goalId) as Array<{
+      id: string;
+      goalId: string;
+      checkInDate: string;
+      completed: number;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      goalId: row.goalId,
+      date: row.checkInDate,
+      completed: Boolean(row.completed)
+    }));
+  }
+
   getOverdueDeadlinesRequiringReminder(referenceDate: string = nowIso(), cooldownMinutes = 180): Deadline[] {
     const nowMs = new Date(referenceDate).getTime();
 
@@ -1197,6 +1648,8 @@ export class RuntimeStore {
       journals: this.getJournalEntries(),
       schedule: this.getScheduleEvents(),
       deadlines: this.getDeadlines(),
+      habits: this.getHabitsWithStatus(),
+      goals: this.getGoalsWithStatus(),
       userContext: this.getUserContext(),
       notificationPreferences: this.getNotificationPreferences()
     };
@@ -1403,6 +1856,68 @@ export class RuntimeStore {
       lastConfirmationAt: row.lastConfirmationAt ?? null,
       lastConfirmedCompleted: row.lastConfirmedCompleted === null ? null : Boolean(row.lastConfirmedCompleted)
     }));
+  }
+
+  private toDateKey(input: string | Date = new Date()): string {
+    const date = typeof input === "string" ? new Date(input) : input;
+    const copy = new Date(date);
+    copy.setUTCHours(0, 0, 0, 0);
+    return copy.toISOString().slice(0, 10);
+  }
+
+  private buildRecentCheckIns(checkIns: Array<{ date: string; completed: boolean }>, days: number = 7): Array<{ date: string; completed: boolean }> {
+    const byDate = new Map<string, boolean>();
+    for (const checkIn of checkIns) {
+      byDate.set(this.toDateKey(checkIn.date), checkIn.completed);
+    }
+
+    const recent: Array<{ date: string; completed: boolean }> = [];
+    for (let offset = days - 1; offset >= 0; offset -= 1) {
+      const day = new Date();
+      day.setUTCDate(day.getUTCDate() - offset);
+      const key = this.toDateKey(day);
+      recent.push({
+        date: key,
+        completed: byDate.get(key) ?? false
+      });
+    }
+
+    return recent;
+  }
+
+  private computeStreak(checkIns: Array<{ date: string; completed: boolean }>, referenceDateKey: string): number {
+    const completedDates = new Set(checkIns.filter((c) => c.completed).map((c) => this.toDateKey(c.date)));
+    let streak = 0;
+    let cursor = new Date(`${referenceDateKey}T00:00:00.000Z`);
+
+    while (true) {
+      const key = this.toDateKey(cursor);
+      if (!completedDates.has(key)) {
+        break;
+      }
+      streak += 1;
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
+    }
+
+    return streak;
+  }
+
+  private trimCheckIns(table: "habit_check_ins" | "goal_check_ins", column: "habitId" | "goalId", id: string): void {
+    const count = (this.db.prepare(`SELECT COUNT(*) as count FROM ${table} WHERE ${column} = ?`).get(id) as {
+      count: number;
+    }).count;
+
+    if (count <= this.maxCheckInsPerItem) {
+      return;
+    }
+
+    this.db
+      .prepare(
+        `DELETE FROM ${table} WHERE id IN (
+          SELECT id FROM ${table} WHERE ${column} = ? ORDER BY insertOrder ASC LIMIT ?
+        )`
+      )
+      .run(id, count - this.maxCheckInsPerItem);
   }
 }
 
