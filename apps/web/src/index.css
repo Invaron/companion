@@ -1398,3 +1398,134 @@ button:disabled {
   background: var(--accent-border);
   color: var(--text);
 }
+
+/* Notification History View */
+.notification-history-panel {
+  margin-bottom: 12px;
+}
+
+.notification-history-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.notification-history-filters label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.notification-history-filters select {
+  padding: 6px 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.notification-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.notification-history-item {
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.notification-history-item.priority-high,
+.notification-history-item.priority-critical {
+  border-color: var(--danger-border);
+  background: var(--danger-surface);
+}
+
+.notification-history-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.notification-history-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.notification-history-title-row {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.notification-history-title-row strong {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-history-timestamp {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.notification-history-details {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+}
+
+.notification-history-badge {
+  padding: 3px 8px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.notification-history-time {
+  padding: 3px 8px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.notification-history-retrigger {
+  padding: 6px 12px;
+  background: var(--accent-surface);
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  justify-self: start;
+}
+
+.notification-history-retrigger:hover {
+  border-color: var(--accent-border-strong);
+  background: rgba(246, 195, 127, 0.12);
+}
+
+.notification-history-empty {
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+}

@@ -191,3 +191,17 @@ export interface NotificationPreferences {
 }
 
 export type ThemePreference = "light" | "dark" | "system";
+
+export type NotificationInteractionType = "tap" | "dismiss" | "action";
+
+export interface NotificationInteraction {
+  id: string;
+  notificationId: string;
+  notificationTitle: string;
+  notificationSource: AgentName;
+  notificationPriority: Priority;
+  interactionType: NotificationInteractionType;
+  timestamp: string;
+  actionType?: string;
+  timeToInteractionMs?: number;
+}

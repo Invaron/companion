@@ -7,6 +7,7 @@ import { FocusTimer } from "./components/FocusTimer";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { JournalView } from "./components/JournalView";
 import { NotificationFeed } from "./components/NotificationFeed";
+import { NotificationHistoryView } from "./components/NotificationHistoryView";
 import { OnboardingFlow } from "./components/OnboardingFlow";
 import { NotificationSettings } from "./components/NotificationSettings";
 import { ScheduleView } from "./components/ScheduleView";
@@ -155,6 +156,7 @@ export default function App(): JSX.Element {
             <AgentStatusList states={data.agentStates} />
             <NotificationFeed notifications={data.notifications} />
           </div>
+          <NotificationHistoryView />
           <ContextControls onUpdated={refresh} />
           <NotificationSettings />
           <AppearanceSettings preference={themePreference} onChange={handleThemeChange} />

@@ -9,6 +9,7 @@ import {
   DeadlineStatusConfirmation,
   JournalEntry,
   JournalSyncPayload,
+  NotificationInteraction,
   NotificationPreferences,
   UserContext,
   WeeklySummary
@@ -400,5 +401,32 @@ export async function toggleGoalCheckIn(goalId: string, completed?: boolean): Pr
     updated[index] = offline;
     saveGoals(updated);
     return offline;
+  }
+}
+
+export async function getNotificationInteractions(options?: {
+  since?: string;
+  until?: string;
+  limit?: number;
+}): Promise<NotificationInteraction[]> {
+  const params = new URLSearchParams();
+  if (options?.since) {
+    params.set("since", options.since);
+  }
+  if (options?.until) {
+    params.set("until", options.until);
+  }
+  if (options?.limit) {
+    params.set("limit", options.limit.toString());
+  }
+
+  const queryString = params.toString();
+  const endpoint = queryString ? `/api/notification-interactions?${queryString}` : "/api/notification-interactions";
+
+  try {
+    const response = await jsonOrThrow<{ interactions: NotificationInteraction[] }>(endpoint);
+    return response.interactions;
+  } catch {
+    return [];
   }
 }
