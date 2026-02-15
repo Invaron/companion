@@ -362,6 +362,66 @@ button:disabled {
   }
 }
 
+.journal-photo-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.journal-photo-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.journal-photo-label input {
+  font: inherit;
+}
+
+.journal-photo-previews {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.journal-photo-preview {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+}
+
+.journal-photo-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.journal-photo-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.journal-photo-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 
 .journal-list {
   list-style: none;
@@ -624,6 +684,22 @@ button:disabled {
   color: var(--accent);
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+.journal-entry-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.journal-entry-photo {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
 }
 
 /* Schedule Styles */

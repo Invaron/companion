@@ -4,6 +4,7 @@ import {
   Goal,
   Habit,
   JournalEntry,
+  JournalPhoto,
   LectureEvent,
   NotificationPreferences,
   OnboardingProfile,
@@ -32,6 +33,7 @@ export interface JournalQueueItem {
   timestamp: string;
   baseVersion?: number;
   tags?: string[];
+  photos?: JournalPhoto[];
 }
 
 const defaultContext: UserContext = {
@@ -167,7 +169,7 @@ export function saveJournalEntries(entries: JournalEntry[]): void {
   localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(entries));
 }
 
-export function addJournalEntry(text: string, tags?: string[]): JournalEntry {
+export function addJournalEntry(text: string, tags?: string[], photos?: JournalPhoto[]): JournalEntry {
   const clientEntryId = crypto.randomUUID();
   const entry: JournalEntry = {
     id: clientEntryId,
@@ -176,7 +178,8 @@ export function addJournalEntry(text: string, tags?: string[]): JournalEntry {
     content: text,
     timestamp: new Date().toISOString(),
     syncStatus: navigator.onLine ? "synced" : "queued",
-    tags: tags || []
+    tags: tags || [],
+    photos: photos ?? []
   };
   const entries = loadJournalEntries();
   entries.unshift(entry);
@@ -206,7 +209,8 @@ export function enqueueJournalEntry(entry: JournalEntry): void {
     content: entry.text,
     timestamp: entry.timestamp,
     baseVersion: entry.version,
-    tags: entry.tags
+    tags: entry.tags,
+    photos: entry.photos
   });
   saveJournalQueue(queue);
 }

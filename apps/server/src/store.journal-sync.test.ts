@@ -99,4 +99,30 @@ describe("RuntimeStore - journal sync", () => {
 
     expect(retagged.applied[0].tags).toEqual([schoolTag.name, focusTag.name]);
   });
+
+  it("persists photo attachments during sync", () => {
+    const store = new RuntimeStore(":memory:");
+    const photoDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB";
+
+    const result = store.syncJournalEntries([
+      {
+        clientEntryId: "offline-photos",
+        content: "Lecture whiteboard snapshot",
+        timestamp: "2026-02-22T10:00:00.000Z",
+        photos: [
+          {
+            dataUrl: photoDataUrl,
+            fileName: "whiteboard.png"
+          }
+        ]
+      }
+    ]);
+
+    expect(result.applied[0].photos?.[0].dataUrl).toBe(photoDataUrl);
+    expect(result.applied[0].photos?.[0].fileName).toBe("whiteboard.png");
+    expect(result.applied[0].photos?.[0].id).toBeDefined();
+
+    const stored = store.getJournalEntries();
+    expect(stored[0].photos?.[0].dataUrl).toBe(photoDataUrl);
+  });
 });

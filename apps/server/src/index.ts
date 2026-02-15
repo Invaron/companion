@@ -44,6 +44,12 @@ app.get("/api/export", (_req, res) => {
   return res.json(exportData);
 });
 
+const journalPhotoSchema = z.object({
+  id: z.string().min(1).optional(),
+  dataUrl: z.string().min(1),
+  fileName: z.string().trim().min(1).max(240).optional()
+});
+
 // Import validation schemas
 const journalImportSchema = z.object({
   id: z.string().min(1),
@@ -51,7 +57,8 @@ const journalImportSchema = z.object({
   timestamp: z.string().datetime(),
   updatedAt: z.string().datetime(),
   version: z.number().int().positive(),
-  clientEntryId: z.string().min(1).optional()
+  clientEntryId: z.string().min(1).optional(),
+  photos: z.array(journalPhotoSchema).optional()
 });
 
 const lectureImportSchema = z.object({
@@ -140,7 +147,8 @@ const tagIdsSchema = z.array(tagIdSchema).max(20);
 
 const journalEntrySchema = z.object({
   content: z.string().min(1).max(10000),
-  tags: tagIdsSchema.optional()
+  tags: tagIdsSchema.optional(),
+  photos: z.array(journalPhotoSchema).max(5).optional()
 });
 
 const journalSyncSchema = z.object({
@@ -151,7 +159,8 @@ const journalSyncSchema = z.object({
       content: z.string().min(1).max(10000),
       timestamp: z.string().datetime(),
       baseVersion: z.number().int().positive().optional(),
-      tags: tagIdsSchema.optional()
+      tags: tagIdsSchema.optional(),
+      photos: z.array(journalPhotoSchema).max(5).optional()
     })
   )
 });
@@ -377,7 +386,7 @@ app.post("/api/journal", (req, res) => {
   }
 
   try {
-    const entry = store.recordJournalEntry(parsed.data.content, parsed.data.tags ?? []);
+    const entry = store.recordJournalEntry(parsed.data.content, parsed.data.tags ?? [], parsed.data.photos);
     return res.json({ entry });
   } catch (error) {
     return res.status(400).json({ error: error instanceof Error ? error.message : "Unable to record journal entry" });
@@ -439,11 +448,11 @@ app.get("/api/journal/search", (req, res) => {
     return res.status(400).json({ error: "Invalid endDate parameter" });
   }
 
-  const parsedTags =
+  const parsedTags: string[] =
     typeof tagsParam === "string"
       ? tagsParam.split(",")
       : Array.isArray(tagsParam)
-        ? tagsParam
+        ? tagsParam.map((tag) => tag.toString())
         : [];
   const tagIds = parsedTags.map((tag) => tag.trim()).filter(Boolean);
 

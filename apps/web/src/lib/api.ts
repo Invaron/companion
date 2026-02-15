@@ -72,11 +72,16 @@ export async function updateContext(payload: Partial<UserContext>): Promise<{ co
   }
 }
 
-export async function submitJournalEntry(content: string, clientEntryId: string, tags?: string[]): Promise<JournalEntry | null> {
+export async function submitJournalEntry(
+  content: string,
+  clientEntryId: string,
+  tags?: string[],
+  photos?: JournalSyncPayload["photos"]
+): Promise<JournalEntry | null> {
   try {
     const response = await jsonOrThrow<{ entry: JournalEntry }>("/api/journal", {
       method: "POST",
-      body: JSON.stringify({ content, clientEntryId, tags })
+      body: JSON.stringify({ content, clientEntryId, tags, photos })
     });
     return response.entry;
   } catch {
@@ -95,7 +100,8 @@ export async function syncQueuedJournalEntries(queue: JournalQueueItem[]): Promi
       content: item.content,
       timestamp: item.timestamp,
       baseVersion: item.baseVersion,
-      tags: item.tags
+      tags: item.tags,
+      photos: item.photos
     }));
 
     const response = await jsonOrThrow<{ applied: Array<JournalEntry>; conflicts: Array<JournalEntry> }>(
@@ -118,7 +124,8 @@ export async function syncQueuedJournalEntries(queue: JournalQueueItem[]): Promi
         if (applied.clientEntryId) {
           byClientId.set(applied.clientEntryId, {
             ...applied,
-            text: applied.content
+            text: applied.content,
+            photos: applied.photos ?? []
           });
         }
       }

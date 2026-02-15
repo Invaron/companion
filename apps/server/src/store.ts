@@ -12,6 +12,7 @@ import {
   ImportData,
   ImportResult,
   JournalEntry,
+  JournalPhoto,
   JournalSyncPayload,
   LectureEvent,
   Notification,
@@ -95,6 +96,7 @@ export class RuntimeStore {
         timestamp TEXT NOT NULL,
         updatedAt TEXT NOT NULL,
         version INTEGER NOT NULL,
+        photos TEXT NOT NULL DEFAULT '[]',
         insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000)
       );
 
@@ -282,6 +284,12 @@ export class RuntimeStore {
       CREATE INDEX IF NOT EXISTS idx_notification_interactions_source 
         ON notification_interactions(notificationSource);
     `);
+
+    const journalColumns = this.db.prepare("PRAGMA table_info(journal_entries)").all() as Array<{ name: string }>;
+    const hasPhotosColumn = journalColumns.some((col) => col.name === "photos");
+    if (!hasPhotosColumn) {
+      this.db.prepare("ALTER TABLE journal_entries ADD COLUMN photos TEXT NOT NULL DEFAULT '[]'").run();
+    }
   }
 
   private loadOrInitializeDefaults(): void {
@@ -600,8 +608,9 @@ export class RuntimeStore {
     }
 
     const pickDominant = <T extends string>(counts: Record<T, number>, fallback: T): T => {
-      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-      return (sorted[0]?.[0] as T) ?? fallback;
+      const sorted = Object.entries(counts) as Array<[T, number]>;
+      sorted.sort((a, b) => b[1] - a[1]);
+      return sorted[0]?.[0] ?? fallback;
     };
 
     const byHour = Object.entries(hourBuckets)
@@ -885,6 +894,49 @@ export class RuntimeStore {
     return tags.map(tag => tag.name);
   }
 
+  private normalizePhotos(photos?: JournalPhoto[]): JournalPhoto[] {
+    if (!photos || photos.length === 0) {
+      return [];
+    }
+
+    return photos
+      .filter((photo) => Boolean(photo?.dataUrl))
+      .map((photo) => ({
+        id: photo.id ?? makeId("photo"),
+        dataUrl: photo.dataUrl,
+        fileName: photo.fileName
+      }));
+  }
+
+  private parsePhotos(raw: string | null | undefined): JournalPhoto[] {
+    if (!raw) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      const photos: JournalPhoto[] = [];
+      parsed.forEach((photo) => {
+        if (typeof photo !== "object" || photo === null) return;
+        const candidate = photo as { id?: string; dataUrl?: string; fileName?: string };
+        if (!candidate.dataUrl || typeof candidate.dataUrl !== "string") return;
+        photos.push({
+          id: candidate.id ?? makeId("photo"),
+          dataUrl: candidate.dataUrl,
+          fileName: typeof candidate.fileName === "string" ? candidate.fileName : undefined
+        });
+      });
+
+      return photos;
+    } catch {
+      return [];
+    }
+  }
+
   private trimJournalEntriesIfNeeded(): void {
     const count = (this.db.prepare("SELECT COUNT(*) as count FROM journal_entries").get() as { count: number }).count;
     if (count > this.maxJournalEntries) {
@@ -905,7 +957,7 @@ export class RuntimeStore {
     }
   }
 
-  recordJournalEntry(content: string, tagIds: string[] = []): JournalEntry {
+  recordJournalEntry(content: string, tagIds: string[] = [], photos?: JournalPhoto[]): JournalEntry {
     const timestamp = nowIso();
     const entry: Omit<JournalEntry, "tags"> = {
       id: makeId("journal"),
@@ -915,13 +967,14 @@ export class RuntimeStore {
       version: 1
     };
 
+    const normalizedPhotos = this.normalizePhotos(photos);
     this.resolveTags(tagIds);
 
     this.db
       .prepare(
-        "INSERT INTO journal_entries (id, clientEntryId, content, timestamp, updatedAt, version) VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO journal_entries (id, clientEntryId, content, timestamp, updatedAt, version, photos) VALUES (?, ?, ?, ?, ?, ?, ?)"
       )
-      .run(entry.id, null, entry.content, entry.timestamp, entry.updatedAt, entry.version);
+      .run(entry.id, null, entry.content, entry.timestamp, entry.updatedAt, entry.version, JSON.stringify(normalizedPhotos));
 
     const tags = this.setEntryTags(entry.id, tagIds);
 
@@ -929,7 +982,8 @@ export class RuntimeStore {
 
     return {
       ...entry,
-      tags
+      tags,
+      photos: normalizedPhotos
     };
   }
 
@@ -970,7 +1024,8 @@ export class RuntimeStore {
       timestamp: row.timestamp,
       updatedAt: row.updatedAt,
       version: row.version,
-      tags: this.getTagsForEntry(row.id)
+      tags: this.getTagsForEntry(row.id),
+      photos: this.parsePhotos((row as { photos?: string | null }).photos)
     }));
 
     return {
@@ -1002,12 +1057,14 @@ export class RuntimeStore {
             timestamp: (existingRow as { timestamp: string }).timestamp,
             updatedAt: (existingRow as { updatedAt: string }).updatedAt,
             version: (existingRow as { version: number }).version,
-            tags: this.getTagsForEntry((existingRow as { id: string }).id)
+            tags: this.getTagsForEntry((existingRow as { id: string }).id),
+            photos: this.parsePhotos((existingRow as { photos?: string | null }).photos)
           } as JournalEntry)
         : null;
 
       if (!existing) {
         const newTags = payload.tags ? this.resolveTags(payload.tags).map(tag => tag.name) : [];
+        const newPhotos = this.normalizePhotos(payload.photos);
 
         const createdBase: Omit<JournalEntry, "tags"> = {
           id: payload.id ?? makeId("journal"),
@@ -1015,12 +1072,13 @@ export class RuntimeStore {
           content: payload.content,
           timestamp: payload.timestamp,
           updatedAt: nowIso(),
-          version: 1
+          version: 1,
+          photos: newPhotos
         };
 
         this.db
           .prepare(
-            "INSERT INTO journal_entries (id, clientEntryId, content, timestamp, updatedAt, version) VALUES (?, ?, ?, ?, ?, ?)"
+            "INSERT INTO journal_entries (id, clientEntryId, content, timestamp, updatedAt, version, photos) VALUES (?, ?, ?, ?, ?, ?, ?)"
           )
           .run(
             createdBase.id,
@@ -1028,7 +1086,8 @@ export class RuntimeStore {
             createdBase.content,
             createdBase.timestamp,
             createdBase.updatedAt,
-            createdBase.version
+            createdBase.version,
+            JSON.stringify(newPhotos)
           );
 
         this.setEntryTags(createdBase.id, payload.tags ?? []);
@@ -1054,19 +1113,21 @@ export class RuntimeStore {
         timestamp: payload.timestamp,
         updatedAt: nowIso(),
         version: existing.version + 1,
-        clientEntryId: payload.clientEntryId
+        clientEntryId: payload.clientEntryId,
+        photos: payload.photos !== undefined ? this.normalizePhotos(payload.photos) : existing.photos
       };
 
       const nextTags = payload.tags !== undefined ? this.resolveTags(payload.tags).map(tag => tag.name) : existing.tags;
 
       this.db
-        .prepare("UPDATE journal_entries SET content = ?, timestamp = ?, updatedAt = ?, version = ?, clientEntryId = ? WHERE id = ?")
+        .prepare("UPDATE journal_entries SET content = ?, timestamp = ?, updatedAt = ?, version = ?, clientEntryId = ?, photos = ? WHERE id = ?")
         .run(
           mergedBase.content,
           mergedBase.timestamp,
           mergedBase.updatedAt,
           mergedBase.version,
           mergedBase.clientEntryId ?? null,
+          JSON.stringify(mergedBase.photos ?? []),
           mergedBase.id
         );
 
@@ -1106,7 +1167,8 @@ export class RuntimeStore {
       timestamp: row.timestamp,
       updatedAt: row.updatedAt,
       version: row.version,
-      tags: this.getTagsForEntry(row.id)
+      tags: this.getTagsForEntry(row.id),
+      photos: this.parsePhotos((row as { photos?: string | null }).photos)
     }));
   }
 
@@ -1165,6 +1227,7 @@ export class RuntimeStore {
       timestamp: string;
       updatedAt: string;
       version: number;
+      photos?: string | null;
     }>;
 
     return rows.map((row) => ({
@@ -1174,7 +1237,8 @@ export class RuntimeStore {
       timestamp: row.timestamp,
       updatedAt: row.updatedAt,
       version: row.version,
-      tags: this.getTagsForEntry(row.id)
+      tags: this.getTagsForEntry(row.id),
+      photos: this.parsePhotos(row.photos)
     }));
   }
 
@@ -2029,6 +2093,7 @@ export class RuntimeStore {
       exportedAt: nowIso(),
       version: "1.0",
       journals: this.getJournalEntries(),
+      tags: this.getTags(),
       schedule: this.getScheduleEvents(),
       deadlines: this.getDeadlines(),
       habits: this.getHabitsWithStatus(),
@@ -2065,7 +2130,8 @@ export class RuntimeStore {
         clientEntryId: journal.clientEntryId ?? `import-${journal.id}`,
         content: journal.content,
         timestamp: journal.timestamp,
-        baseVersion: undefined // No base version for import = always apply if no conflict
+        baseVersion: undefined, // No base version for import = always apply if no conflict
+        photos: journal.photos
       }));
 
       const syncResult = this.syncJournalEntries(syncPayloads);
@@ -2513,7 +2579,7 @@ export class RuntimeStore {
     timeToInteractionMs?: number
   ): NotificationInteraction {
     const interaction: NotificationInteraction = {
-      id: makeId(),
+      id: makeId("notif-int"),
       notificationId,
       notificationTitle,
       notificationSource,

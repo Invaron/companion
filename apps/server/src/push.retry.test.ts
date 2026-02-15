@@ -12,6 +12,7 @@ const subscription: PushSubscriptionRecord = {
 };
 
 const notification = {
+  id: "notif-1",
   title: "Title",
   message: "Message",
   priority: "high" as const,

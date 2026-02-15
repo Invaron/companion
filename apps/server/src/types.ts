@@ -69,6 +69,12 @@ export interface Tag {
   name: string;
 }
 
+export interface JournalPhoto {
+  id?: string;
+  dataUrl: string;
+  fileName?: string;
+}
+
 export interface JournalEntry {
   id: string;
   content: string;
@@ -76,7 +82,8 @@ export interface JournalEntry {
   updatedAt: string;
   version: number;
   clientEntryId?: string;
-  tags: Tag[];
+  tags?: string[];
+  photos?: JournalPhoto[];
 }
 
 export interface JournalSyncPayload {
@@ -86,6 +93,7 @@ export interface JournalSyncPayload {
   timestamp: string;
   baseVersion?: number;
   tags?: string[];
+  photos?: JournalPhoto[];
 }
 
 export interface LectureEvent {

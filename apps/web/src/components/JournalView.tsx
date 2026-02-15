@@ -6,14 +6,23 @@ import {
   loadJournalEntries,
   loadJournalQueue
 } from "../lib/storage";
-import { JournalEntry } from "../types";
+import { JournalEntry, JournalPhoto } from "../types";
 import { TagInput } from "./TagInput";
 
 export function JournalView(): JSX.Element {
-  const [entries, setEntries] = useState<JournalEntry[]>(loadJournalEntries());
-  const [displayedEntries, setDisplayedEntries] = useState<JournalEntry[]>(loadJournalEntries());
+  const normalizeEntry = (entry: JournalEntry): JournalEntry => ({
+    ...entry,
+    text: entry.text ?? entry.content,
+    photos: entry.photos ?? []
+  });
+
+  const initialEntries = loadJournalEntries().map(normalizeEntry);
+
+  const [entries, setEntries] = useState<JournalEntry[]>(initialEntries);
+  const [displayedEntries, setDisplayedEntries] = useState<JournalEntry[]>(initialEntries);
   const [text, setText] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<JournalPhoto[]>([]);
   const [busy, setBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,12 +32,13 @@ export function JournalView(): JSX.Element {
   const [isSearching, setIsSearching] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const sync = async (): Promise<void> => {
       const synced = await syncQueuedJournalEntries(loadJournalQueue());
       if (synced > 0) {
-        const updated = loadJournalEntries();
+        const updated = loadJournalEntries().map(normalizeEntry);
         setEntries(updated);
         applyFilters(updated);
         setSyncMessage(`Synced ${synced} queued journal entr${synced === 1 ? "y" : "ies"}.`);
@@ -50,6 +60,37 @@ export function JournalView(): JSX.Element {
   useEffect(() => {
     applyFilters(entries);
   }, [searchQuery, startDate, endDate, filterTags, entries]);
+
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Unable to read file"));
+      reader.readAsDataURL(file);
+    });
+
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    if (!event.target.files) return;
+    const files = Array.from(event.target.files);
+    const remainingSlots = Math.max(0, 5 - photos.length);
+    const selected = files.slice(0, remainingSlots);
+
+    const uploads = await Promise.all(
+      selected.map(async (file) => ({
+        id: crypto.randomUUID(),
+        dataUrl: await fileToDataUrl(file),
+        fileName: file.name
+      }))
+    );
+
+    setPhotos((prev) => [...prev, ...uploads]);
+    event.target.value = "";
+  };
+
+  const removePhoto = (id?: string): void => {
+    if (!id) return;
+    setPhotos((prev) => prev.filter((photo) => photo.id !== id));
+  };
 
   const applyFilters = (entriesList: JournalEntry[]): void => {
     let filtered = [...entriesList];
@@ -101,7 +142,8 @@ export function JournalView(): JSX.Element {
       if (results) {
         const withTextFields = results.map((entry) => ({
           ...entry,
-          text: entry.content || entry.text
+          text: entry.content || entry.text,
+          photos: entry.photos ?? []
         }));
         setDisplayedEntries(withTextFields);
       } else {
@@ -128,14 +170,18 @@ export function JournalView(): JSX.Element {
 
     setBusy(true);
     try {
-      const entry = addJournalEntry(text.trim(), tags);
+      const entry = normalizeEntry(addJournalEntry(text.trim(), tags, photos));
       const updated = [entry, ...entries];
       setEntries(updated);
       applyFilters(updated);
       setText("");
       setTags([]);
+      setPhotos([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
 
-      const submitted = await submitJournalEntry(entry.text, entry.clientEntryId ?? entry.id, tags);
+      const submitted = await submitJournalEntry(entry.text, entry.clientEntryId ?? entry.id, tags, photos);
       if (!submitted) {
         enqueueJournalEntry(entry);
         setSyncMessage("Saved offline. Will sync when connection returns.");
@@ -258,16 +304,51 @@ export function JournalView(): JSX.Element {
             rows={3}
             disabled={busy}
           />
-          <button
-            type="button"
-            className={`journal-voice-btn ${isListening ? "listening" : ""}`}
-            onClick={toggleVoiceInput}
-            disabled={busy}
+        <button
+          type="button"
+          className={`journal-voice-btn ${isListening ? "listening" : ""}`}
+          onClick={toggleVoiceInput}
+          disabled={busy}
             aria-label={isListening ? "Stop voice input" : "Start voice input"}
             title={isListening ? "Stop voice input" : "Start voice input"}
           >
             {isListening ? "⏹" : "🎤"}
           </button>
+        </div>
+        <div className="journal-photo-upload">
+          <label className="journal-photo-label">
+            Attach photos
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(event) => void handlePhotoChange(event)}
+              disabled={busy}
+            />
+          </label>
+          {photos.length > 0 && (
+            <div className="journal-photo-previews">
+              {photos.map((photo) => (
+                <div key={photo.id} className="journal-photo-preview">
+                  <img
+                    src={photo.dataUrl}
+                    alt={photo.fileName ?? "Journal attachment"}
+                    className="journal-photo-thumb"
+                  />
+                  <button
+                    type="button"
+                    className="journal-photo-remove"
+                    onClick={() => removePhoto(photo.id)}
+                    aria-label="Remove photo"
+                    disabled={busy}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <TagInput tags={tags} onTagsChange={setTags} disabled={busy} />
         <button type="submit" disabled={busy || !text.trim()}>
@@ -335,6 +416,18 @@ export function JournalView(): JSX.Element {
                 <div className="journal-entry-tags">
                   {entry.tags.map((tag) => (
                     <span key={tag} className="journal-tag-pill">{tag}</span>
+                  ))}
+                </div>
+              )}
+              {entry.photos && entry.photos.length > 0 && (
+                <div className="journal-entry-photos">
+                  {entry.photos.map((photo) => (
+                    <img
+                      key={photo.id}
+                      src={photo.dataUrl}
+                      alt={photo.fileName ?? "Journal attachment"}
+                      className="journal-entry-photo"
+                    />
                   ))}
                 </div>
               )}

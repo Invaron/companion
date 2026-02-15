@@ -49,6 +49,12 @@ export interface UserContext {
   mode: "focus" | "balanced" | "recovery";
 }
 
+export interface JournalPhoto {
+  id?: string;
+  dataUrl: string;
+  fileName?: string;
+}
+
 export interface JournalEntry {
   id: string;
   text: string;
@@ -59,6 +65,7 @@ export interface JournalEntry {
   clientEntryId?: string;
   syncStatus?: "queued" | "synced";
   tags?: string[];
+  photos?: JournalPhoto[];
 }
 
 export interface WeeklySummary {
@@ -76,6 +83,7 @@ export interface JournalSyncPayload {
   timestamp: string;
   baseVersion?: number;
   tags?: string[];
+  photos?: JournalPhoto[];
 }
 
 export interface LectureEvent {
