@@ -288,3 +288,62 @@ self.addEventListener("notificationactionclick", (event) => {
       })
   );
 });
+
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+
+  // Handle share target POST requests
+  if (url.pathname === "/companion/share-target" && event.request.method === "POST") {
+    event.respondWith(
+      (async () => {
+        const formData = await event.request.formData();
+        const title = formData.get("title") || "";
+        const text = formData.get("text") || "";
+        const url = formData.get("url") || "";
+        const media = formData.getAll("media");
+
+        // Build the shared content
+        let sharedText = "";
+        if (title) sharedText += title;
+        if (text) {
+          if (sharedText) sharedText += "\n\n";
+          sharedText += text;
+        }
+        if (url) {
+          if (sharedText) sharedText += "\n\n";
+          sharedText += url;
+        }
+
+        // Convert images to data URLs
+        const imagePromises = media
+          .filter((file) => file instanceof File && file.type.startsWith("image/"))
+          .map(async (file) => {
+            const arrayBuffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = "";
+            for (let i = 0; i < bytes.byteLength; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            const base64 = btoa(binary);
+            return {
+              id: crypto.randomUUID(),
+              dataUrl: `data:${file.type};base64,${base64}`,
+              fileName: file.name
+            };
+          });
+
+        const images = await Promise.all(imagePromises);
+
+        // Build share data URL parameters
+        const params = new URLSearchParams();
+        if (sharedText) params.set("text", sharedText);
+        if (images.length > 0) params.set("photos", JSON.stringify(images));
+
+        // Redirect to the app with shared content
+        const targetUrl = `/companion/?share=true&${params.toString()}`;
+
+        return Response.redirect(targetUrl, 303);
+      })()
+    );
+  }
+});

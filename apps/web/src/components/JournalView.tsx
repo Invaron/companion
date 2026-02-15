@@ -8,6 +8,7 @@ import {
 } from "../lib/storage";
 import { JournalEntry, JournalPhoto } from "../types";
 import { TagInput } from "./TagInput";
+import { useSharedContent } from "../hooks/useSharedContent";
 
 export function JournalView(): JSX.Element {
   const normalizeEntry = (entry: JournalEntry): JournalEntry => ({
@@ -17,6 +18,7 @@ export function JournalView(): JSX.Element {
   });
 
   const initialEntries = loadJournalEntries().map(normalizeEntry);
+  const sharedContent = useSharedContent();
 
   const [entries, setEntries] = useState<JournalEntry[]>(initialEntries);
   const [displayedEntries, setDisplayedEntries] = useState<JournalEntry[]>(initialEntries);
@@ -33,6 +35,15 @@ export function JournalView(): JSX.Element {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Handle shared content from Web Share Target API
+  useEffect(() => {
+    if (sharedContent) {
+      setText(sharedContent.text);
+      setPhotos(sharedContent.photos);
+      setSyncMessage("Shared content ready to journal!");
+    }
+  }, [sharedContent]);
 
   useEffect(() => {
     const sync = async (): Promise<void> => {
