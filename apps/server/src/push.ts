@@ -43,10 +43,11 @@ export function hasStaticVapidKeys(): boolean {
 
 export async function sendPushNotification(
   subscription: PushSubscriptionRecord,
-  notification: Pick<Notification, "title" | "message" | "priority" | "source" | "timestamp" | "metadata">,
+  notification: Pick<Notification, "id" | "title" | "message" | "priority" | "source" | "timestamp" | "metadata">,
   options: PushRetryOptions = {}
 ): Promise<PushSendResult> {
   const payload = JSON.stringify({
+    notificationId: notification.id,
     title: notification.title,
     message: notification.message,
     priority: notification.priority,

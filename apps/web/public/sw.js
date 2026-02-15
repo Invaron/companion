@@ -57,12 +57,12 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  
+
   // Track tap interaction
   const data = event.notification.data || {};
   if (data.notificationId && data.source && data.priority && data.notificationTitle) {
     const timeToInteractionMs = data.timestamp ? Date.now() - data.timestamp : undefined;
-    
+
     event.waitUntil(
       fetch("/companion/api/notification-interactions", {
         method: "POST",
@@ -104,11 +104,64 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
+self.addEventListener("notificationclose", (event) => {
+  // Track dismiss interaction
+  const data = event.notification.data || {};
+  if (data.notificationId && data.source && data.priority && data.notificationTitle) {
+    const timeToInteractionMs = data.timestamp ? Date.now() - data.timestamp : undefined;
+
+    event.waitUntil(
+      fetch("/companion/api/notification-interactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          notificationId: data.notificationId,
+          notificationTitle: data.notificationTitle,
+          notificationSource: data.source,
+          notificationPriority: data.priority,
+          interactionType: "dismiss",
+          timeToInteractionMs
+        })
+      }).catch(() => {
+        // Silently fail if tracking fails
+      })
+    );
+  }
+});
+
 self.addEventListener("notificationactionclick", (event) => {
   event.notification.close();
-  
+
+  // Track action button interaction
+  const data = event.notification.data || {};
+  if (data.notificationId && data.source && data.priority && data.notificationTitle) {
+    const timeToInteractionMs = data.timestamp ? Date.now() - data.timestamp : undefined;
+
+    event.waitUntil(
+      fetch("/companion/api/notification-interactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          notificationId: data.notificationId,
+          notificationTitle: data.notificationTitle,
+          notificationSource: data.source,
+          notificationPriority: data.priority,
+          interactionType: "action",
+          actionType: event.action,
+          timeToInteractionMs
+        })
+      }).catch(() => {
+        // Silently fail if tracking fails
+      })
+    );
+  }
+
   const deadlineId = event.notification.data?.deadlineId;
-  
+
   if (!deadlineId) {
     return;
   }
