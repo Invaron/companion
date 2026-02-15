@@ -948,3 +948,161 @@ button:disabled {
   font-size: 0.9rem;
   margin: 0 0 8px;
 }
+
+/* Focus Timer Styles */
+.focus-timer-panel {
+  margin-bottom: 12px;
+}
+
+.session-badge {
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid;
+}
+
+.session-badge-work {
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.session-badge-break {
+  background: rgba(125, 211, 168, 0.12);
+  border-color: var(--ok-border);
+  color: var(--ok);
+}
+
+.session-badge-paused {
+  background: var(--warn-surface);
+  border-color: var(--warn-border);
+  color: var(--warn);
+}
+
+.timer-config {
+  display: grid;
+  gap: 14px;
+}
+
+.timer-config-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.timer-start-button {
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
+  color: var(--text);
+  font-weight: 600;
+  padding: 14px;
+  font-size: 1rem;
+}
+
+.timer-start-button:hover {
+  border-color: var(--accent-border-strong);
+  background: rgba(246, 195, 127, 0.12);
+}
+
+.timer-active {
+  display: grid;
+  gap: 14px;
+}
+
+.timer-display {
+  display: grid;
+  gap: 12px;
+}
+
+.timer-time {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+.timer-progress-bar {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.timer-progress-fill {
+  height: 100%;
+  transition: width 1s linear;
+}
+
+.timer-progress-work {
+  background: linear-gradient(90deg, #f6c37f, #ff8a80);
+}
+
+.timer-progress-break {
+  background: linear-gradient(90deg, #7dd3a8, #6ab8e5);
+}
+
+.timer-session-info {
+  text-align: center;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.timer-button-primary,
+.timer-button-secondary,
+.timer-button-danger {
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  flex: 1;
+  max-width: 140px;
+}
+
+.timer-button-primary {
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
+  color: var(--text);
+}
+
+.timer-button-primary:hover {
+  border-color: var(--accent-border-strong);
+}
+
+.timer-button-secondary {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.timer-button-secondary:hover {
+  border-color: var(--accent-border);
+}
+
+.timer-button-danger {
+  background: var(--danger-surface);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.timer-button-danger:hover {
+  border-color: var(--danger-border-strong);
+  background: var(--danger-surface-strong);
+}
+
+.timer-info {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 12px;
+}

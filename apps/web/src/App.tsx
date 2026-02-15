@@ -3,6 +3,7 @@ import { AgentStatusList } from "./components/AgentStatusList";
 import { CalendarImportView } from "./components/CalendarImportView";
 import { ContextControls } from "./components/ContextControls";
 import { DeadlineList } from "./components/DeadlineList";
+import { FocusTimer } from "./components/FocusTimer";
 import { JournalView } from "./components/JournalView";
 import { NotificationFeed } from "./components/NotificationFeed";
 import { OnboardingFlow } from "./components/OnboardingFlow";
@@ -140,6 +141,7 @@ export default function App(): JSX.Element {
             journalStreak={data.summary.journalStreak}
           />
           <HabitsGoalsView />
+          <FocusTimer onUpdated={refresh} />
           <JournalView />
           <WeeklyReviewView />
           <CalendarImportView onImported={() => setScheduleRevision((revision) => revision + 1)} />
