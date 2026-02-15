@@ -1,17 +1,26 @@
-import { DashboardSnapshot, UserContext, JournalEntry, LectureEvent, Deadline } from "../types";
+import { DashboardSnapshot, Deadline, JournalEntry, LectureEvent, UserContext } from "../types";
 
 const STORAGE_KEYS = {
   dashboard: "companion:dashboard",
   context: "companion:context",
   journal: "companion:journal",
+  journalQueue: "companion:journal-queue",
   schedule: "companion:schedule",
-  deadlines: "companion:deadlines",
+  deadlines: "companion:deadlines"
 } as const;
+
+export interface JournalQueueItem {
+  id: string;
+  clientEntryId: string;
+  content: string;
+  timestamp: string;
+  baseVersion?: number;
+}
 
 const defaultContext: UserContext = {
   stressLevel: "medium",
   energyLevel: "medium",
-  mode: "balanced",
+  mode: "balanced"
 };
 
 function defaultDashboard(): DashboardSnapshot {
@@ -21,16 +30,16 @@ function defaultDashboard(): DashboardSnapshot {
       todayFocus: "Welcome to Companion! Set your context below.",
       pendingDeadlines: 0,
       activeAgents: 0,
-      journalStreak: 0,
+      journalStreak: 0
     },
     agentStates: [
       { name: "notes", status: "idle", lastRunAt: null },
       { name: "lecture-plan", status: "idle", lastRunAt: null },
       { name: "assignment-tracker", status: "idle", lastRunAt: null },
-      { name: "orchestrator", status: "idle", lastRunAt: null },
+      { name: "orchestrator", status: "idle", lastRunAt: null }
     ],
     notifications: [],
-    events: [],
+    events: []
   };
 }
 
@@ -77,41 +86,75 @@ export function saveJournalEntries(entries: JournalEntry[]): void {
 }
 
 export function addJournalEntry(text: string): JournalEntry {
+  const clientEntryId = crypto.randomUUID();
   const entry: JournalEntry = {
-    id: crypto.randomUUID(),
+    id: clientEntryId,
+    clientEntryId,
     text,
+    content: text,
     timestamp: new Date().toISOString(),
+    syncStatus: navigator.onLine ? "synced" : "queued"
   };
   const entries = loadJournalEntries();
-  entries.unshift(entry); // newest first
+  entries.unshift(entry);
   saveJournalEntries(entries);
   return entry;
 }
 
-// Mock schedule data for demo
+export function loadJournalQueue(): JournalQueueItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.journalQueue);
+    if (raw) return JSON.parse(raw) as JournalQueueItem[];
+  } catch {
+    // corrupted
+  }
+  return [];
+}
+
+export function saveJournalQueue(entries: JournalQueueItem[]): void {
+  localStorage.setItem(STORAGE_KEYS.journalQueue, JSON.stringify(entries));
+}
+
+export function enqueueJournalEntry(entry: JournalEntry): void {
+  const queue = loadJournalQueue();
+  queue.push({
+    id: crypto.randomUUID(),
+    clientEntryId: entry.clientEntryId ?? entry.id,
+    content: entry.text,
+    timestamp: entry.timestamp,
+    baseVersion: entry.version
+  });
+  saveJournalQueue(queue);
+}
+
+export function removeJournalQueueItem(clientEntryId: string): void {
+  const queue = loadJournalQueue().filter((item) => item.clientEntryId !== clientEntryId);
+  saveJournalQueue(queue);
+}
+
 function getDefaultSchedule(): LectureEvent[] {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   return [
     {
       id: "1",
       title: "Data Structures",
-      startTime: new Date(today.getTime() + 10 * 60 * 60 * 1000).toISOString(), // 10 AM today
+      startTime: new Date(today.getTime() + 10 * 60 * 60 * 1000).toISOString(),
       durationMinutes: 90,
       workload: "medium"
     },
     {
       id: "2",
       title: "Linear Algebra",
-      startTime: new Date(today.getTime() + 14 * 60 * 60 * 1000).toISOString(), // 2 PM today
+      startTime: new Date(today.getTime() + 14 * 60 * 60 * 1000).toISOString(),
       durationMinutes: 75,
       workload: "high"
     },
     {
       id: "3",
       title: "Systems Design",
-      startTime: new Date(today.getTime() + 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000).toISOString(), // 9 AM tomorrow
+      startTime: new Date(today.getTime() + 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000).toISOString(),
       durationMinutes: 90,
       workload: "high"
     }
@@ -134,16 +177,15 @@ export function saveSchedule(schedule: LectureEvent[]): void {
   localStorage.setItem(STORAGE_KEYS.schedule, JSON.stringify(schedule));
 }
 
-// Mock deadline data for demo
 function getDefaultDeadlines(): Deadline[] {
   const now = new Date();
-  
+
   return [
     {
       id: "1",
       course: "Algorithms",
       task: "Problem Set 4",
-      dueDate: new Date(now.getTime() + 28 * 60 * 60 * 1000).toISOString(), // 28 hours from now
+      dueDate: new Date(now.getTime() + 28 * 60 * 60 * 1000).toISOString(),
       priority: "high",
       completed: false
     },
@@ -151,7 +193,7 @@ function getDefaultDeadlines(): Deadline[] {
       id: "2",
       course: "Operating Systems",
       task: "Lab 3",
-      dueDate: new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString(), // 12 hours from now
+      dueDate: new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString(),
       priority: "critical",
       completed: false
     },
@@ -159,7 +201,7 @@ function getDefaultDeadlines(): Deadline[] {
       id: "3",
       course: "Databases",
       task: "Schema Design Report",
-      dueDate: new Date(now.getTime() + 54 * 60 * 60 * 1000).toISOString(), // 54 hours from now
+      dueDate: new Date(now.getTime() + 54 * 60 * 60 * 1000).toISOString(),
       priority: "medium",
       completed: false
     }

@@ -52,7 +52,19 @@ export interface UserContext {
 export interface JournalEntry {
   id: string;
   text: string;
+  content: string;
   timestamp: string;
+  updatedAt?: string;
+  version?: number;
+  clientEntryId?: string;
+  syncStatus?: "queued" | "synced";
+}
+
+export interface JournalSyncPayload {
+  clientEntryId: string;
+  content: string;
+  timestamp: string;
+  baseVersion?: number;
 }
 
 export interface LectureEvent {

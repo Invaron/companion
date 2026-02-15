@@ -1,13 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { submitJournalEntry, syncQueuedJournalEntries } from "../lib/api";
+import {
+  addJournalEntry,
+  enqueueJournalEntry,
+  loadJournalEntries,
+  loadJournalQueue
+} from "../lib/storage";
 import { JournalEntry } from "../types";
-import { addJournalEntry, loadJournalEntries } from "../lib/storage";
 
 export function JournalView(): JSX.Element {
   const [entries, setEntries] = useState<JournalEntry[]>(loadJournalEntries());
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
 
-  const handleSubmit = (event: React.FormEvent): void => {
+  useEffect(() => {
+    const sync = async (): Promise<void> => {
+      const synced = await syncQueuedJournalEntries(loadJournalQueue());
+      if (synced > 0) {
+        setEntries(loadJournalEntries());
+        setSyncMessage(`Synced ${synced} queued journal entr${synced === 1 ? "y" : "ies"}.`);
+      }
+    };
+
+    const handleOnline = (): void => {
+      void sync();
+    };
+
+    window.addEventListener("online", handleOnline);
+    void sync();
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
+
+  const handleSubmit = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault();
     if (!text.trim()) return;
 
@@ -16,6 +44,15 @@ export function JournalView(): JSX.Element {
       const entry = addJournalEntry(text.trim());
       setEntries((prev) => [entry, ...prev]);
       setText("");
+
+      const submitted = await submitJournalEntry(entry.text, entry.clientEntryId ?? entry.id);
+      if (!submitted) {
+        enqueueJournalEntry(entry);
+        setSyncMessage("Saved offline. Will sync when connection returns.");
+        return;
+      }
+
+      setSyncMessage("");
     } finally {
       setBusy(false);
     }
@@ -37,7 +74,7 @@ export function JournalView(): JSX.Element {
     return date.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
-      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined
     });
   };
 
@@ -47,8 +84,9 @@ export function JournalView(): JSX.Element {
         <h2>Journal</h2>
         <span className="journal-count">{entries.length} entries</span>
       </header>
+      {syncMessage && <p className="journal-sync-status">{syncMessage}</p>}
 
-      <form className="journal-input-form" onSubmit={handleSubmit}>
+      <form className="journal-input-form" onSubmit={(event) => void handleSubmit(event)}>
         <textarea
           className="journal-textarea"
           placeholder="What's on your mind? Quick thoughts, reflections, or to-dos..."

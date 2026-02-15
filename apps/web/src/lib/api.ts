@@ -1,5 +1,14 @@
-import { DashboardSnapshot, UserContext } from "../types";
-import { loadDashboard, saveDashboard, loadContext, saveContext } from "./storage";
+import { DashboardSnapshot, JournalEntry, JournalSyncPayload, UserContext } from "../types";
+import {
+  JournalQueueItem,
+  loadContext,
+  loadDashboard,
+  loadJournalEntries,
+  removeJournalQueueItem,
+  saveContext,
+  saveDashboard,
+  saveJournalEntries
+} from "./storage";
 
 async function jsonOrThrow<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(input, {
@@ -23,7 +32,6 @@ export async function getDashboard(): Promise<DashboardSnapshot> {
     saveDashboard(snapshot);
     return snapshot;
   } catch {
-    // Server unreachable (e.g. GitHub Pages) — use localStorage
     return loadDashboard();
   }
 }
@@ -35,10 +43,70 @@ export async function updateContext(payload: Partial<UserContext>): Promise<{ co
       body: JSON.stringify(payload)
     });
   } catch {
-    // Server unreachable — persist locally
     const current = loadContext();
     const merged = { ...current, ...payload };
     saveContext(merged);
     return { context: merged };
+  }
+}
+
+export async function submitJournalEntry(content: string, clientEntryId: string): Promise<JournalEntry | null> {
+  try {
+    const response = await jsonOrThrow<{ entry: JournalEntry }>("/api/journal", {
+      method: "POST",
+      body: JSON.stringify({ content })
+    });
+    return response.entry;
+  } catch {
+    return null;
+  }
+}
+
+export async function syncQueuedJournalEntries(queue: JournalQueueItem[]): Promise<number> {
+  if (queue.length === 0) {
+    return 0;
+  }
+
+  try {
+    const payload: JournalSyncPayload[] = queue.map((item) => ({
+      clientEntryId: item.clientEntryId,
+      content: item.content,
+      timestamp: item.timestamp,
+      baseVersion: item.baseVersion
+    }));
+
+    const response = await jsonOrThrow<{ applied: Array<JournalEntry>; conflicts: Array<JournalEntry> }>(
+      "/api/journal/sync",
+      {
+        method: "POST",
+        body: JSON.stringify({ entries: payload })
+      }
+    );
+
+    for (const entry of response.applied) {
+      removeJournalQueueItem(entry.clientEntryId ?? "");
+    }
+
+    if (response.applied.length > 0) {
+      const current = loadJournalEntries();
+      const byClientId = new Map(current.map((entry) => [entry.clientEntryId, entry]));
+
+      for (const applied of response.applied) {
+        if (applied.clientEntryId) {
+          byClientId.set(applied.clientEntryId, {
+            ...applied,
+            text: applied.content
+          });
+        }
+      }
+
+      saveJournalEntries(
+        Array.from(byClientId.values()).sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+      );
+    }
+
+    return response.applied.length;
+  } catch {
+    return 0;
   }
 }
