@@ -409,6 +409,12 @@ button:disabled {
   letter-spacing: normal;
 }
 
+.deadline-sync-status {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .deadline-list {
   list-style: none;
   margin: 0;
@@ -450,7 +456,6 @@ button:disabled {
   grid-template-columns: auto 1fr;
   gap: 12px;
   align-items: start;
-  cursor: pointer;
 }
 
 .deadline-checkbox {
@@ -517,6 +522,12 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+.deadline-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .settings-stack { display: grid; gap: 0.75rem; }
 .settings-stack label { display: grid; gap: 0.25rem; }
 
@@ -561,4 +572,46 @@ button:disabled {
   padding-left: 18px;
   display: grid;
   gap: 4px;
+}
+
+.weekly-review-panel {
+  margin-bottom: 12px;
+}
+
+.weekly-review-window {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.weekly-review-metrics {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.weekly-review-metrics p {
+  margin: 0;
+}
+
+.weekly-review-section {
+  margin-top: 10px;
+}
+
+.weekly-review-section h3 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.weekly-review-section ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.weekly-review-empty {
+  margin: 0;
+  color: var(--muted);
 }

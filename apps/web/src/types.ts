@@ -60,6 +60,15 @@ export interface JournalEntry {
   syncStatus?: "queued" | "synced";
 }
 
+export interface WeeklySummary {
+  windowStart: string;
+  windowEnd: string;
+  deadlinesDue: number;
+  deadlinesCompleted: number;
+  completionRate: number;
+  journalHighlights: JournalEntry[];
+}
+
 export interface JournalSyncPayload {
   clientEntryId: string;
   content: string;
@@ -84,6 +93,18 @@ export interface Deadline {
   completed: boolean;
 }
 
+export interface DeadlineReminderState {
+  deadlineId: string;
+  reminderCount: number;
+  lastReminderAt: string;
+  lastConfirmationAt: string | null;
+  lastConfirmedCompleted: boolean | null;
+}
+
+export interface DeadlineStatusConfirmation {
+  deadline: Deadline;
+  reminder: DeadlineReminderState;
+}
 export interface CalendarImportPayload {
   ics?: string;
   url?: string;

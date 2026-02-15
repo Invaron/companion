@@ -3,20 +3,25 @@ import {
   CalendarImportPreview,
   CalendarImportResult,
   DashboardSnapshot,
+  Deadline,
+  DeadlineStatusConfirmation,
   JournalEntry,
   JournalSyncPayload,
   NotificationPreferences,
-  UserContext
+  UserContext,
+  WeeklySummary
 } from "../types";
 import {
   JournalQueueItem,
   loadContext,
   loadDashboard,
+  loadDeadlines,
   loadJournalEntries,
   loadNotificationPreferences,
   removeJournalQueueItem,
   saveContext,
   saveDashboard,
+  saveDeadlines,
   saveJournalEntries,
   saveNotificationPreferences
 } from "./storage";
@@ -173,4 +178,52 @@ export async function applyCalendarImport(payload: CalendarImportPayload): Promi
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export async function getDeadlines(): Promise<Deadline[]> {
+  try {
+    const response = await jsonOrThrow<{ deadlines: Deadline[] }>("/api/deadlines");
+    saveDeadlines(response.deadlines);
+    return response.deadlines;
+  } catch {
+    return loadDeadlines();
+  }
+}
+
+export async function confirmDeadlineStatus(
+  deadlineId: string,
+  completed: boolean
+): Promise<DeadlineStatusConfirmation | null> {
+  try {
+    const response = await jsonOrThrow<DeadlineStatusConfirmation>(`/api/deadlines/${deadlineId}/confirm-status`, {
+      method: "POST",
+      body: JSON.stringify({ completed })
+    });
+
+    const next = loadDeadlines().map((deadline) =>
+      deadline.id === response.deadline.id ? response.deadline : deadline
+    );
+    saveDeadlines(next);
+
+    return response;
+  } catch {
+    return null;
+  }
+}
+
+export async function getWeeklySummary(referenceDate?: string): Promise<WeeklySummary | null> {
+  const params = new URLSearchParams();
+  if (referenceDate) {
+    params.set("referenceDate", referenceDate);
+  }
+
+  const query = params.toString();
+  const endpoint = query ? `/api/weekly-review?${query}` : "/api/weekly-review";
+
+  try {
+    const response = await jsonOrThrow<{ summary: WeeklySummary }>(endpoint);
+    return response.summary;
+  } catch {
+    return null;
+  }
 }
