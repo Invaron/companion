@@ -185,7 +185,8 @@ describe("chat service", () => {
 
     const result = await sendChatMessage(store, "What did I miss on X? Any new AI videos?", {
       geminiClient: fakeGemini,
-      now
+      now,
+      useFunctionCalling: false
     });
 
     expect(generateChatResponse).toHaveBeenCalled();
@@ -207,7 +208,8 @@ describe("chat service", () => {
 
     const result = await sendChatMessage(store, "Any new videos?", {
       geminiClient: fakeGemini,
-      now
+      now,
+      useFunctionCalling: false
     });
 
     expect(generateChatResponse).toHaveBeenCalled();
