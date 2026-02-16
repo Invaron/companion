@@ -32,6 +32,22 @@ describe("RuntimeStore - habits and goals", () => {
     expect(updated?.completionRate7d).toBeGreaterThan(0);
   });
 
+  it("allows streak recovery within 24hrs of a missed day", () => {
+    const habit = store.createHabit({
+      name: "Hydrate",
+      cadence: "daily",
+      targetPerWeek: 7
+    });
+
+    store.toggleHabitCheckIn(habit.id, { date: "2026-02-14T18:00:00.000Z", completed: true });
+    store.toggleHabitCheckIn(habit.id, { date: "2026-02-16T07:30:00.000Z", completed: true });
+
+    vi.setSystemTime(new Date("2026-02-16T12:00:00.000Z"));
+    const recovered = store.getHabitsWithStatus().find((h) => h.id === habit.id);
+
+    expect(recovered?.streak).toBe(3);
+  });
+
   it("tracks goal progress, remaining counts, and allows toggling check-ins", () => {
     const goal = store.createGoal({
       title: "Ship resume updates",

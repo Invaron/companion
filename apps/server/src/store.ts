@@ -2675,15 +2675,22 @@ export class RuntimeStore {
 
   private computeStreak(checkIns: Array<{ date: string; completed: boolean }>, referenceDateKey: string): number {
     const completedDates = new Set(checkIns.filter((c) => c.completed).map((c) => this.toDateKey(c.date)));
+    const referenceDate = new Date(`${referenceDateKey}T00:00:00.000Z`);
+    const graceWindowMs = 24 * 60 * 60 * 1000;
     let streak = 0;
-    let cursor = new Date(`${referenceDateKey}T00:00:00.000Z`);
+    let graceUsed = false;
+    let cursor = new Date(referenceDate);
 
     while (true) {
       const key = this.toDateKey(cursor);
-      if (!completedDates.has(key)) {
+      if (completedDates.has(key)) {
+        streak += 1;
+      } else if (!graceUsed && streak > 0 && referenceDate.getTime() - cursor.getTime() <= graceWindowMs) {
+        graceUsed = true;
+        streak += 1;
+      } else {
         break;
       }
-      streak += 1;
       cursor.setUTCDate(cursor.getUTCDate() - 1);
     }
 

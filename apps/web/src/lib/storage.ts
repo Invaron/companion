@@ -340,9 +340,19 @@ function completionRate(recent: Array<{ completed: boolean }>): number {
 
 function streakFromRecent(recent: Array<{ completed: boolean }>): number {
   let streak = 0;
+  let graceUsed = false;
   for (let i = recent.length - 1; i >= 0; i -= 1) {
-    if (!recent[i].completed) break;
-    streak += 1;
+    const offsetFromToday = recent.length - 1 - i;
+    if (recent[i].completed) {
+      streak += 1;
+      continue;
+    }
+    if (!graceUsed && streak > 0 && offsetFromToday <= 1) {
+      graceUsed = true;
+      streak += 1;
+      continue;
+    }
+    break;
   }
   return streak;
 }
@@ -504,4 +514,3 @@ export function removeSyncQueueItem(id: string): void {
 export function clearSyncQueue(): void {
   saveSyncQueue([]);
 }
-
