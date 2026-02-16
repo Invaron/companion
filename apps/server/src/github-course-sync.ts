@@ -170,9 +170,18 @@ export class GitHubCourseSyncService {
 
   /**
    * Generate a unique key for a deadline based on course and task
+   * Uses robust slugification to avoid collisions
    */
   private generateDeadlineKey(course: string, task: string): string {
-    return `github-${course}-${task.toLowerCase().replace(/\s+/g, "-")}`;
+    // Remove special characters and normalize spacing
+    const slug = task
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "") // Remove punctuation except spaces and hyphens
+      .replace(/\s+/g, "-")      // Replace spaces with hyphens
+      .replace(/-+/g, "-")       // Collapse multiple hyphens
+      .replace(/^-|-$/g, "");    // Remove leading/trailing hyphens
+    
+    return `github-${course.toLowerCase()}-${slug}`;
   }
 
   /**

@@ -24,7 +24,7 @@ export class GitHubCourseClient {
     const url = `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, {
       headers: {
-        Authorization: `token ${this.token}`,
+        Authorization: `Bearer ${this.token}`,
         Accept: "application/vnd.github.v3+json",
         "User-Agent": "Companion-App"
       }
@@ -46,9 +46,8 @@ export class GitHubCourseClient {
     );
 
     if (data.encoding === "base64") {
-      // Decode base64 content
-      const decoded = atob(data.content.replace(/\n/g, ""));
-      return decoded;
+      // Decode base64 content - remove newlines first as GitHub splits base64 into lines
+      return Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf-8");
     }
 
     return data.content;
