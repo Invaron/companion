@@ -99,7 +99,7 @@ export function analyzeCompletionPatterns(
 
   for (const reminder of deadlineHistory) {
     if (reminder.lastConfirmedCompleted && reminder.lastConfirmationAt) {
-      const hour = new Date(reminder.lastConfirmationAt).getHours();
+      const hour = new Date(reminder.lastConfirmationAt).getUTCHours();
       completionHours[hour] = (completionHours[hour] || 0) + 1;
     }
   }

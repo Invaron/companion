@@ -41,13 +41,12 @@ const LOW_TODO_THRESHOLD = 2; // When <= this many todos remain, generate ideas
 
 // ── AI Agent providers (round-robin order) ──────────────────────────
 // Each provider has a different trigger mechanism:
-//   copilot:  REST API agent_assignment payload
-//   claude:   Playwright-based UI assignment via assign-agent.yml
-//   codex:    Playwright-based UI assignment via assign-agent.yml
+//   All agents use the assign-agent.yml workflow dispatch which calls
+//   GitHub's internal GraphQL to assign the bot to the issue.
 
 const AGENT_PROVIDERS = [
   { name: 'Claude',  trigger: 'workflow', botId: 'BOT_kgDODnPHJg', display: 'Claude (Anthropic)' },
-  { name: 'Copilot', trigger: 'assign',   botUser: 'copilot-swe-agent[bot]', display: 'Copilot (GitHub)' },
+  { name: 'Copilot', trigger: 'workflow', botId: 'BOT_kgDOC9w8XQ', display: 'Copilot (GitHub)' },
   { name: 'Codex',   trigger: 'workflow', botId: 'BOT_kgDODnSAjQ', display: 'Codex (OpenAI)' },
 ];
 
@@ -197,32 +196,10 @@ async function getExistingIssueTitles() {
  * Trigger Copilot via REST API agent_assignment payload.
  * This is the official API for triggering GitHub's coding agent.
  */
-async function triggerCopilot(issueNumber, agentProfile) {
-  const result = await githubAPI(
-    `/repos/${OWNER}/${REPO_NAME}/issues/${issueNumber}/assignees`,
-    'POST',
-    {
-      assignees: ['copilot-swe-agent[bot]'],
-      agent_assignment: {
-        target_repo: `${OWNER}/${REPO_NAME}`,
-        base_branch: 'main',
-        custom_instructions: `Use the ${agentProfile} agent profile. Read docs/project-brief.md first. After completing, update the roadmap status.`,
-        custom_agent: agentProfile,
-        model: '',
-      },
-    },
-    AGENT_PAT
-  );
-
-  // Check if the bot was actually added to assignees
-  const assigneeLogins = (result.assignees || []).map(a => a.login);
-  return assigneeLogins.some(l => l.toLowerCase().includes('copilot'));
-}
-
 /**
- * Trigger an agent (Claude or Codex) via the assign-agent workflow.
- * Dispatches .github/workflows/assign-agent.yml which uses Playwright to call
- * GitHub's internal GraphQL and trigger the agent's runtime.
+ * Trigger an agent (Claude, Copilot, or Codex) via the assign-agent workflow.
+ * Dispatches .github/workflows/assign-agent.yml which uses fetch to call
+ * GitHub's internal GraphQL and assign the bot to the issue.
  */
 async function triggerAgentWorkflow(issueNumber, issueNodeId, botId, displayName) {
   await githubAPI(
@@ -247,13 +224,7 @@ async function triggerAgentWorkflow(issueNumber, issueNodeId, botId, displayName
  * Returns true if the trigger was sent successfully.
  */
 async function tryTriggerAgent(issueNumber, provider, agentProfile, issueNodeId) {
-  if (provider.trigger === 'workflow') {
-    return triggerAgentWorkflow(issueNumber, issueNodeId, provider.botId, provider.name);
-  } else if (provider.trigger === 'assign') {
-    return triggerCopilot(issueNumber, agentProfile);
-  } else {
-    throw new Error(`Unknown trigger type: ${provider.trigger}`);
-  }
+  return triggerAgentWorkflow(issueNumber, issueNodeId, provider.botId, provider.name);
 }
 
 // ── Issue creation ──────────────────────────────────────────────────
