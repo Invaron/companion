@@ -205,3 +205,24 @@ export interface NotificationInteraction {
   actionType?: string;
   timeToInteractionMs?: number;
 }
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+  streaming?: boolean;
+}
+
+export interface SendChatMessageRequest {
+  message: string;
+}
+
+export interface SendChatMessageResponse {
+  message: ChatMessage;
+}
+
+export interface GetChatHistoryResponse {
+  messages: ChatMessage[];
+  hasMore: boolean;
+}
