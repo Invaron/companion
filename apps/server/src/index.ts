@@ -1113,10 +1113,57 @@ app.post("/api/sync/process", async (_req, res) => {
 });
 
 app.get("/api/sync/status", (_req, res) => {
-  const status = store.getSyncQueueStatus();
-  return res.json({ 
-    status,
-    isProcessing: syncService.isCurrentlyProcessing()
+  // Get data from various integrations
+  const canvasData = store.getCanvasData();
+  const xData = store.getXData();
+  const youtubeData = store.getYouTubeData();
+  const gmailData = store.getGmailData();
+  const geminiClient = getGeminiClient();
+  const rateLimitStatus = geminiClient.getRateLimitStatus();
+  const gmailConnection = gmailOAuthService.getConnectionInfo();
+
+  return res.json({
+    canvas: {
+      lastSyncAt: canvasData?.lastSyncedAt ?? null,
+      status: canvasData ? "ok" : "not_synced",
+      coursesCount: canvasData?.courses.length ?? 0,
+      assignmentsCount: canvasData?.assignments.length ?? 0
+    },
+    tp: {
+      lastSyncAt: null, // Will be implemented when TP sync stores last sync time
+      status: "ok",
+      source: "ical",
+      eventsCount: store.getScheduleEvents().length
+    },
+    github: {
+      lastSyncAt: null, // Will be implemented when GitHub sync stores last sync time
+      status: "ok",
+      deadlinesFound: 0 // Count deadlines with GitHub source when implemented
+    },
+    gemini: {
+      status: geminiClient.isConfigured() ? "ok" : "not_configured",
+      model: "gemini-2.0-flash",
+      requestsToday: rateLimitStatus.requestCount,
+      dailyLimit: rateLimitStatus.limit
+    },
+    youtube: {
+      lastSyncAt: youtubeData?.lastSyncedAt ?? null,
+      status: youtubeData ? "ok" : "not_synced",
+      videosTracked: youtubeData?.videos.length ?? 0,
+      quotaUsedToday: 0, // Will be tracked when quota tracking is implemented
+      quotaLimit: 10000
+    },
+    x: {
+      lastSyncAt: xData?.lastSyncedAt ?? null,
+      status: xData ? "ok" : "not_synced",
+      tweetsProcessed: xData?.tweets.length ?? 0
+    },
+    gmail: {
+      lastSyncAt: gmailData.lastSyncedAt,
+      status: gmailConnection.connected ? "ok" : "not_connected",
+      messagesProcessed: gmailData.messages.length,
+      connected: gmailConnection.connected
+    }
   });
 });
 
