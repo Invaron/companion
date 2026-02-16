@@ -37,6 +37,7 @@ const DRY_RUN = process.env.DRY_RUN === 'true';
 const API = 'https://api.github.com';
 const CAN_ASSIGN_AGENTS = Boolean(AGENT_PAT);
 const MAX_ISSUES_PER_RUN = 3;
+const MAX_CONCURRENT_AGENTS = 3; // Max agents working at once (prevents rate limits)
 const LOW_TODO_THRESHOLD = 2; // When <= this many todos remain, generate ideas
 
 // ── AI Agent providers (round-robin order) ──────────────────────────
@@ -200,13 +201,33 @@ async function getExistingIssueTitles() {
   }
 }
 
+// ── Count active agents (draft PRs = agent currently working) ───────
+
+async function countActiveAgents() {
+  try {
+    const prs = await githubAPI(
+      `/repos/${OWNER}/${REPO_NAME}/pulls?state=open&per_page=100`
+    );
+    const drafts = prs.filter(pr => pr.draft === true);
+    return drafts.length;
+  } catch (e) {
+    console.error('  Failed to count active agents:', e.message);
+    return 0; // Assume 0 so we don't block on API errors
+  }
+}
+
 // ── Reassign unassigned agent-task issues ───────────────────────────
 
-async function reassignUnassignedIssues() {
+async function reassignUnassignedIssues(availableSlots) {
   console.log('\n--- Checking for unassigned agent-task issues ---');
 
   if (!CAN_ASSIGN_AGENTS) {
     console.log('  Skipping (no AGENT_PAT configured)');
+    return 0;
+  }
+
+  if (availableSlots <= 0) {
+    console.log(`  No available slots (${MAX_CONCURRENT_AGENTS} agents already active)`);
     return 0;
   }
 
@@ -221,10 +242,11 @@ async function reassignUnassignedIssues() {
       return 0;
     }
 
-    console.log(`  Found ${unassigned.length} unassigned issue(s)`);
+    console.log(`  Found ${unassigned.length} unassigned issue(s), ${availableSlots} slot(s) available`);
+    const batch = unassigned.slice(0, availableSlots);
     let assigned = 0;
 
-    for (const issue of unassigned) {
+    for (const issue of batch) {
       const provider = AGENT_PROVIDERS[providerIndex % AGENT_PROVIDERS.length];
       providerIndex++;
 
@@ -249,7 +271,11 @@ async function reassignUnassignedIssues() {
       await new Promise(r => setTimeout(r, 1000));
     }
 
-    console.log(`  Assigned ${assigned}/${unassigned.length} issues`);
+    const remaining = unassigned.length - batch.length;
+    if (remaining > 0) {
+      console.log(`  ⏳ ${remaining} issue(s) waiting for slots (next orchestrator run)`);
+    }
+    console.log(`  Assigned ${assigned}/${batch.length} issues`);
     return assigned;
   } catch (e) {
     console.error('  Failed to fetch issues:', e.message);
@@ -413,13 +439,22 @@ async function main() {
     }
   }
 
-  // Cap at MAX_ISSUES_PER_RUN
-  const batch = issuesToCreate.slice(0, MAX_ISSUES_PER_RUN);
+  // Check how many agents are currently active (draft PRs)
+  const activeAgents = await countActiveAgents();
+  const availableSlots = Math.max(0, MAX_CONCURRENT_AGENTS - activeAgents);
+  console.log(`\n🔄 Active agents: ${activeAgents}/${MAX_CONCURRENT_AGENTS} (${availableSlots} slot(s) available)`);
 
-  if (batch.length === 0) {
+  // Cap at both MAX_ISSUES_PER_RUN and available slots
+  const maxToCreate = Math.min(MAX_ISSUES_PER_RUN, availableSlots);
+  const batch = issuesToCreate.slice(0, maxToCreate);
+
+  if (availableSlots === 0) {
+    console.log('\n⏸  All agent slots full — skipping issue creation and assignment');
+    console.log(`   ${issuesToCreate.length} issue(s) queued for next run`);
+  } else if (batch.length === 0) {
     console.log('\nAll features have issues or are done. Nothing to create!');
   } else {
-    console.log(`\nCreating ${batch.length} issues...\n`);
+    console.log(`\nCreating ${batch.length} issues (capped by ${availableSlots} available slot(s))...\n`);
 
     let created = 0;
     for (const issue of batch) {
@@ -431,8 +466,9 @@ async function main() {
     console.log(`\nCreated ${created}/${batch.length} issues`);
   }
 
-  // Reassign any existing unassigned agent-task issues
-  await reassignUnassignedIssues();
+  // Reassign any existing unassigned agent-task issues (respecting slots)
+  const slotsAfterCreation = Math.max(0, availableSlots - batch.length);
+  await reassignUnassignedIssues(slotsAfterCreation);
 
   console.log('\nOrchestrator will re-run on next cron schedule.');
   console.log('='.repeat(60));
