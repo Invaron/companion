@@ -1,4 +1,6 @@
 import {
+  CanvasSettings,
+  CanvasStatus,
   DashboardSnapshot,
   Deadline,
   Goal,
@@ -24,7 +26,9 @@ const STORAGE_KEYS = {
   goals: "companion:goals",
   onboarding: "companion:onboarding",
   notificationPreferences: "companion:notification-preferences",
-  theme: "companion:theme"
+  theme: "companion:theme",
+  canvasSettings: "companion:canvas-settings",
+  canvasStatus: "companion:canvas-status"
 } as const;
 
 export interface JournalQueueItem {
@@ -48,6 +52,17 @@ const defaultContext: UserContext = {
   stressLevel: "medium",
   energyLevel: "medium",
   mode: "balanced"
+};
+
+const defaultCanvasSettings: CanvasSettings = {
+  baseUrl: "https://stavanger.instructure.com",
+  token: ""
+};
+
+const defaultCanvasStatus: CanvasStatus = {
+  baseUrl: defaultCanvasSettings.baseUrl,
+  lastSyncedAt: null,
+  courses: []
 };
 
 
@@ -95,6 +110,34 @@ export function loadThemePreference(): ThemePreference {
 
 export function saveThemePreference(preference: ThemePreference): void {
   localStorage.setItem(STORAGE_KEYS.theme, preference);
+}
+
+export function loadCanvasSettings(): CanvasSettings {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.canvasSettings);
+    if (raw) return { ...defaultCanvasSettings, ...(JSON.parse(raw) as CanvasSettings) };
+  } catch {
+    // corrupted
+  }
+  return defaultCanvasSettings;
+}
+
+export function saveCanvasSettings(settings: CanvasSettings): void {
+  localStorage.setItem(STORAGE_KEYS.canvasSettings, JSON.stringify(settings));
+}
+
+export function loadCanvasStatus(): CanvasStatus {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.canvasStatus);
+    if (raw) return { ...defaultCanvasStatus, ...(JSON.parse(raw) as CanvasStatus) };
+  } catch {
+    // corrupted
+  }
+  return defaultCanvasStatus;
+}
+
+export function saveCanvasStatus(status: CanvasStatus): void {
+  localStorage.setItem(STORAGE_KEYS.canvasStatus, JSON.stringify(status));
 }
 
 function defaultDashboard(): DashboardSnapshot {

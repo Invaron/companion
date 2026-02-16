@@ -342,6 +342,11 @@ const pushTestSchema = z.object({
   priority: z.enum(["low", "medium", "high", "critical"]).optional()
 });
 
+const canvasSyncSchema = z.object({
+  token: z.string().trim().min(1).optional(),
+  baseUrl: z.string().url().optional()
+});
+
 const notificationPreferencesSchema = z.object({
   quietHours: z
     .object({
@@ -1128,6 +1133,26 @@ app.post("/api/sync/tp", async (_req, res) => {
       lecturesDeleted: 0
     });
   }
+});
+
+app.get("/api/canvas/status", (_req, res) => {
+  const canvasData = store.getCanvasData();
+  return res.json({
+    baseUrl: config.CANVAS_BASE_URL,
+    lastSyncedAt: canvasData?.lastSyncedAt ?? null,
+    courses: canvasData?.courses ?? []
+  });
+});
+
+app.post("/api/canvas/sync", async (req, res) => {
+  const parsed = canvasSyncSchema.safeParse(req.body ?? {});
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid Canvas sync payload", issues: parsed.error.issues });
+  }
+
+  const result = await canvasSyncService.sync(parsed.data);
+  return res.json(result);
 });
 
 async function fetchCalendarIcs(url: string): Promise<string | null> {

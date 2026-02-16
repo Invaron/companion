@@ -249,3 +249,30 @@ export interface GetChatHistoryResponse {
   messages: ChatMessage[];
   hasMore: boolean;
 }
+
+export interface CanvasCourse {
+  id: number;
+  name: string;
+  course_code: string;
+  workflow_state: "available" | "completed" | "unpublished" | "deleted";
+}
+
+export interface CanvasStatus {
+  baseUrl: string;
+  lastSyncedAt: string | null;
+  courses: CanvasCourse[];
+}
+
+export interface CanvasSettings {
+  baseUrl: string;
+  token: string;
+}
+
+export interface CanvasSyncResult {
+  success: boolean;
+  coursesCount: number;
+  assignmentsCount: number;
+  modulesCount: number;
+  announcementsCount: number;
+  error?: string;
+}

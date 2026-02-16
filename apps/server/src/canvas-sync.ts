@@ -11,6 +11,11 @@ export interface CanvasSyncResult {
   error?: string;
 }
 
+export interface CanvasSyncOptions {
+  baseUrl?: string;
+  token?: string;
+}
+
 export class CanvasSyncService {
   private readonly store: RuntimeStore;
   private readonly client: CanvasClient;
@@ -51,12 +56,14 @@ export class CanvasSyncService {
   /**
    * Perform a Canvas sync
    */
-  async sync(): Promise<CanvasSyncResult> {
+  async sync(options?: CanvasSyncOptions): Promise<CanvasSyncResult> {
+    const client = options ? new CanvasClient(options.baseUrl, options.token) : this.client;
+
     try {
-      const courses = await this.client.getCourses();
-      const assignments = await this.client.getAllAssignments(courses);
-      const modules = await this.client.getAllModules(courses);
-      const announcements = await this.client.getAnnouncements();
+      const courses = await client.getCourses();
+      const assignments = await client.getAllAssignments(courses);
+      const modules = await client.getAllModules(courses);
+      const announcements = await client.getAnnouncements();
 
       const canvasData: CanvasData = {
         courses,

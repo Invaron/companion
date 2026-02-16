@@ -17,12 +17,17 @@ import {
   GetChatHistoryResponse,
   UserContext,
   WeeklySummary,
-  SyncQueueStatus
+  SyncQueueStatus,
+  CanvasSettings,
+  CanvasStatus,
+  CanvasSyncResult
 } from "../types";
 import {
   JournalQueueItem,
   SyncQueueItem,
   enqueueSyncOperation,
+  loadCanvasSettings,
+  loadCanvasStatus,
   loadContext,
   loadDashboard,
   loadDeadlines,
@@ -33,6 +38,8 @@ import {
   loadSyncQueue,
   removeJournalQueueItem,
   removeSyncQueueItem,
+  saveCanvasSettings,
+  saveCanvasStatus,
   saveContext,
   saveDashboard,
   saveDeadlines,
@@ -508,6 +515,50 @@ export async function getSyncQueueStatus(): Promise<{
         recentItems: []
       },
       isProcessing: false
+    };
+  }
+}
+
+export async function getCanvasStatus(): Promise<CanvasStatus> {
+  try {
+    const status = await jsonOrThrow<CanvasStatus>("/api/canvas/status");
+    saveCanvasStatus(status);
+
+    const currentSettings = loadCanvasSettings();
+    if (!currentSettings.baseUrl) {
+      saveCanvasSettings({ ...currentSettings, baseUrl: status.baseUrl });
+    }
+
+    return status;
+  } catch {
+    return loadCanvasStatus();
+  }
+}
+
+export async function triggerCanvasSync(settings?: CanvasSettings): Promise<CanvasSyncResult> {
+  const payload = settings
+    ? {
+        token: settings.token?.trim() ? settings.token : undefined,
+        baseUrl: settings.baseUrl?.trim() ? settings.baseUrl : undefined
+      }
+    : {};
+
+  try {
+    const result = await jsonOrThrow<CanvasSyncResult>("/api/canvas/sync", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    await getCanvasStatus();
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Canvas sync failed";
+    return {
+      success: false,
+      coursesCount: 0,
+      assignmentsCount: 0,
+      modulesCount: 0,
+      announcementsCount: 0,
+      error: message
     };
   }
 }

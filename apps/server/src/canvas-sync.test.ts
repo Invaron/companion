@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { RuntimeStore } from "./store.js";
 import { CanvasClient } from "./canvas-client.js";
 import { CanvasSyncService } from "./canvas-sync.js";
@@ -9,6 +9,10 @@ describe("Canvas Integration", () => {
   
   beforeEach(() => {
     store = new RuntimeStore(":memory:");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe("CanvasClient", () => {
@@ -50,6 +54,42 @@ describe("Canvas Integration", () => {
       expect(result.assignmentsCount).toBe(0);
       expect(result.modulesCount).toBe(0);
       expect(result.announcementsCount).toBe(0);
+    });
+
+    it("should use override token and baseUrl when provided", async () => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input.toString();
+        const json = async (): Promise<unknown> => {
+          if (url.includes("/courses")) {
+            return [
+              { id: 42, name: "Manual Course", course_code: "MC1", workflow_state: "available" }
+            ];
+          }
+          return [];
+        };
+
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          json,
+          headers: init?.headers ?? {}
+        } as unknown as Response;
+      });
+
+      const service = new CanvasSyncService(store);
+      const result = await service.sync({
+        baseUrl: "https://manual.canvas.test",
+        token: "token-123"
+      });
+
+      expect(result.success).toBe(true);
+      expect(fetchSpy).toHaveBeenCalled();
+      const [firstUrl, firstInit] = fetchSpy.mock.calls[0] ?? [];
+      const urlString = typeof firstUrl === "string" ? firstUrl : firstUrl?.toString() ?? "";
+      expect(urlString.startsWith("https://manual.canvas.test")).toBe(true);
+      const headers = (firstInit?.headers as Record<string, string>) ?? {};
+      expect(headers.Authorization).toBe("Bearer token-123");
     });
   });
 
