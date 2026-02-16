@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { confirmDeadlineStatus, getDeadlines } from "../lib/api";
+import { hapticSuccess } from "../lib/haptics";
 import { Deadline } from "../types";
 import { loadDeadlines, saveDeadlines } from "../lib/storage";
 
@@ -87,6 +88,9 @@ export function DeadlineList(): JSX.Element {
     );
     setDeadlines(synced);
     saveDeadlines(synced);
+    if (completed) {
+      hapticSuccess();
+    }
     setSyncMessage(completed ? "Marked complete." : "Saved as still working.");
     setUpdatingId(null);
   };

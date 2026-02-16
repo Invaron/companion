@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getGoals, getHabits, toggleGoalCheckIn, toggleHabitCheckIn } from "../lib/api";
 import { loadGoals, loadHabits, saveGoals, saveHabits } from "../lib/storage";
 import { Goal, Habit, CheckInDay } from "../types";
+import { hapticSuccess } from "../lib/haptics";
 
 interface BusyState {
   type: "habit" | "goal";
@@ -67,6 +68,9 @@ export function HabitsGoalsView(): JSX.Element {
       const merged = habits.map((existing) => (existing.id === habit.id ? next : existing));
       setHabits(merged);
       saveHabits(merged);
+      if (next.todayCompleted && !habit.todayCompleted) {
+        hapticSuccess();
+      }
     } else {
       setHabitMessage("Could not update habit right now. Try again soon.");
     }
@@ -81,6 +85,9 @@ export function HabitsGoalsView(): JSX.Element {
       const merged = goals.map((existing) => (existing.id === goal.id ? next : existing));
       setGoals(merged);
       saveGoals(merged);
+      if (next.todayCompleted && !goal.todayCompleted) {
+        hapticSuccess();
+      }
     } else {
       setGoalMessage("Could not update goal check-in right now.");
     }

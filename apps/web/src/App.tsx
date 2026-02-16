@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AgentStatusList } from "./components/AgentStatusList";
 import { CalendarImportView } from "./components/CalendarImportView";
 import { ContextControls } from "./components/ContextControls";
@@ -21,6 +21,7 @@ import { enablePushNotifications, isPushEnabled, supportsPushNotifications } fro
 import { setupSyncListeners } from "./lib/sync";
 import { applyTheme } from "./lib/theme";
 import { loadOnboardingProfile, loadThemePreference, saveOnboardingProfile, saveThemePreference } from "./lib/storage";
+import { hapticCriticalAlert } from "./lib/haptics";
 import { OnboardingProfile, ThemePreference } from "./types";
 
 type PushState = "checking" | "ready" | "enabled" | "unsupported" | "denied" | "error";
@@ -32,6 +33,7 @@ export default function App(): JSX.Element {
   const [profile, setProfile] = useState<OnboardingProfile | null>(loadOnboardingProfile());
   const [scheduleRevision, setScheduleRevision] = useState(0);
   const [themePreference, setThemePreference] = useState<ThemePreference>(() => loadThemePreference());
+  const seenCriticalNotifications = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     saveThemePreference(themePreference);
@@ -85,6 +87,25 @@ export default function App(): JSX.Element {
       disposed = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!data?.notifications) return;
+
+    let triggered = false;
+    const seen = seenCriticalNotifications.current;
+
+    for (const notification of data.notifications) {
+      if (notification.priority !== "critical") continue;
+      if (!seen.has(notification.id)) {
+        seen.add(notification.id);
+        triggered = true;
+      }
+    }
+
+    if (triggered) {
+      hapticCriticalAlert();
+    }
+  }, [data?.notifications]);
 
   const handleEnablePush = async (): Promise<void> => {
     setPushState("checking");

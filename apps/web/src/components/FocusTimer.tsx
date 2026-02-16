@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { updateContext } from "../lib/api";
+import { hapticNotice, hapticSuccess } from "../lib/haptics";
 import { UserContext } from "../types";
 
 interface FocusTimerProps {
@@ -29,6 +30,7 @@ export function FocusTimer({ onUpdated }: FocusTimerProps): JSX.Element {
     setRemainingSeconds(durationSeconds);
     setTimerState("work");
     setSessionStartTime(Date.now());
+    hapticNotice();
     
     // Update context to focus mode
     try {
@@ -63,11 +65,13 @@ export function FocusTimer({ onUpdated }: FocusTimerProps): JSX.Element {
 
   const resumeTimer = (): void => {
     if (remainingSeconds > 0) {
+      hapticNotice();
       setTimerState(timerState === "paused" ? "work" : timerState);
     }
   };
 
   const stopTimer = async (): Promise<void> => {
+    hapticNotice();
     setTimerState("idle");
     setRemainingSeconds(0);
     setSessionStartTime(null);
@@ -90,8 +94,10 @@ export function FocusTimer({ onUpdated }: FocusTimerProps): JSX.Element {
           if (prev <= 1) {
             // Timer completed
             if (timerState === "work") {
+              hapticSuccess();
               void startBreakSession();
             } else {
+              hapticSuccess();
               setTimerState("idle");
             }
             return 0;
