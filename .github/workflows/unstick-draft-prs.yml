@@ -398,6 +398,7 @@ jobs:
                     }
                   }`;
                   await github.graphql(mutation, { id: pr.node_id });
+                  pr.draft = false; // Update local state so Steps 6/7 see the PR as ready
                   core.info(`  ✓ Marked PR #${pr.number} as ready for review`);
                 } catch (err) {
                   core.warning(`  Could not mark ready: ${err.message}`);
