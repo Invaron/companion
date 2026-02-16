@@ -363,6 +363,15 @@ export class RuntimeStore {
 
       CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status);
       CREATE INDEX IF NOT EXISTS idx_sync_queue_createdAt ON sync_queue(createdAt);
+
+      CREATE TABLE IF NOT EXISTS canvas_data (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        courses TEXT NOT NULL DEFAULT '[]',
+        assignments TEXT NOT NULL DEFAULT '[]',
+        modules TEXT NOT NULL DEFAULT '[]',
+        announcements TEXT NOT NULL DEFAULT '[]',
+        lastSyncedAt TEXT
+      );
     `);
 
     const journalColumns = this.db.prepare("PRAGMA table_info(journal_entries)").all() as Array<{ name: string }>;
@@ -3548,6 +3557,55 @@ export class RuntimeStore {
   deleteSyncQueueItem(id: string): boolean {
     const result = this.db.prepare("DELETE FROM sync_queue WHERE id = ?").run(id);
     return result.changes > 0;
+  }
+
+  /**
+   * Set Canvas data
+   */
+  setCanvasData(data: import("./types.js").CanvasData): void {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO canvas_data (
+        id, courses, assignments, modules, announcements, lastSyncedAt
+      ) VALUES (1, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      JSON.stringify(data.courses),
+      JSON.stringify(data.assignments),
+      JSON.stringify(data.modules),
+      JSON.stringify(data.announcements),
+      data.lastSyncedAt
+    );
+  }
+
+  /**
+   * Get Canvas data
+   */
+  getCanvasData(): import("./types.js").CanvasData | null {
+    const stmt = this.db.prepare(`
+      SELECT courses, assignments, modules, announcements, lastSyncedAt
+      FROM canvas_data WHERE id = 1
+    `);
+
+    const row = stmt.get() as {
+      courses: string;
+      assignments: string;
+      modules: string;
+      announcements: string;
+      lastSyncedAt: string | null;
+    } | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      courses: JSON.parse(row.courses),
+      assignments: JSON.parse(row.assignments),
+      modules: JSON.parse(row.modules),
+      announcements: JSON.parse(row.announcements),
+      lastSyncedAt: row.lastSyncedAt
+    };
   }
 }
 
