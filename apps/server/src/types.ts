@@ -521,3 +521,19 @@ export interface YouTubeData {
   }>;
   lastSyncedAt: string | null;
 }
+
+export interface XData {
+  tweets: Array<{
+    id: string;
+    text: string;
+    authorId: string;
+    authorUsername: string;
+    authorName: string;
+    createdAt: string;
+    likeCount: number;
+    retweetCount: number;
+    replyCount: number;
+    conversationId: string;
+  }>;
+  lastSyncedAt: string | null;
+}

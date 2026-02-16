@@ -15,7 +15,12 @@ const schema = z.object({
   YOUTUBE_API_KEY: z.string().optional(),
   CANVAS_API_TOKEN: z.string().optional(),
   CANVAS_BASE_URL: z.string().default("https://stavanger.instructure.com"),
-  COURSE_GITHUB_PAT: z.string().optional()
+  COURSE_GITHUB_PAT: z.string().optional(),
+  X_API_KEY: z.string().optional(),
+  X_API_KEY_SECRET: z.string().optional(),
+  X_ACCESS_TOKEN: z.string().optional(),
+  X_ACCESS_TOKEN_SECRET: z.string().optional(),
+  X_BEARER_TOKEN: z.string().optional()
 });
 
 export const config = schema.parse(process.env);
