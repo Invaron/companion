@@ -194,16 +194,6 @@ export async function authenticateBiometric(
   }
 }
 
-/**
- * Remove biometric credential (disable biometric authentication).
- * Note: This only removes the local reference; the actual credential
- * remains in the authenticator until the user manually removes it.
- */
-export function disableBiometric(): void {
-  // Credential removal is handled by storage layer
-  // This is just a placeholder for future credential cleanup
-}
-
 // Helper functions
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {

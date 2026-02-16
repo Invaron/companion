@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { enrollBiometric, supportsBiometric, disableBiometric } from "../lib/biometric";
+import { enrollBiometric, supportsBiometric } from "../lib/biometric";
 import { loadBiometricCredential, saveBiometricCredential, removeBiometricCredential, loadOnboardingProfile } from "../lib/storage";
 
 export function BiometricSettings(): JSX.Element {
@@ -50,7 +50,6 @@ export function BiometricSettings(): JSX.Element {
   };
 
   const handleDisable = (): void => {
-    disableBiometric();
     removeBiometricCredential();
     setCredential(null);
     setSuccessMessage("Biometric authentication disabled.");
