@@ -324,7 +324,7 @@ Features are built in priority order. The orchestrator reads this section to dec
 | ✅ done | `x-feed-sync-api` | backend-engineer | Add X/Twitter API v2 client: fetch home timeline and recent tweets from followed accounts using OAuth 1.0a. Config: `X_API_KEY`, `X_API_KEY_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`, `X_BEARER_TOKEN` env vars. Sync every 4 hours. |
 | ⬜ todo | `social-media-summarizer` | backend-engineer | Build Gemini-powered summarization pipeline: takes raw YouTube/X data, generates AI newsletter-style digest grouped by topic (AI news, tech, entertainment). Configurable summary length and focus areas. |
 | ⬜ todo | `social-media-digest-ui` | frontend-engineer | Build Social Media Summary view: card-based digest with YouTube video thumbnails and X thread summaries. Filter by platform, refresh on demand. Tab in bottom nav. |
-| ⬜ todo | `social-media-chat-integration` | backend-engineer | Integrate social media context into Gemini chat: "What did I miss on X?" or "Any new AI videos?" queries pull from cached social media data and generate contextual summaries. |
+| ✅ done | `social-media-chat-integration` | backend-engineer | Integrate social media context into Gemini chat: "What did I miss on X?" or "Any new AI videos?" queries pull from cached social media data and generate contextual summaries. |
 | | | | |
 | | **— Phase 4: Production Deployment & Gmail —** | | |
 | ⬜ todo | `server-deployment` | backend-engineer | Deploy `apps/server` to a production host (Railway, Fly.io, or VPS). Add health check, environment variable config, and deployment workflow. Update frontend API base URL to point to production server. |
