@@ -2402,3 +2402,74 @@ button:disabled {
   font-size: 1.5rem;
   color: var(--text);
 }
+
+/* Onboarding Flow */
+.onboarding-panel {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.onboarding-info {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.onboarding-info p {
+  margin: 8px 0;
+  color: var(--text);
+}
+
+.onboarding-info strong {
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.onboarding-info ul {
+  margin: 8px 0;
+  padding-left: 24px;
+  color: var(--text);
+}
+
+.onboarding-info li {
+  margin: 4px 0;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.button-group button {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button-secondary {
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
+  color: var(--muted);
+}
+
+.button-secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: var(--surface);
+}
+
+label small.muted {
+  display: block;
+  font-size: 0.85rem;
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: normal;
+}
