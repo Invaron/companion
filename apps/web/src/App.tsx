@@ -17,6 +17,7 @@ import { WeeklyReviewView } from "./components/WeeklyReviewView";
 import { AppearanceSettings } from "./components/AppearanceSettings";
 import { HabitsGoalsView } from "./components/HabitsGoalsView";
 import { FloatingQuickCapture } from "./components/FloatingQuickCapture";
+import { CanvasSettings } from "./components/CanvasSettings";
 import { SyncStatusBadge } from "./components/SyncStatusBadge";
 import { useDashboard } from "./hooks/useDashboard";
 import { enablePushNotifications, isPushEnabled, supportsPushNotifications } from "./lib/push";
@@ -190,6 +191,7 @@ export default function App(): JSX.Element {
             <NotificationFeed notifications={data.notifications} />
           </div>
           <NotificationHistoryView />
+          <CanvasSettings />
           <ContextControls onUpdated={refresh} />
           <NotificationSettings />
           <AppearanceSettings preference={themePreference} onChange={handleThemeChange} />
