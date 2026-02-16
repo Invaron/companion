@@ -21,7 +21,7 @@ on:
         options: ['true', 'false']
 
   schedule:
-    - cron: '0 */2 * * *'  # Every 2 hours (fallback; primary trigger is dispatch from unstick workflow)
+    - cron: '*/30 * * * *'  # Every 30 minutes (primary trigger for reassignment after rate-limit cooldowns)
 
   issues:
     types: [closed]
