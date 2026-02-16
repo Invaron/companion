@@ -1869,6 +1869,7 @@ button:disabled {
   position: relative;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  max-height: 600px;
 }
 
 .pull-to-refresh-indicator {

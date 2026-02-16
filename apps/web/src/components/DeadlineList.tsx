@@ -18,7 +18,7 @@ export function DeadlineList(): JSX.Element {
     setTimeout(() => setSyncMessage(""), 2000);
   };
 
-  const { containerRef, isPulling, pullDistance, isRefreshing } = usePullToRefresh({
+  const { containerRef, isPulling, pullDistance, isRefreshing } = usePullToRefresh<HTMLDivElement>({
     onRefresh: handleRefresh,
     threshold: 80
   });
@@ -125,9 +125,8 @@ export function DeadlineList(): JSX.Element {
       {syncMessage && <p className="deadline-sync-status">{syncMessage}</p>}
 
       <div 
-        ref={containerRef as React.RefObject<HTMLDivElement>}
+        ref={containerRef}
         className="pull-to-refresh-container"
-        style={{ position: 'relative', maxHeight: '600px', overflowY: 'auto' }}
       >
         {(isPulling || isRefreshing) && (
           <PullToRefreshIndicator

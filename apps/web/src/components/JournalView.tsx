@@ -51,7 +51,7 @@ export function JournalView(): JSX.Element {
     }
   };
 
-  const { containerRef, isPulling, pullDistance, isRefreshing } = usePullToRefresh({
+  const { containerRef, isPulling, pullDistance, isRefreshing } = usePullToRefresh<HTMLDivElement>({
     onRefresh: handleRefresh,
     threshold: 80
   });
@@ -439,9 +439,8 @@ export function JournalView(): JSX.Element {
       </div>
 
       <div 
-        ref={containerRef as React.RefObject<HTMLDivElement>}
+        ref={containerRef}
         className="pull-to-refresh-container"
-        style={{ position: 'relative', maxHeight: '600px', overflowY: 'auto' }}
       >
         {(isPulling || isRefreshing) && (
           <PullToRefreshIndicator

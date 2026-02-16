@@ -5,15 +5,16 @@ import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "./PullToRefreshIndicator";
 
 export function ScheduleView(): JSX.Element {
-  const [schedule] = useState<LectureEvent[]>(() => loadSchedule());
+  const [schedule, setSchedule] = useState<LectureEvent[]>(() => loadSchedule());
 
   const handleRefresh = async (): Promise<void> => {
     // Reload schedule from storage
-    // In a real implementation, this might fetch from an API
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate refresh delay
+    const refreshedSchedule = loadSchedule();
+    setSchedule(refreshedSchedule);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Smooth visual feedback
   };
 
-  const { containerRef, isPulling, pullDistance, isRefreshing } = usePullToRefresh({
+  const { containerRef, isPulling, pullDistance, isRefreshing } = usePullToRefresh<HTMLDivElement>({
     onRefresh: handleRefresh,
     threshold: 80
   });
@@ -75,9 +76,8 @@ export function ScheduleView(): JSX.Element {
       </header>
 
       <div 
-        ref={containerRef as React.RefObject<HTMLDivElement>}
+        ref={containerRef}
         className="pull-to-refresh-container"
-        style={{ position: 'relative', maxHeight: '600px', overflowY: 'auto' }}
       >
         {(isPulling || isRefreshing) && (
           <PullToRefreshIndicator

@@ -16,12 +16,12 @@ export interface PullToRefreshState {
  * Hook that implements pull-to-refresh gesture for touch devices.
  * Provides a familiar iPhone UX pattern for refreshing list views.
  */
-export function usePullToRefresh(
+export function usePullToRefresh<T extends HTMLElement = HTMLElement>(
   options: PullToRefreshOptions
-): PullToRefreshState & { containerRef: React.RefObject<HTMLElement> } {
+): PullToRefreshState & { containerRef: React.RefObject<T> } {
   const { onRefresh, threshold = 80, resistance = 2.5 } = options;
   
-  const containerRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<T>(null);
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
