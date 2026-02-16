@@ -145,9 +145,16 @@ jobs:
             }
 
             // Extract linked issue number from PR body
+            // Handles: "Fixes #74", "Fixes owner/repo#74", "Closes https://github.com/owner/repo/issues/74"
             function extractLinkedIssue(body) {
-              const match = body && body.match(/(?:Fixes|Closes|Resolves)\s+#(\d+)/i);
-              return match ? parseInt(match[1]) : null;
+              if (!body) return null;
+              // Try "Fixes owner/repo#N" or "Fixes #N"
+              const hashMatch = body.match(/(?:Fixes|Closes|Resolves)\s+(?:[\w.-]+\/[\w.-]+)?#(\d+)/i);
+              if (hashMatch) return parseInt(hashMatch[1]);
+              // Try full URL: github.com/owner/repo/issues/N
+              const urlMatch = body.match(/(?:Fixes|Closes|Resolves)\s+https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/(\d+)/i);
+              if (urlMatch) return parseInt(urlMatch[1]);
+              return null;
             }
 
             // Assign an agent to fix merge conflicts on a PR
