@@ -216,4 +216,87 @@ describe("chat service", () => {
     const contextWindow = result.assistantMessage.metadata?.contextWindow;
     expect(contextWindow).toContain("Social media: No recent data synced");
   });
+
+  it("includes Gmail context with unread count and actionable items", async () => {
+    const now = new Date("2026-02-16T09:00:00.000Z");
+
+    // Add Gmail messages
+    store.setGmailMessages(
+      [
+        {
+          id: "msg1",
+          from: "notifications@instructure.com",
+          subject: "Lab 3 has been graded",
+          snippet: "Your submission for Lab 3: gRPC has been graded. Score: 95/100",
+          receivedAt: "2026-02-16T08:30:00.000Z",
+          labels: ["INBOX", "UNREAD"],
+          isRead: false
+        },
+        {
+          id: "msg2",
+          from: "github@notifications.github.com",
+          subject: "PR merged: defnotai/server",
+          snippet: "Your pull request has been merged into main",
+          receivedAt: "2026-02-15T20:00:00.000Z",
+          labels: ["INBOX", "UNREAD"],
+          isRead: false
+        },
+        {
+          id: "msg3",
+          from: "professor@uis.no",
+          subject: "Reminder: Assignment 2 deadline approaching",
+          snippet: "Just a friendly reminder that Assignment 2 for DAT520 is due on Friday",
+          receivedAt: "2026-02-15T14:00:00.000Z",
+          labels: ["INBOX", "UNREAD"],
+          isRead: false
+        },
+        {
+          id: "msg4",
+          from: "friend@example.com",
+          subject: "Coffee tomorrow?",
+          snippet: "Hey, want to grab coffee tomorrow afternoon?",
+          receivedAt: "2026-02-14T12:00:00.000Z",
+          labels: ["INBOX"],
+          isRead: true
+        }
+      ],
+      "2026-02-16T08:00:00.000Z"
+    );
+
+    const result = await sendChatMessage(store, "What's in my inbox?", {
+      geminiClient: fakeGemini,
+      now,
+      useFunctionCalling: false
+    });
+
+    expect(generateChatResponse).toHaveBeenCalled();
+    const contextWindow = result.assistantMessage.metadata?.contextWindow;
+
+    // Check unread count
+    expect(contextWindow).toContain("Gmail Inbox");
+    expect(contextWindow).toContain("3 unread messages");
+
+    // Check important senders (Canvas, GitHub, UiS)
+    expect(contextWindow).toContain("Important senders");
+    expect(contextWindow).toContain("notifications@instructure.com");
+    expect(contextWindow).toContain("Lab 3 has been graded");
+
+    // Check actionable items (graded, deadline, reminder keywords)
+    expect(contextWindow).toContain("Actionable items");
+    expect(contextWindow).toContain("Assignment 2 deadline approaching");
+  });
+
+  it("shows fallback message when no Gmail messages are synced", async () => {
+    const now = new Date("2026-02-16T09:00:00.000Z");
+
+    const result = await sendChatMessage(store, "Check my emails", {
+      geminiClient: fakeGemini,
+      now,
+      useFunctionCalling: false
+    });
+
+    expect(generateChatResponse).toHaveBeenCalled();
+    const contextWindow = result.assistantMessage.metadata?.contextWindow;
+    expect(contextWindow).toContain("Gmail: No emails synced yet");
+  });
 });
