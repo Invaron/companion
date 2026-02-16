@@ -160,7 +160,7 @@ export class GitHubSyncService {
 
       // Look for headings that might indicate the lab/assignment
       if (line.startsWith("#")) {
-        const headingMatch = line.match(/#+\s*(Lab\s*\d+|Assignment\s*\d+|Exercise\s*\d+)/i);
+        const headingMatch = line.match(/#+\s*(Lab\s*\d+|Assignment\s*\d+|Exercise\s*\d+|.*Exam.*|Project\s*\d*)/i);
         if (headingMatch) {
           currentTask = headingMatch[1]!.trim();
         }

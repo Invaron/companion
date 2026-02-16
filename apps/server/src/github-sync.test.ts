@@ -100,6 +100,7 @@ Deadline: **May 15, 2026** - This is the final exam
 
       expect(deadlines).toHaveLength(1);
       expect(deadlines[0]!.priority).toBe("critical");
+      expect(deadlines[0]!.task).toBe("Final Exam");
     });
 
     it("should return empty array when no deadlines found", () => {
@@ -133,6 +134,8 @@ This course has no deadlines.
   describe("date parsing", () => {
     it("should parse dates with times", () => {
       const markdown = `
+# Lab 1
+
 Deadline: Jan 15, 2026 14:30
 `;
 
@@ -145,6 +148,8 @@ Deadline: Jan 15, 2026 14:30
 
     it("should default to 23:59 when no time specified", () => {
       const markdown = `
+# Lab 1
+
 Deadline: Jan 15, 2026
 `;
 
@@ -163,6 +168,8 @@ Deadline: Jan 15, 2026
       const dateStr = futureDate.toISOString().split("T")[0];
 
       const markdown = `
+# Assignment 1
+
 Deadline: ${dateStr}
 `;
 
@@ -179,6 +186,8 @@ Deadline: ${dateStr}
       const dateStr = futureDate.toISOString().split("T")[0];
 
       const markdown = `
+# Assignment 1
+
 Deadline: ${dateStr}
 `;
 

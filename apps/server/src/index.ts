@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { z } from "zod";
 import { BackgroundSyncService } from "./background-sync.js";
+import { ScheduledSyncService } from "./scheduled-sync.js";
 import { buildCalendarImportPreview, parseICS } from "./calendar-import.js";
 import { config } from "./config.js";
 import { generateDeadlineSuggestions } from "./deadline-suggestions.js";
@@ -15,10 +16,12 @@ const app = express();
 const store = new RuntimeStore();
 const runtime = new OrchestratorRuntime(store);
 const syncService = new BackgroundSyncService(store);
+const scheduledSync = new ScheduledSyncService(store);
 const digestService = new EmailDigestService(store);
 
 runtime.start();
 syncService.start();
+scheduledSync.start();
 digestService.start();
 
 app.use(cors());
