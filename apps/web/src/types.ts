@@ -305,3 +305,41 @@ export interface GeminiStatus {
   lastRequestAt: string | null;
   error?: string;
 }
+
+export interface YouTubeVideo {
+  id: string;
+  channelId: string;
+  channelTitle: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  thumbnailUrl: string;
+  duration: string;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+}
+
+export interface XTweet {
+  id: string;
+  text: string;
+  authorId: string;
+  authorUsername: string;
+  authorName: string;
+  createdAt: string;
+  likeCount: number;
+  retweetCount: number;
+  replyCount: number;
+  conversationId: string;
+}
+
+export interface SocialMediaData {
+  youtube: {
+    videos: YouTubeVideo[];
+    lastSyncedAt: string | null;
+  };
+  x: {
+    tweets: XTweet[];
+    lastSyncedAt: string | null;
+  };
+}

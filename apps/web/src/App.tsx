@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChatTab } from "./components/ChatTab";
 import { ScheduleTab } from "./components/ScheduleTab";
+import { SocialMediaView } from "./components/SocialMediaView";
 import { FocusTimer } from "./components/FocusTimer";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { JournalView } from "./components/JournalView";
@@ -181,6 +182,9 @@ export default function App(): JSX.Element {
             )}
             {activeTab === "schedule" && (
               <ScheduleTab scheduleKey={`schedule-${scheduleRevision}`} />
+            )}
+            {activeTab === "social" && (
+              <SocialMediaView />
             )}
             {activeTab === "journal" && (
               <div className="journal-tab-container">

@@ -1187,6 +1187,22 @@ app.post("/api/x/sync", async (_req, res) => {
   return res.json(result);
 });
 
+app.get("/api/social-media", (_req, res) => {
+  const youtubeData = store.getYouTubeData();
+  const xData = store.getXData();
+  
+  return res.json({
+    youtube: {
+      videos: youtubeData?.videos ?? [],
+      lastSyncedAt: youtubeData?.lastSyncedAt ?? null
+    },
+    x: {
+      tweets: xData?.tweets ?? [],
+      lastSyncedAt: xData?.lastSyncedAt ?? null
+    }
+  });
+});
+
 app.get("/api/gemini/status", (_req, res) => {
   const geminiClient = getGeminiClient();
   const isConfigured = geminiClient.isConfigured();
