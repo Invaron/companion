@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   unstick:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       AGENT_PAT: ${{ secrets.AGENT_PAT_COLLAB || secrets.AGENT_PAT }}
       AGENT_PAT_COLLAB: ${{ secrets.AGENT_PAT_COLLAB }}

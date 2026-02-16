@@ -32,7 +32,7 @@ permissions:
 
 jobs:
   orchestrate:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     # Only run on:
     # - manual dispatch
     # - schedule
