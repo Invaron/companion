@@ -12,11 +12,7 @@
  * - This provides access control, not data encryption (localStorage is still plaintext)
  */
 
-export interface BiometricCredential {
-  credentialId: string;
-  publicKey: string;
-  enrolledAt: string;
-}
+import type { BiometricCredential } from "../types";
 
 export type BiometricEnrollResult = 
   | { success: true; credential: BiometricCredential }

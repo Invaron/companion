@@ -5,8 +5,9 @@
  * authenticates with their enrolled biometric credential.
  */
 
-import { useEffect, useState } from "react";
-import { authenticateBiometric, type BiometricCredential } from "../lib/biometric";
+import { useCallback, useEffect, useState } from "react";
+import { authenticateBiometric } from "../lib/biometric";
+import type { BiometricCredential } from "../types";
 
 interface BiometricGateProps {
   credential: BiometricCredential;
@@ -20,12 +21,7 @@ export function BiometricGate({ credential, onAuthenticated, onSkip }: Biometric
   const [authState, setAuthState] = useState<AuthState>("ready");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // Auto-trigger authentication on mount
-  useEffect(() => {
-    void handleAuthenticate();
-  }, []);
-
-  const handleAuthenticate = async (): Promise<void> => {
+  const handleAuthenticate = useCallback(async (): Promise<void> => {
     setAuthState("authenticating");
     setErrorMessage("");
 
@@ -38,7 +34,12 @@ export function BiometricGate({ credential, onAuthenticated, onSkip }: Biometric
       setAuthState("error");
       setErrorMessage(result.error);
     }
-  };
+  }, [credential, onAuthenticated]);
+
+  // Auto-trigger authentication on mount
+  useEffect(() => {
+    void handleAuthenticate();
+  }, [handleAuthenticate]);
 
   return (
     <div className="biometric-gate">
