@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { AgentStatusList } from "./components/AgentStatusList";
+import { BiometricGate } from "./components/BiometricGate";
+import { BiometricSettings } from "./components/BiometricSettings";
 import { CalendarImportView } from "./components/CalendarImportView";
 import { ContextControls } from "./components/ContextControls";
 import { DeadlineList } from "./components/DeadlineList";
@@ -20,7 +22,7 @@ import { useDashboard } from "./hooks/useDashboard";
 import { enablePushNotifications, isPushEnabled, supportsPushNotifications } from "./lib/push";
 import { setupSyncListeners } from "./lib/sync";
 import { applyTheme } from "./lib/theme";
-import { loadOnboardingProfile, loadThemePreference, saveOnboardingProfile, saveThemePreference } from "./lib/storage";
+import { loadOnboardingProfile, loadThemePreference, saveOnboardingProfile, saveThemePreference, loadBiometricCredential } from "./lib/storage";
 import { OnboardingProfile, ThemePreference } from "./types";
 
 type PushState = "checking" | "ready" | "enabled" | "unsupported" | "denied" | "error";
@@ -32,6 +34,9 @@ export default function App(): JSX.Element {
   const [profile, setProfile] = useState<OnboardingProfile | null>(loadOnboardingProfile());
   const [scheduleRevision, setScheduleRevision] = useState(0);
   const [themePreference, setThemePreference] = useState<ThemePreference>(() => loadThemePreference());
+  const [biometricAuthenticated, setBiometricAuthenticated] = useState(false);
+
+  const biometricCredential = loadBiometricCredential();
 
   useEffect(() => {
     saveThemePreference(themePreference);
@@ -120,6 +125,19 @@ export default function App(): JSX.Element {
     );
   }
 
+  // Show biometric gate if credential exists and not yet authenticated
+  if (biometricCredential && !biometricAuthenticated) {
+    return (
+      <main className="app-shell">
+        <BiometricGate
+          credential={biometricCredential}
+          onAuthenticated={() => setBiometricAuthenticated(true)}
+          onSkip={() => setBiometricAuthenticated(true)}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <InstallPrompt />
@@ -167,6 +185,7 @@ export default function App(): JSX.Element {
           <NotificationHistoryView />
           <ContextControls onUpdated={refresh} />
           <NotificationSettings />
+          <BiometricSettings />
           <AppearanceSettings preference={themePreference} onChange={handleThemeChange} />
         </>
       )}

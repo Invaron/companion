@@ -205,3 +205,9 @@ export interface NotificationInteraction {
   actionType?: string;
   timeToInteractionMs?: number;
 }
+
+export interface BiometricCredential {
+  credentialId: string;
+  publicKey: string;
+  enrolledAt: string;
+}

@@ -1,4 +1,5 @@
 import {
+  BiometricCredential,
   DashboardSnapshot,
   Deadline,
   Goal,
@@ -24,7 +25,8 @@ const STORAGE_KEYS = {
   goals: "companion:goals",
   onboarding: "companion:onboarding",
   notificationPreferences: "companion:notification-preferences",
-  theme: "companion:theme"
+  theme: "companion:theme",
+  biometricCredential: "companion:biometric-credential"
 } as const;
 
 export interface JournalQueueItem {
@@ -513,4 +515,25 @@ export function removeSyncQueueItem(id: string): void {
 
 export function clearSyncQueue(): void {
   saveSyncQueue([]);
+}
+
+// Biometric credential management
+export function loadBiometricCredential(): BiometricCredential | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.biometricCredential);
+    if (raw) {
+      return JSON.parse(raw) as BiometricCredential;
+    }
+  } catch {
+    // corrupted
+  }
+  return null;
+}
+
+export function saveBiometricCredential(credential: BiometricCredential): void {
+  localStorage.setItem(STORAGE_KEYS.biometricCredential, JSON.stringify(credential));
+}
+
+export function removeBiometricCredential(): void {
+  localStorage.removeItem(STORAGE_KEYS.biometricCredential);
 }
