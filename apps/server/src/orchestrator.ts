@@ -5,6 +5,7 @@ import { buildContextAwareNudge } from "./nudge-engine.js";
 import { NotesAgent } from "./agents/notes-agent.js";
 import { RuntimeStore } from "./store.js";
 import { calculateOptimalNotificationTime } from "./smart-timing.js";
+import { processProactiveTriggers } from "./proactive-chat-triggers.js";
 import { AgentEvent } from "./types.js";
 
 export class OrchestratorRuntime {
@@ -12,6 +13,7 @@ export class OrchestratorRuntime {
   private readonly deadlineReminderIntervalMs = 60_000;
   private readonly deadlineReminderCooldownMinutes = 180;
   private readonly scheduledNotificationCheckIntervalMs = 30_000;
+  private readonly proactiveTriggerCheckIntervalMs = 60_000; // Check every minute
   private readonly agents: BaseAgent[] = [
     new NotesAgent(),
     new LecturePlanAgent(),
@@ -62,6 +64,13 @@ export class OrchestratorRuntime {
       this.processScheduledNotifications();
     }, this.scheduledNotificationCheckIntervalMs);
     this.timers.push(scheduledNotifTimer);
+
+    // Process proactive chat triggers
+    this.processProactiveChatTriggers();
+    const proactiveTriggerTimer = setInterval(() => {
+      this.processProactiveChatTriggers();
+    }, this.proactiveTriggerCheckIntervalMs);
+    this.timers.push(proactiveTriggerTimer);
   }
 
   stop(): void {
@@ -159,9 +168,26 @@ export class OrchestratorRuntime {
     for (const scheduled of dueNotifications) {
       // Push the notification immediately
       this.store.pushNotification(scheduled.notification);
-      
+
       // Remove from scheduled queue
       this.store.removeScheduledNotification(scheduled.id);
+    }
+  }
+
+  /**
+   * Check for and process proactive chat triggers
+   * (morning briefing, schedule gaps, approaching deadlines, etc.)
+   */
+  private processProactiveChatTriggers(): void {
+    try {
+      const triggersProcessed = processProactiveTriggers(this.store);
+
+      if (triggersProcessed > 0) {
+        // Optionally log or track proactive trigger activity
+      }
+    } catch (error) {
+      // Don't crash the orchestrator if proactive triggers fail
+      console.error("Error processing proactive chat triggers:", error);
     }
   }
 }
