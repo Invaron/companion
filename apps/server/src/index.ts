@@ -3,6 +3,7 @@ import express from "express";
 import { z } from "zod";
 import { BackgroundSyncService } from "./background-sync.js";
 import { buildCalendarImportPreview, parseICS } from "./calendar-import.js";
+import { CanvasSyncService } from "./canvas-sync.js";
 import { config } from "./config.js";
 import { generateDeadlineSuggestions } from "./deadline-suggestions.js";
 import { OrchestratorRuntime } from "./orchestrator.js";
@@ -16,10 +17,12 @@ const store = new RuntimeStore();
 const runtime = new OrchestratorRuntime(store);
 const syncService = new BackgroundSyncService(store);
 const digestService = new EmailDigestService(store);
+const canvasSync = new CanvasSyncService(store);
 
 runtime.start();
 syncService.start();
 digestService.start();
+canvasSync.start();
 
 app.use(cors());
 app.use(express.json());
@@ -1043,6 +1046,60 @@ app.delete("/api/sync/cleanup", (_req, res) => {
   return res.json({ deleted });
 });
 
+// Canvas LMS endpoints
+app.get("/api/canvas/status", (_req, res) => {
+  const status = store.getCanvasSyncStatus();
+  return res.json({ status });
+});
+
+app.post("/api/canvas/sync", async (_req, res) => {
+  try {
+    await canvasSync.runSync();
+    const status = store.getCanvasSyncStatus();
+    return res.json({ status, message: "Canvas sync completed" });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Canvas sync failed",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+app.get("/api/canvas/courses", (_req, res) => {
+  const courses = store.getCanvasCourses();
+  return res.json({ courses });
+});
+
+app.get("/api/canvas/assignments", (req, res) => {
+  const courseId = req.query.courseId ? parseInt(req.query.courseId as string) : undefined;
+  
+  const assignments = courseId
+    ? store.getCanvasAssignmentsByCourse(courseId)
+    : store.getCanvasAssignments();
+  
+  return res.json({ assignments });
+});
+
+app.get("/api/canvas/modules", (req, res) => {
+  const courseId = req.query.courseId ? parseInt(req.query.courseId as string) : undefined;
+  
+  const modules = courseId
+    ? store.getCanvasModulesByCourse(courseId)
+    : store.getCanvasModules();
+  
+  return res.json({ modules });
+});
+
+app.get("/api/canvas/announcements", (req, res) => {
+  const courseId = req.query.courseId ? parseInt(req.query.courseId as string) : undefined;
+  
+  const announcements = courseId
+    ? store.getCanvasAnnouncementsByCourse(courseId)
+    : store.getCanvasAnnouncements();
+  
+  return res.json({ announcements });
+});
+
 async function fetchCalendarIcs(url: string): Promise<string | null> {
   try {
     const response = await fetch(url);
@@ -1066,6 +1123,7 @@ const shutdown = (): void => {
   runtime.stop();
   syncService.stop();
   digestService.stop();
+  canvasSync.stop();
   server.close(() => {
     process.exit(0);
   });

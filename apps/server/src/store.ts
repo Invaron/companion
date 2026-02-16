@@ -41,7 +41,12 @@ import {
   LocationHistory,
   SyncQueueItem,
   SyncQueueStatus,
-  SyncOperationType
+  SyncOperationType,
+  CanvasCourse,
+  CanvasAssignment,
+  CanvasModule,
+  CanvasAnnouncement,
+  CanvasSyncStatus
 } from "./types.js";
 import { makeId, nowIso } from "./utils.js";
 
@@ -350,6 +355,69 @@ export class RuntimeStore {
 
       CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status);
       CREATE INDEX IF NOT EXISTS idx_sync_queue_createdAt ON sync_queue(createdAt);
+
+      CREATE TABLE IF NOT EXISTS canvas_courses (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        courseCode TEXT NOT NULL,
+        enrollmentTermId INTEGER,
+        startAt TEXT,
+        endAt TEXT,
+        workflowState TEXT NOT NULL,
+        syncedAt TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS canvas_assignments (
+        id INTEGER PRIMARY KEY,
+        courseId INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        dueAt TEXT,
+        pointsPossible REAL,
+        submissionTypes TEXT NOT NULL,
+        hasSubmittedSubmissions INTEGER NOT NULL,
+        workflowState TEXT NOT NULL,
+        htmlUrl TEXT NOT NULL,
+        syncedAt TEXT NOT NULL,
+        FOREIGN KEY (courseId) REFERENCES canvas_courses(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS canvas_modules (
+        id INTEGER PRIMARY KEY,
+        courseId INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        unlockAt TEXT,
+        requireSequentialProgress INTEGER NOT NULL,
+        state TEXT NOT NULL,
+        syncedAt TEXT NOT NULL,
+        FOREIGN KEY (courseId) REFERENCES canvas_courses(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS canvas_announcements (
+        id INTEGER PRIMARY KEY,
+        courseId INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        postedAt TEXT NOT NULL,
+        authorDisplayName TEXT,
+        syncedAt TEXT NOT NULL,
+        FOREIGN KEY (courseId) REFERENCES canvas_courses(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS canvas_sync_status (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        lastSyncAt TEXT,
+        nextSyncAt TEXT,
+        syncing INTEGER NOT NULL DEFAULT 0,
+        errors TEXT NOT NULL DEFAULT '[]'
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_canvas_assignments_courseId ON canvas_assignments(courseId);
+      CREATE INDEX IF NOT EXISTS idx_canvas_assignments_dueAt ON canvas_assignments(dueAt);
+      CREATE INDEX IF NOT EXISTS idx_canvas_modules_courseId ON canvas_modules(courseId);
+      CREATE INDEX IF NOT EXISTS idx_canvas_announcements_courseId ON canvas_announcements(courseId);
+      CREATE INDEX IF NOT EXISTS idx_canvas_announcements_postedAt ON canvas_announcements(postedAt);
     `);
 
     const journalColumns = this.db.prepare("PRAGMA table_info(journal_entries)").all() as Array<{ name: string }>;
@@ -3401,6 +3469,367 @@ export class RuntimeStore {
   deleteSyncQueueItem(id: string): boolean {
     const result = this.db.prepare("DELETE FROM sync_queue WHERE id = ?").run(id);
     return result.changes > 0;
+  }
+
+  // Canvas LMS methods
+
+  /**
+   * Store Canvas courses
+   */
+  storeCanvasCourses(courses: CanvasCourse[]): void {
+    const syncedAt = nowIso();
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO canvas_courses 
+      (id, name, courseCode, enrollmentTermId, startAt, endAt, workflowState, syncedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const course of courses) {
+      stmt.run(
+        course.id,
+        course.name,
+        course.courseCode,
+        course.enrollmentTermId ?? null,
+        course.startAt,
+        course.endAt,
+        course.workflowState,
+        syncedAt
+      );
+    }
+  }
+
+  /**
+   * Store Canvas assignments
+   */
+  storeCanvasAssignments(assignments: CanvasAssignment[]): void {
+    const syncedAt = nowIso();
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO canvas_assignments 
+      (id, courseId, name, description, dueAt, pointsPossible, submissionTypes, 
+       hasSubmittedSubmissions, workflowState, htmlUrl, syncedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const assignment of assignments) {
+      stmt.run(
+        assignment.id,
+        assignment.courseId,
+        assignment.name,
+        assignment.description,
+        assignment.dueAt,
+        assignment.pointsPossible,
+        JSON.stringify(assignment.submissionTypes),
+        assignment.hasSubmittedSubmissions ? 1 : 0,
+        assignment.workflowState,
+        assignment.htmlUrl,
+        syncedAt
+      );
+    }
+  }
+
+  /**
+   * Store Canvas modules
+   */
+  storeCanvasModules(modules: CanvasModule[]): void {
+    const syncedAt = nowIso();
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO canvas_modules 
+      (id, courseId, name, position, unlockAt, requireSequentialProgress, state, syncedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const module of modules) {
+      stmt.run(
+        module.id,
+        module.courseId,
+        module.name,
+        module.position,
+        module.unlockAt,
+        module.requireSequentialProgress ? 1 : 0,
+        module.state,
+        syncedAt
+      );
+    }
+  }
+
+  /**
+   * Store Canvas announcements
+   */
+  storeCanvasAnnouncements(announcements: CanvasAnnouncement[]): void {
+    const syncedAt = nowIso();
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO canvas_announcements 
+      (id, courseId, title, message, postedAt, authorDisplayName, syncedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const announcement of announcements) {
+      stmt.run(
+        announcement.id,
+        announcement.courseId,
+        announcement.title,
+        announcement.message,
+        announcement.postedAt,
+        announcement.author?.displayName ?? null,
+        syncedAt
+      );
+    }
+  }
+
+  /**
+   * Get all Canvas courses
+   */
+  getCanvasCourses(): CanvasCourse[] {
+    const rows = this.db.prepare("SELECT * FROM canvas_courses ORDER BY name").all() as Array<{
+      id: number;
+      name: string;
+      courseCode: string;
+      enrollmentTermId: number | null;
+      startAt: string | null;
+      endAt: string | null;
+      workflowState: string;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      courseCode: row.courseCode,
+      enrollmentTermId: row.enrollmentTermId ?? undefined,
+      startAt: row.startAt,
+      endAt: row.endAt,
+      workflowState: row.workflowState
+    }));
+  }
+
+  /**
+   * Get all Canvas assignments
+   */
+  getCanvasAssignments(): CanvasAssignment[] {
+    const rows = this.db.prepare("SELECT * FROM canvas_assignments ORDER BY dueAt").all() as Array<{
+      id: number;
+      courseId: number;
+      name: string;
+      description: string | null;
+      dueAt: string | null;
+      pointsPossible: number | null;
+      submissionTypes: string;
+      hasSubmittedSubmissions: number;
+      workflowState: string;
+      htmlUrl: string;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      courseId: row.courseId,
+      name: row.name,
+      description: row.description,
+      dueAt: row.dueAt,
+      pointsPossible: row.pointsPossible,
+      submissionTypes: JSON.parse(row.submissionTypes),
+      hasSubmittedSubmissions: row.hasSubmittedSubmissions === 1,
+      workflowState: row.workflowState,
+      htmlUrl: row.htmlUrl
+    }));
+  }
+
+  /**
+   * Get Canvas assignments for a specific course
+   */
+  getCanvasAssignmentsByCourse(courseId: number): CanvasAssignment[] {
+    const rows = this.db
+      .prepare("SELECT * FROM canvas_assignments WHERE courseId = ? ORDER BY dueAt")
+      .all(courseId) as Array<{
+      id: number;
+      courseId: number;
+      name: string;
+      description: string | null;
+      dueAt: string | null;
+      pointsPossible: number | null;
+      submissionTypes: string;
+      hasSubmittedSubmissions: number;
+      workflowState: string;
+      htmlUrl: string;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      courseId: row.courseId,
+      name: row.name,
+      description: row.description,
+      dueAt: row.dueAt,
+      pointsPossible: row.pointsPossible,
+      submissionTypes: JSON.parse(row.submissionTypes),
+      hasSubmittedSubmissions: row.hasSubmittedSubmissions === 1,
+      workflowState: row.workflowState,
+      htmlUrl: row.htmlUrl
+    }));
+  }
+
+  /**
+   * Get all Canvas modules
+   */
+  getCanvasModules(): CanvasModule[] {
+    const rows = this.db.prepare("SELECT * FROM canvas_modules ORDER BY courseId, position").all() as Array<{
+      id: number;
+      courseId: number;
+      name: string;
+      position: number;
+      unlockAt: string | null;
+      requireSequentialProgress: number;
+      state: string;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      courseId: row.courseId,
+      name: row.name,
+      position: row.position,
+      unlockAt: row.unlockAt,
+      requireSequentialProgress: row.requireSequentialProgress === 1,
+      state: row.state
+    }));
+  }
+
+  /**
+   * Get Canvas modules for a specific course
+   */
+  getCanvasModulesByCourse(courseId: number): CanvasModule[] {
+    const rows = this.db
+      .prepare("SELECT * FROM canvas_modules WHERE courseId = ? ORDER BY position")
+      .all(courseId) as Array<{
+      id: number;
+      courseId: number;
+      name: string;
+      position: number;
+      unlockAt: string | null;
+      requireSequentialProgress: number;
+      state: string;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      courseId: row.courseId,
+      name: row.name,
+      position: row.position,
+      unlockAt: row.unlockAt,
+      requireSequentialProgress: row.requireSequentialProgress === 1,
+      state: row.state
+    }));
+  }
+
+  /**
+   * Get all Canvas announcements
+   */
+  getCanvasAnnouncements(): CanvasAnnouncement[] {
+    const rows = this.db
+      .prepare("SELECT * FROM canvas_announcements ORDER BY postedAt DESC")
+      .all() as Array<{
+      id: number;
+      courseId: number;
+      title: string;
+      message: string;
+      postedAt: string;
+      authorDisplayName: string | null;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      courseId: row.courseId,
+      title: row.title,
+      message: row.message,
+      postedAt: row.postedAt,
+      author: row.authorDisplayName ? { displayName: row.authorDisplayName } : undefined
+    }));
+  }
+
+  /**
+   * Get Canvas announcements for a specific course
+   */
+  getCanvasAnnouncementsByCourse(courseId: number): CanvasAnnouncement[] {
+    const rows = this.db
+      .prepare("SELECT * FROM canvas_announcements WHERE courseId = ? ORDER BY postedAt DESC")
+      .all(courseId) as Array<{
+      id: number;
+      courseId: number;
+      title: string;
+      message: string;
+      postedAt: string;
+      authorDisplayName: string | null;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      courseId: row.courseId,
+      title: row.title,
+      message: row.message,
+      postedAt: row.postedAt,
+      author: row.authorDisplayName ? { displayName: row.authorDisplayName } : undefined
+    }));
+  }
+
+  /**
+   * Get Canvas sync status
+   */
+  getCanvasSyncStatus(): CanvasSyncStatus {
+    // Initialize if not exists
+    const exists = this.db.prepare("SELECT id FROM canvas_sync_status WHERE id = 1").get();
+    if (!exists) {
+      this.db
+        .prepare("INSERT INTO canvas_sync_status (id, syncing) VALUES (1, 0)")
+        .run();
+    }
+
+    const row = this.db.prepare("SELECT * FROM canvas_sync_status WHERE id = 1").get() as {
+      lastSyncAt: string | null;
+      nextSyncAt: string | null;
+      syncing: number;
+      errors: string;
+    };
+
+    const coursesCount = (this.db.prepare("SELECT COUNT(*) as count FROM canvas_courses").get() as { count: number }).count;
+    const assignmentsCount = (this.db.prepare("SELECT COUNT(*) as count FROM canvas_assignments").get() as { count: number }).count;
+    const modulesCount = (this.db.prepare("SELECT COUNT(*) as count FROM canvas_modules").get() as { count: number }).count;
+    const announcementsCount = (this.db.prepare("SELECT COUNT(*) as count FROM canvas_announcements").get() as { count: number }).count;
+
+    return {
+      lastSyncAt: row.lastSyncAt,
+      nextSyncAt: row.nextSyncAt,
+      syncing: row.syncing === 1,
+      coursesCount,
+      assignmentsCount,
+      modulesCount,
+      announcementsCount,
+      errors: JSON.parse(row.errors || "[]")
+    };
+  }
+
+  /**
+   * Update Canvas sync status
+   */
+  updateCanvasSyncStatus(update: Partial<Omit<CanvasSyncStatus, "coursesCount" | "assignmentsCount" | "modulesCount" | "announcementsCount">>): void {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    if (update.lastSyncAt !== undefined) {
+      fields.push("lastSyncAt = ?");
+      values.push(update.lastSyncAt);
+    }
+    if (update.nextSyncAt !== undefined) {
+      fields.push("nextSyncAt = ?");
+      values.push(update.nextSyncAt);
+    }
+    if (update.syncing !== undefined) {
+      fields.push("syncing = ?");
+      values.push(update.syncing ? 1 : 0);
+    }
+    if (update.errors !== undefined) {
+      fields.push("errors = ?");
+      values.push(JSON.stringify(update.errors));
+    }
+
+    if (fields.length > 0) {
+      this.db.prepare(`UPDATE canvas_sync_status SET ${fields.join(", ")} WHERE id = 1`).run(...values);
+    }
   }
 }
 

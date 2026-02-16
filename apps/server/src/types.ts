@@ -414,3 +414,59 @@ export interface SyncQueueStatus {
   failed: number;
   recentItems: SyncQueueItem[];
 }
+
+// Canvas LMS types
+export interface CanvasCourse {
+  id: number;
+  name: string;
+  courseCode: string;
+  enrollmentTermId?: number;
+  startAt: string | null;
+  endAt: string | null;
+  workflowState: string;
+}
+
+export interface CanvasAssignment {
+  id: number;
+  courseId: number;
+  name: string;
+  description: string | null;
+  dueAt: string | null;
+  pointsPossible: number | null;
+  submissionTypes: string[];
+  hasSubmittedSubmissions: boolean;
+  workflowState: string;
+  htmlUrl: string;
+}
+
+export interface CanvasModule {
+  id: number;
+  courseId: number;
+  name: string;
+  position: number;
+  unlockAt: string | null;
+  requireSequentialProgress: boolean;
+  state: string;
+}
+
+export interface CanvasAnnouncement {
+  id: number;
+  courseId: number;
+  title: string;
+  message: string;
+  postedAt: string;
+  author?: {
+    displayName: string;
+  };
+}
+
+export interface CanvasSyncStatus {
+  lastSyncAt: string | null;
+  nextSyncAt: string | null;
+  syncing: boolean;
+  coursesCount: number;
+  assignmentsCount: number;
+  modulesCount: number;
+  announcementsCount: number;
+  errors: string[];
+}
