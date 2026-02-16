@@ -62,6 +62,85 @@ function buildCanvasContextSummary(store: RuntimeStore, now: Date = new Date()):
   return parts.join("\n");
 }
 
+function buildGmailContextSummary(store: RuntimeStore, now: Date = new Date()): string {
+  const gmailData = store.getGmailData();
+
+  if (!gmailData.messages || gmailData.messages.length === 0) {
+    return "Gmail: No emails synced yet. Connect Gmail to see inbox summary.";
+  }
+
+  const messages = gmailData.messages;
+  const unreadMessages = messages.filter((msg) => !msg.isRead);
+  const unreadCount = unreadMessages.length;
+
+  // Identify important senders (Canvas, UiS, course-related)
+  const importantKeywords = [
+    "instructure.com",
+    "canvas",
+    "uis.no",
+    "stavanger",
+    "github",
+    "noreply",
+    "notification"
+  ];
+
+  const importantMessages = unreadMessages.filter((msg) => {
+    const fromLower = msg.from.toLowerCase();
+    const subjectLower = msg.subject.toLowerCase();
+    return importantKeywords.some((keyword) => fromLower.includes(keyword) || subjectLower.includes(keyword));
+  });
+
+  // Identify actionable items (Canvas notifications, deadline reminders)
+  const actionableKeywords = [
+    "graded",
+    "due",
+    "deadline",
+    "reminder",
+    "assignment",
+    "submission",
+    "posted",
+    "announced",
+    "updated"
+  ];
+
+  const actionableMessages = unreadMessages.filter((msg) => {
+    const subjectLower = msg.subject.toLowerCase();
+    const snippetLower = msg.snippet.toLowerCase();
+    return actionableKeywords.some((keyword) => subjectLower.includes(keyword) || snippetLower.includes(keyword));
+  });
+
+  const parts = [`**Gmail Inbox:** ${unreadCount} unread message${unreadCount !== 1 ? "s" : ""}`];
+
+  if (importantMessages.length > 0) {
+    parts.push("");
+    parts.push("**Important senders:**");
+    importantMessages.slice(0, 3).forEach((msg) => {
+      const receivedDate = new Date(msg.receivedAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+      });
+      const fromName = msg.from.includes("<") ? msg.from.split("<")[0].trim() : msg.from;
+      const subjectPreview = msg.subject.length > 60 ? msg.subject.slice(0, 60) + "..." : msg.subject;
+      parts.push(`- ${fromName}: "${subjectPreview}" (${receivedDate})`);
+    });
+  }
+
+  if (actionableMessages.length > 0) {
+    parts.push("");
+    parts.push("**Actionable items:**");
+    actionableMessages.slice(0, 3).forEach((msg) => {
+      const receivedDate = new Date(msg.receivedAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+      });
+      const snippetPreview = msg.snippet.length > 80 ? msg.snippet.slice(0, 80) + "..." : msg.snippet;
+      parts.push(`- ${msg.subject} (${receivedDate}): ${snippetPreview}`);
+    });
+  }
+
+  return parts.join("\n");
+}
+
 function buildSocialMediaContextSummary(store: RuntimeStore, now: Date = new Date()): string {
   const parts: string[] = [];
   
@@ -151,6 +230,7 @@ export function buildChatContext(store: RuntimeStore, now: Date = new Date(), hi
   const recentJournals = store.getJournalEntries(3);
   const userState: UserContext = store.getUserContext();
   const canvasContext = buildCanvasContextSummary(store, now);
+  const gmailContext = buildGmailContextSummary(store, now);
   const socialMediaContext = buildSocialMediaContextSummary(store, now);
 
   const contextWindow = buildContextWindow({
@@ -158,7 +238,7 @@ export function buildChatContext(store: RuntimeStore, now: Date = new Date(), hi
     upcomingDeadlines,
     recentJournals,
     userState,
-    customContext: `${canvasContext}\n\n${socialMediaContext}`
+    customContext: `${canvasContext}\n\n${gmailContext}\n\n${socialMediaContext}`
   });
 
   const history = store.getRecentChatMessages(historyLimit);
