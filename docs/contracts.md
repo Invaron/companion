@@ -375,3 +375,82 @@ Response:
   ]
 }
 ```
+
+---
+
+## Phase 4: Gmail Integration & LLM Tools
+
+### GET `/api/auth/gmail`
+
+Redirect to Google OAuth consent screen for `gmail.readonly` scope.
+
+Response: `302 Redirect` to Google OAuth URL.
+
+### GET `/api/auth/gmail/callback?code=...`
+
+Handle OAuth callback, exchange code for tokens, store refresh token.
+
+Response:
+
+```json
+{
+  "status": "connected",
+  "email": "user@gmail.com",
+  "connectedAt": "2026-02-14T15:00:00.000Z"
+}
+```
+
+### GET `/api/gmail/summary?hours=24`
+
+AI-summarized mailbox digest (subjects + snippets, not full bodies).
+
+Response:
+
+```json
+{
+  "generatedAt": "2026-02-14T15:00:00.000Z",
+  "period": { "from": "2026-02-13T15:00:00.000Z", "to": "2026-02-14T15:00:00.000Z" },
+  "totalMessages": 12,
+  "summary": "## Inbox Highlights\n- Canvas notification: Lab 3 graded (DAT520)\n- GitHub: PR merged in defnotai repo\n- UiS admin: Exam schedule published for spring 2026",
+  "messages": [
+    {
+      "id": "msg-gmail-001",
+      "from": "notifications@instructure.com",
+      "subject": "Lab 3 has been graded",
+      "snippet": "Your submission for Lab 3: gRPC has been graded. Score: 95/100",
+      "receivedAt": "2026-02-14T12:30:00.000Z",
+      "labels": ["INBOX", "CATEGORY_UPDATES"],
+      "isRead": true
+    }
+  ]
+}
+```
+
+### POST `/api/gmail/sync`
+
+Trigger manual Gmail sync.
+
+Response:
+
+```json
+{
+  "status": "syncing",
+  "messagesFound": 12,
+  "startedAt": "2026-02-14T15:00:00.000Z"
+}
+```
+
+### Sync status addition
+
+The `GET /api/sync/status` response adds a `gmail` field:
+
+```json
+{
+  "gmail": {
+    "lastSyncAt": "2026-02-14T14:30:00.000Z",
+    "status": "ok",
+    "messagesProcessed": 12,
+    "connected": true
+  }
+}
+```

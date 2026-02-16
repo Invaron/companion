@@ -99,6 +99,53 @@ The key difference from a generic chatbot: Companion has **context**. It knows y
 - **Integrations**: Canvas REST API (token auth) + TP EduCloud iCal feed (public, no auth) + Course GitHub orgs (PAT auth) + YouTube Data API v3 + X API v2 + Twitch API
 - **Notifications**: Web Push API (VAPID keys) for proactive nudges
 
+## Deployment Status
+
+> **IMPORTANT: Agents must understand the current hosting situation.**
+
+| Component | Status | Details |
+|-----------|--------|--------|
+| **Frontend** (`apps/web`) | ✅ Deployed | GitHub Pages — static files only, auto-deploys on push to `main` |
+| **Backend** (`apps/server`) | ⚠️ Local only | Runs on `localhost:8787` during development. **No production server yet.** |
+| **API calls** | ⚠️ Dev only | Vite proxies `/api/*` → `localhost:8787` in dev. On GitHub Pages, APIs return 404 (frontend falls back to localStorage). |
+| **Database** | ⚠️ Local only | SQLite file exists only on developer's machine |
+| **Cron jobs/sync** | ⚠️ Local only | Canvas, TP, GitHub sync only runs when server is running locally |
+| **Push notifications** | ⚠️ Local only | VAPID push requires the server to send |
+
+**What this means for agents:**
+- Backend code is real, tested, and works — it just doesn't have a production host yet
+- Frontend code should gracefully handle missing API (offline-first pattern with localStorage fallback)
+- A future Phase 4 will add proper server deployment (VPS, Railway, or Fly.io)
+- Keep building the server — it will deploy eventually. Don't skip features because "there's no server."
+
+## LLM Architecture: Gemini with Tools
+
+The Gemini integration supports two complementary approaches for giving the AI access to user data:
+
+### Approach 1: Context Injection (immediate)
+Before each Gemini call, build a context window that injects summaries into the system prompt:
+- Today's schedule (from TP sync)
+- Upcoming deadlines (next 7 days, from Canvas/GitHub sync)
+- Recent journal entries (last 3)
+- Current energy/stress state
+- Unread email summary (from Gmail sync)
+- Social media digest highlights
+
+This is simpler to implement and works well for conversational context.
+
+### Approach 2: Gemini Function Calling / Tools (future)
+Gemini supports [function calling](https://ai.google.dev/gemini-api/docs/function-calling) where the model can request data on demand:
+- `getScheduleForDate(date)` — fetch schedule for a specific day
+- `getUpcomingDeadlines(days)` — list deadlines within N days
+- `searchJournal(query)` — search journal entries
+- `getCanvasAssignment(courseId, assignmentId)` — get assignment details
+- `getEmailSummary(hours)` — summarize recent emails
+- `getSocialMediaDigest(platform, hours)` — get social media summary
+
+This is more powerful (the AI decides what data it needs) but requires more implementation effort. Consider implementing this as an enhancement after context injection works.
+
+**Decision**: Start with context injection (Approach 1). Add function calling tools later once the basic chat flow works.
+
 ## Data Sources
 
 ### Canvas LMS (`stavanger.instructure.com`)
@@ -173,6 +220,17 @@ The key difference from a generic chatbot: Companion has **context**. It knows y
   - `GET /helix/users/follows` — followed channels list
 - **Usage**: Check if followed streamers are live, send push notification
 - **Sync interval**: Every 15 minutes (lightweight polling)
+
+### Gmail API (OAuth 2.0)
+- **Auth**: OAuth 2.0 with `GMAIL_CLIENT_ID` and `GMAIL_CLIENT_SECRET` env vars. User authorizes via OAuth consent flow, refresh token stored securely.
+- **Scopes**: `gmail.readonly` (read-only access to inbox)
+- **Endpoints used**:
+  - `GET /gmail/v1/users/me/messages` — list messages
+  - `GET /gmail/v1/users/me/messages/:id` — get message details (subject, sender, snippet)
+  - `GET /gmail/v1/users/me/labels` — inbox labels for categorization
+- **Usage**: Fetch recent unread emails, generate summary for LLM context window ("You have 3 unread emails — 1 from Canvas about Lab 3 feedback, 2 newsletters"). The AI can reference email context in conversations.
+- **Sync interval**: Every 30 minutes (lightweight — only fetches metadata + snippets, not full bodies)
+- **Privacy**: Only email subjects and short snippets are stored/summarized. Full email bodies are never persisted.
 
 ## Agent Modules (Server-Side)
 
@@ -277,3 +335,10 @@ Features are built in priority order. The orchestrator reads this section to dec
 | ⬜ todo | `social-media-summarizer` | backend-engineer | Build Gemini-powered summarization pipeline: takes raw YouTube/X/Twitch data, generates AI newsletter-style digest grouped by topic (AI news, tech, entertainment). Configurable summary length and focus areas. |
 | ⬜ todo | `social-media-digest-ui` | frontend-engineer | Build Social Media Summary view: card-based digest with YouTube video thumbnails, X thread summaries, Twitch live alerts. Filter by platform, refresh on demand. Tab in bottom nav. |
 | ⬜ todo | `social-media-chat-integration` | backend-engineer | Integrate social media context into Gemini chat: "What did I miss on X?" or "Any new AI videos?" queries pull from cached social media data and generate contextual summaries. |
+| | | | |
+| | **— Phase 4: Production Deployment & Gmail —** | | |
+| ⬜ todo | `server-deployment` | backend-engineer | Deploy `apps/server` to a production host (Railway, Fly.io, or VPS). Add health check, environment variable config, and deployment workflow. Update frontend API base URL to point to production server. |
+| ⬜ todo | `gmail-oauth-flow` | backend-engineer | Implement Gmail OAuth 2.0 consent flow: redirect user to Google consent screen, handle callback, store refresh token securely. Config: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET` env vars. |
+| ⬜ todo | `gmail-sync-api` | backend-engineer | Add Gmail sync service: fetch recent unread emails (subjects, senders, snippets), generate summaries for LLM context. Sync every 30 min. Scope: `gmail.readonly`. |
+| ⬜ todo | `gmail-context-injection` | backend-engineer | Add email summary to Gemini context window: inject unread count, important sender highlights, and actionable items (Canvas notifications, deadline reminders from profs) into chat context. |
+| ⬜ todo | `gemini-function-calling` | backend-engineer | Add Gemini function calling (tools): define callable functions (`getSchedule`, `getDeadlines`, `searchJournal`, `getEmails`, `getSocialDigest`) that Gemini can invoke on demand instead of relying solely on context injection. |

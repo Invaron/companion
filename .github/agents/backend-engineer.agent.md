@@ -60,4 +60,8 @@ After completing a feature, update `docs/project-brief.md`:
 
 - Do not modify frontend code in `apps/web/`.
 - Do not install new dependencies without justification.
-- Do not build social media, food tracking, or video features (out of scope).
+- Do not build food tracking or video features (out of scope).
+
+## Deployment awareness
+
+The server (`apps/server`) currently only runs locally — there is **no production deployment yet**. GitHub Pages hosts the static frontend only. This is fine — keep building real server code. A future Phase 4 task will add server deployment (Railway/Fly.io/VPS). Don't skip features because "there's no production server."

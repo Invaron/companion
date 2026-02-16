@@ -42,6 +42,9 @@ The system operates in a continuous loop:
 
 ## Key technical details for Phase 2
 
+### Deployment Status
+> The frontend deploys to **GitHub Pages** (static only). The backend (`apps/server`) runs **locally only** — no production server yet. API calls return 404 on GitHub Pages; the frontend uses offline-first fallback. Phase 4 will add proper server hosting.
+
 ### Gemini Integration
 - Use `@google/generative-ai` npm package
 - Model: `gemini-2.0-flash` (free tier: 15 RPM, 1M tokens/day)
@@ -90,6 +93,13 @@ The system operates in a continuous loop:
 - Auth: TBD (client credentials from Twitch Developer Console)
 - Key endpoints: `/helix/streams/followed` (live status), `/helix/users/follows`
 - Poll every 15 minutes for live stream alerts
+
+### Gmail API
+- Auth: OAuth 2.0 — `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET` env vars + user-granted refresh token
+- Scope: `gmail.readonly` (read-only inbox access)
+- Key endpoints: `/gmail/v1/users/me/messages` (list), `/gmail/v1/users/me/messages/:id` (details)
+- Used for mailbox summary in LLM context (subjects + snippets, not full bodies)
+- Sync every 30 minutes
 
 ## Task decomposition rules
 - Prefer tasks that can be completed in one PR.

@@ -57,4 +57,12 @@ After completing a feature, update `docs/project-brief.md`:
 - Do not modify server code in `apps/server/`.
 - Do not change CI/CD workflows or orchestrator scripts.
 - Do not add heavy dependencies — this is a lightweight PWA.
-- Do not build social media, food tracking, or video features (out of scope).
+- Do not build food tracking or unrelated features (out of scope).
+
+## Deployment awareness
+
+The PWA deploys to **GitHub Pages** (static files only). The backend (`apps/server`) only runs locally — there is no production API server yet. This means:
+- All API calls (`/api/*`) will 404 on GitHub Pages
+- Frontend must gracefully handle missing API (offline-first, localStorage fallback)
+- Vite dev server proxies `/api/*` to `localhost:8787` — this only works in development
+- A future Phase 4 task will deploy the server. Until then, ensure the app degrades gracefully.
