@@ -307,7 +307,7 @@ Features are built in priority order. The orchestrator reads this section to dec
 | ✅ done | `streak-persistence-recovery` | backend-engineer | Add grace period logic for habit/goal streaks that allows recovery within 24hrs of missed check-in to prevent demotivation from one-time lapses. |
 | ✅ done | `share-to-journal` | frontend-engineer | Add Web Share Target API handler so users can share text, links, or images from other apps directly into a new journal entry on iPhone. |
 | ✅ done | `mobile-bottom-navigation` | frontend-engineer | Replace single-page layout with iOS-style bottom tab navigation (Journal, Schedule, Habits, Settings) for quick context switching on iPhone. |
-| ⬜ todo | `biometric-authentication` | frontend-engineer | Add Web Authentication API integration for Face ID/Touch ID login on iPhone to reduce friction on app reopens and protect sensitive journal data. |
+| ❌ skip | `biometric-authentication` | frontend-engineer | Skipped — single-user personal PWA, no login flow needed. |
 | ✅ done | `haptic-feedback-system` | frontend-engineer | Integrate Vibration API for tactile feedback on task completions, timer events, and critical notifications to make interactions feel native on iPhone. |
 | ✅ done | `sync-status-indicator` | frontend-engineer | Add persistent sync status badge showing online/offline state, pending queue count, and last sync timestamp so users know when data is safely persisted. |
 | ✅ done | `pull-to-refresh-gesture` | frontend-engineer | Add pull-to-refresh gesture to all list views (journal, schedule, deadlines) using touch event handlers for familiar iPhone UX pattern. |
