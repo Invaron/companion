@@ -16,6 +16,7 @@ import { TPSyncService } from "./tp-sync-service.js";
 import { CanvasSyncService } from "./canvas-sync.js";
 import { GitHubCourseSyncService } from "./github-course-sync.js";
 import { YouTubeSyncService } from "./youtube-sync.js";
+import { XSyncService } from "./x-sync.js";
 import { Notification, NotificationPreferencesPatch } from "./types.js";
 
 const app = express();
@@ -27,6 +28,7 @@ const tpSyncService = new TPSyncService(store);
 const canvasSyncService = new CanvasSyncService(store);
 const githubCourseSyncService = new GitHubCourseSyncService(store);
 const youtubeSyncService = new YouTubeSyncService(store);
+const xSyncService = new XSyncService(store);
 
 runtime.start();
 syncService.start();
@@ -35,6 +37,7 @@ tpSyncService.start();
 canvasSyncService.start();
 githubCourseSyncService.start();
 youtubeSyncService.start();
+xSyncService.start();
 
 app.use(cors());
 app.use(express.json());
@@ -1171,6 +1174,19 @@ app.post("/api/canvas/sync", async (req, res) => {
   return res.json(result);
 });
 
+app.get("/api/x/status", (_req, res) => {
+  const xData = store.getXData();
+  return res.json({
+    lastSyncedAt: xData?.lastSyncedAt ?? null,
+    tweetsCount: xData?.tweets.length ?? 0
+  });
+});
+
+app.post("/api/x/sync", async (_req, res) => {
+  const result = await xSyncService.sync();
+  return res.json(result);
+});
+
 app.get("/api/gemini/status", (_req, res) => {
   const geminiClient = getGeminiClient();
   const isConfigured = geminiClient.isConfigured();
@@ -1213,6 +1229,7 @@ const shutdown = (): void => {
   syncService.stop();
   digestService.stop();
   tpSyncService.stop();
+  xSyncService.stop();
   server.close(() => {
     process.exit(0);
   });

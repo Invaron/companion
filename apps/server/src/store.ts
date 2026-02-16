@@ -379,6 +379,12 @@ export class RuntimeStore {
         videos TEXT NOT NULL DEFAULT '[]',
         lastSyncedAt TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS x_data (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        tweets TEXT NOT NULL DEFAULT '[]',
+        lastSyncedAt TEXT
+      );
     `);
 
     const journalColumns = this.db.prepare("PRAGMA table_info(journal_entries)").all() as Array<{ name: string }>;
@@ -3665,6 +3671,46 @@ export class RuntimeStore {
     return {
       channels: JSON.parse(row.channels),
       videos: JSON.parse(row.videos),
+      lastSyncedAt: row.lastSyncedAt
+    };
+  }
+
+  /**
+   * Set X data
+   */
+  setXData(data: import("./types.js").XData): void {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO x_data (
+        id, tweets, lastSyncedAt
+      ) VALUES (1, ?, ?)
+    `);
+
+    stmt.run(
+      JSON.stringify(data.tweets),
+      data.lastSyncedAt
+    );
+  }
+
+  /**
+   * Get X data
+   */
+  getXData(): import("./types.js").XData | null {
+    const stmt = this.db.prepare(`
+      SELECT tweets, lastSyncedAt
+      FROM x_data WHERE id = 1
+    `);
+
+    const row = stmt.get() as {
+      tweets: string;
+      lastSyncedAt: string | null;
+    } | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      tweets: JSON.parse(row.tweets),
       lastSyncedAt: row.lastSyncedAt
     };
   }
