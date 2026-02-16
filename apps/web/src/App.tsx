@@ -14,7 +14,7 @@ import { useDashboard } from "./hooks/useDashboard";
 import { enablePushNotifications, isPushEnabled, supportsPushNotifications } from "./lib/push";
 import { setupSyncListeners } from "./lib/sync";
 import { applyTheme } from "./lib/theme";
-import { loadOnboardingProfile, loadThemePreference, saveOnboardingProfile, saveThemePreference } from "./lib/storage";
+import { loadOnboardingProfile, loadThemePreference, saveOnboardingProfile, saveThemePreference, loadCanvasSettings, saveCanvasSettings } from "./lib/storage";
 import { hapticCriticalAlert } from "./lib/haptics";
 import { OnboardingProfile, ThemePreference } from "./types";
 
@@ -111,6 +111,16 @@ export default function App(): JSX.Element {
 
   const handleOnboardingComplete = (nextProfile: OnboardingProfile): void => {
     saveOnboardingProfile(nextProfile);
+    
+    // If Canvas token was provided during onboarding, save it to Canvas settings
+    if (nextProfile.canvasToken) {
+      const canvasSettings = loadCanvasSettings();
+      saveCanvasSettings({
+        ...canvasSettings,
+        token: nextProfile.canvasToken
+      });
+    }
+    
     setProfile(nextProfile);
   };
 
