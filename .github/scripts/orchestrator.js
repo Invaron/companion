@@ -230,7 +230,7 @@ async function assignCopilotToIssue(issueNumber) {
 
 // ── Issue creation ──────────────────────────────────────────────────
 
-async function createAndAssignIssue(title, body, agent) {
+async function createAndAssignIssue(title, body, agent, shouldAssign = true) {
   console.log(`\n  Creating: "${title}"`);
   console.log(`   Agent profile: ${agent}`);
 
@@ -249,6 +249,11 @@ async function createAndAssignIssue(title, body, agent) {
   } catch (e) {
     console.error(`   Failed to create issue: ${e.message}`);
     return false;
+  }
+
+  if (!shouldAssign) {
+    console.log('   Skipping assignment (slot full or not first issue)');
+    return true;
   }
 
   if (!CAN_ASSIGN_AGENTS) {
@@ -329,7 +334,8 @@ async function main() {
 
   // Check if an agent slot is available before creating + assigning
   const activeAgents = await countActiveAgents();
-  if (activeAgents >= 1) {
+  const slotAvailable = activeAgents < 1;
+  if (!slotAvailable) {
     console.log(`\n⏸  Agent slot full (${activeAgents} active) — creating issues WITHOUT assignment`);
   }
 
@@ -342,7 +348,7 @@ async function main() {
 
     let created = 0;
     for (const issue of batch) {
-      const ok = await createAndAssignIssue(issue.title, issue.body, issue.agent);
+      const ok = await createAndAssignIssue(issue.title, issue.body, issue.agent, slotAvailable && created === 0);
       if (ok) created++;
       await new Promise(r => setTimeout(r, 1000));
     }

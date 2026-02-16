@@ -53,6 +53,8 @@ jobs:
             let needsAssignment = false;
             // Track whether roadmap scanner should run (after merge completes a feature)
             let needsRoadmapScan = false;
+            // Count how many agents we've already assigned this run (max 1)
+            let assignedThisRun = 0;
 
             // Copilot-only: all known Copilot agent bot logins
             const AGENT_BOTS = new Set([
@@ -227,6 +229,7 @@ jobs:
                       if (logins.includes(provider.name) || logins.includes(provider.botUser)) {
                         core.info(`  Reassigned issue #${issueNumber} to ${provider.name}`);
                         reassigned = true;
+                        assignedThisRun++;
                         await github.rest.issues.createComment({
                           owner, repo,
                           issue_number: issueNumber,
@@ -386,6 +389,12 @@ jobs:
 
             // Find and assign the next unassigned agent-task issue
             async function assignNextUnassignedIssue() {
+              // Never assign more than 1 agent per run
+              if (assignedThisRun >= 1) {
+                core.info('  ⏸ Already assigned an agent this run — skipping');
+                return false;
+              }
+
               // Check rate limits (skip on manual dispatch)
               if (context.eventName !== 'workflow_dispatch') {
                 if (await isRateLimited()) {
@@ -421,7 +430,9 @@ jobs:
 
               const next = unassigned[0];
               core.info(`  Next issue: #${next.number} — ${next.title}`);
-              return await assignCopilotToIssue(next.number);
+              const ok = await assignCopilotToIssue(next.number);
+              if (ok) assignedThisRun++;
+              return ok;
             }
 
             // ─── Main logic ───
