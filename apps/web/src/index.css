@@ -80,6 +80,8 @@ body {
   max-width: 980px;
   margin: 0 auto;
   padding: 20px;
+  padding-bottom: max(100px, calc(100px + env(safe-area-inset-bottom)));
+  min-height: 100vh;
 }
 
 .hero {
@@ -1769,4 +1771,95 @@ button:disabled {
 .quick-capture-actions button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Bottom Tab Navigation */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: var(--card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-soft);
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  z-index: 100;
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.1);
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px 16px;
+  transition: color 0.2s ease, transform 0.1s ease;
+  min-width: 60px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab-item:active {
+  transform: scale(0.95);
+}
+
+.tab-item-active {
+  color: var(--accent);
+}
+
+.tab-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.tab-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tab-content {
+  padding-bottom: max(80px, calc(80px + env(safe-area-inset-bottom)));
+}
+
+/* Settings container */
+.settings-container {
+  display: grid;
+  gap: 20px;
+}
+
+.settings-container h2 {
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+}
+
+/* Schedule tab container */
+.schedule-tab-container {
+  display: grid;
+  gap: 20px;
+}
+
+.schedule-tab-container h2 {
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+}
+
+.schedule-grid {
+  display: grid;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .schedule-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }

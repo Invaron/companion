@@ -1,0 +1,32 @@
+export type TabId = "journal" | "schedule" | "habits" | "settings";
+
+interface TabBarProps {
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+}
+
+export function TabBar({ activeTab, onTabChange }: TabBarProps): JSX.Element {
+  const tabs: Array<{ id: TabId; label: string; icon: string }> = [
+    { id: "journal", label: "Journal", icon: "📝" },
+    { id: "schedule", label: "Schedule", icon: "📅" },
+    { id: "habits", label: "Habits", icon: "✓" },
+    { id: "settings", label: "Settings", icon: "⚙️" }
+  ];
+
+  return (
+    <nav className="tab-bar">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          className={`tab-item ${activeTab === tab.id ? "tab-item-active" : ""}`}
+          onClick={() => onTabChange(tab.id)}
+          aria-current={activeTab === tab.id ? "page" : undefined}
+        >
+          <span className="tab-icon">{tab.icon}</span>
+          <span className="tab-label">{tab.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
