@@ -25,7 +25,7 @@ Keep work moving asynchronously by assigning small, verifiable tasks to agents a
 ### Token budget awareness
 Each agent session has a **per-task token limit** (separate from the monthly quota). To avoid hitting it:
 - **Keep tasks small.** If an issue feels like it needs 5+ files changed, ask for it to be split.
-- **Don't start MCP servers you don't need.** Playwright and GitHub MCP servers burn tokens just initializing. Only use them if the task requires browser testing or GitHub API calls.
+- **⛔ NEVER start MCP servers.** Do NOT start Playwright or GitHub MCP servers under ANY circumstances. They are not needed for ANY task. Starting them wastes your entire token budget and causes 100% session failure.
 - **Don't read entire directories.** Read only the files relevant to your task.
 - **Commit early.** If you've made good progress but feel the task is getting large, commit what you have and push — a partial PR is better than a crashed session.
 - **Skip exploratory browsing.** Don't explore the codebase "just to understand" — read your agent profile and the project brief instead.
