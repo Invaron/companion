@@ -704,6 +704,82 @@ button:disabled {
   background: var(--surface-raised);
 }
 
+.swipeable-list-item {
+  list-style: none;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.swipeable-actions-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  pointer-events: none;
+}
+
+.swipeable-action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  padding: 0 14px;
+}
+
+.swipeable-action-visible {
+  opacity: 1;
+}
+
+.swipeable-action-right {
+  justify-content: flex-start;
+  background: var(--ok);
+}
+
+.swipeable-action-left {
+  justify-content: flex-end;
+  background: var(--danger);
+}
+
+.swipeable-content {
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+  transition: transform 0.15s ease;
+  will-change: transform;
+}
+
+.swipe-undo-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: max(92px, calc(92px + env(safe-area-inset-bottom)));
+  z-index: 220;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+}
+
+.swipe-undo-toast button {
+  border: 1px solid var(--accent-border);
+  background: var(--accent-surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 /* Schedule Styles */
 .schedule-panel {
   margin-bottom: 12px;

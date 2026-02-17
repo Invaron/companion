@@ -1219,6 +1219,12 @@ export class RuntimeStore {
     };
   }
 
+  deleteJournalEntry(entryId: string): boolean {
+    this.db.prepare("DELETE FROM journal_entry_tags WHERE entryId = ?").run(entryId);
+    const result = this.db.prepare("DELETE FROM journal_entries WHERE id = ?").run(entryId);
+    return result.changes > 0;
+  }
+
   getWeeklySummary(referenceDate: string = nowIso()): WeeklySummary {
     const windowEnd = new Date(referenceDate);
     const windowStart = new Date(windowEnd);

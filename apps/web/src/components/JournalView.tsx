@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import { submitJournalEntry, syncQueuedJournalEntries, searchJournalEntries } from "../lib/api";
+import { deleteJournalEntry, searchJournalEntries, submitJournalEntry, syncQueuedJournalEntries } from "../lib/api";
 import {
   addJournalEntry,
   enqueueJournalEntry,
+  loadArchivedJournalIds,
   loadJournalEntries,
-  loadJournalQueue
+  loadJournalQueue,
+  saveArchivedJournalIds
 } from "../lib/storage";
 import { JournalEntry, JournalPhoto } from "../types";
 import { TagInput } from "./TagInput";
 import { useSharedContent } from "../hooks/useSharedContent";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "./PullToRefreshIndicator";
+import { SwipeableListItem } from "./SwipeableListItem";
+import { hapticNotice, hapticSuccess } from "../lib/haptics";
+
+interface UndoToast {
+  message: string;
+  onUndo: () => void;
+}
 
 export function JournalView(): JSX.Element {
   const normalizeEntry = (entry: JournalEntry): JournalEntry => ({
@@ -35,8 +44,12 @@ export function JournalView(): JSX.Element {
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [archivedIds, setArchivedIds] = useState<Set<string>>(() => new Set(loadArchivedJournalIds()));
+  const [undoToast, setUndoToast] = useState<UndoToast | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const undoTimerRef = useRef<number | null>(null);
+  const pendingDeleteRef = useRef<Map<string, number>>(new Map());
 
   const handleRefresh = async (): Promise<void> => {
     const synced = await syncQueuedJournalEntries(loadJournalQueue());
@@ -91,6 +104,19 @@ export function JournalView(): JSX.Element {
   useEffect(() => {
     applyFilters(entries);
   }, [searchQuery, startDate, endDate, filterTags, entries]);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) {
+        window.clearTimeout(undoTimerRef.current);
+      }
+
+      pendingDeleteRef.current.forEach((timer) => {
+        window.clearTimeout(timer);
+      });
+      pendingDeleteRef.current.clear();
+    };
+  }, []);
 
   const fileToDataUrl = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -193,6 +219,71 @@ export function JournalView(): JSX.Element {
     setEndDate("");
     setFilterTags([]);
     setDisplayedEntries(entries);
+  };
+
+  const sortByNewest = (items: JournalEntry[]): JournalEntry[] => {
+    return [...items].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  };
+
+  const showUndoToast = (message: string, onUndo: () => void): void => {
+    if (undoTimerRef.current) {
+      window.clearTimeout(undoTimerRef.current);
+    }
+
+    setUndoToast({ message, onUndo });
+    undoTimerRef.current = window.setTimeout(() => {
+      setUndoToast(null);
+      undoTimerRef.current = null;
+    }, 5000);
+  };
+
+  const archiveEntry = (entry: JournalEntry): void => {
+    if (archivedIds.has(entry.id)) return;
+
+    const nextArchived = new Set(archivedIds);
+    nextArchived.add(entry.id);
+    setArchivedIds(nextArchived);
+    saveArchivedJournalIds(Array.from(nextArchived));
+    hapticSuccess();
+
+    showUndoToast("Entry archived.", () => {
+      const restoredArchived = new Set(nextArchived);
+      restoredArchived.delete(entry.id);
+      setArchivedIds(restoredArchived);
+      saveArchivedJournalIds(Array.from(restoredArchived));
+    });
+  };
+
+  const queueDeleteEntry = (entry: JournalEntry): void => {
+    setEntries((prev) => prev.filter((candidate) => candidate.id !== entry.id));
+
+    if (archivedIds.has(entry.id)) {
+      const nextArchived = new Set(archivedIds);
+      nextArchived.delete(entry.id);
+      setArchivedIds(nextArchived);
+      saveArchivedJournalIds(Array.from(nextArchived));
+    }
+
+    hapticNotice();
+
+    const timer = window.setTimeout(async () => {
+      pendingDeleteRef.current.delete(entry.id);
+      const deleted = await deleteJournalEntry(entry.id);
+      if (!deleted) {
+        setSyncMessage("Entry removed locally but could not be deleted on server.");
+      }
+    }, 5000);
+    pendingDeleteRef.current.set(entry.id, timer);
+
+    showUndoToast("Entry deleted.", () => {
+      const pending = pendingDeleteRef.current.get(entry.id);
+      if (pending) {
+        window.clearTimeout(pending);
+        pendingDeleteRef.current.delete(entry.id);
+      }
+
+      setEntries((prev) => sortByNewest([...prev, entry]));
+    });
   };
 
   const handleSubmit = async (event: React.FormEvent): Promise<void> => {
@@ -316,6 +407,8 @@ export function JournalView(): JSX.Element {
       year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined
     });
   };
+
+  const visibleEntries = displayedEntries.filter((entry) => !archivedIds.has(entry.id));
 
   return (
     <section className="panel journal-panel">
@@ -449,10 +542,18 @@ export function JournalView(): JSX.Element {
             isRefreshing={isRefreshing}
           />
         )}
-        {displayedEntries.length > 0 ? (
+        {visibleEntries.length > 0 ? (
           <ul className="journal-list">
-            {displayedEntries.map((entry) => (
-              <li key={entry.id} className="journal-entry">
+            {visibleEntries.map((entry) => (
+              <SwipeableListItem
+                key={entry.id}
+                className="journal-entry"
+                onSwipeRight={() => archiveEntry(entry)}
+                onSwipeLeft={() => queueDeleteEntry(entry)}
+                rightActionLabel="Archive"
+                leftActionLabel="Delete"
+                disabled={busy}
+              >
                 <p className="journal-entry-text">{entry.text}</p>
                 {entry.tags && entry.tags.length > 0 && (
                   <div className="journal-entry-tags">
@@ -474,7 +575,7 @@ export function JournalView(): JSX.Element {
                   </div>
                 )}
                 <time className="journal-entry-time">{formatDate(entry.timestamp)}</time>
-              </li>
+              </SwipeableListItem>
             ))}
           </ul>
         ) : (
@@ -485,6 +586,25 @@ export function JournalView(): JSX.Element {
           </p>
         )}
       </div>
+
+      {undoToast && (
+        <div className="swipe-undo-toast" role="status" aria-live="polite">
+          <span>{undoToast.message}</span>
+          <button
+            type="button"
+            onClick={() => {
+              undoToast.onUndo();
+              setUndoToast(null);
+              if (undoTimerRef.current) {
+                window.clearTimeout(undoTimerRef.current);
+                undoTimerRef.current = null;
+              }
+            }}
+          >
+            Undo
+          </button>
+        </div>
+      )}
     </section>
   );
 }

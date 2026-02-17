@@ -249,6 +249,26 @@ export async function confirmDeadlineStatus(
   }
 }
 
+export async function updateDeadline(
+  deadlineId: string,
+  payload: Partial<Pick<Deadline, "course" | "task" | "dueDate" | "priority" | "completed">>
+): Promise<Deadline | null> {
+  try {
+    const response = await jsonOrThrow<{ deadline: Deadline }>(`/api/deadlines/${deadlineId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    });
+
+    const next = loadDeadlines().map((deadline) =>
+      deadline.id === response.deadline.id ? response.deadline : deadline
+    );
+    saveDeadlines(next);
+    return response.deadline;
+  } catch {
+    return null;
+  }
+}
+
 export async function getWeeklySummary(referenceDate?: string): Promise<WeeklySummary | null> {
   const params = new URLSearchParams();
   if (referenceDate) {
@@ -303,6 +323,17 @@ export async function getAllJournalTags(): Promise<string[]> {
     return response.tags;
   } catch {
     return [];
+  }
+}
+
+export async function deleteJournalEntry(entryId: string): Promise<boolean> {
+  try {
+    const response = await fetch(apiUrl(`/api/journal/${entryId}`), {
+      method: "DELETE"
+    });
+    return response.ok;
+  } catch {
+    return false;
   }
 }
 
