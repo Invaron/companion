@@ -700,6 +700,16 @@ app.get("/api/journal/search", (req, res) => {
   return res.json({ entries });
 });
 
+app.delete("/api/journal/:id", (req, res) => {
+  const deleted = store.deleteJournalEntry(req.params.id);
+
+  if (!deleted) {
+    return res.status(404).json({ error: "Journal entry not found" });
+  }
+
+  return res.status(204).send();
+});
+
 app.post("/api/calendar/import", async (req, res) => {
   const parsed = calendarImportSchema.safeParse(req.body ?? {});
 

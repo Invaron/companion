@@ -30,6 +30,7 @@ const STORAGE_KEYS = {
   dashboard: "companion:dashboard",
   context: "companion:context",
   journal: "companion:journal",
+  archivedJournalIds: "companion:archived-journal-ids",
   journalQueue: "companion:journal-queue",
   syncQueue: "companion:sync-queue",
   schedule: "companion:schedule",
@@ -243,6 +244,22 @@ export function loadJournalEntries(): JournalEntry[] {
 
 export function saveJournalEntries(entries: JournalEntry[]): void {
   localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(entries));
+}
+
+export function loadArchivedJournalIds(): string[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.archivedJournalIds);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((value): value is string => typeof value === "string");
+  } catch {
+    return [];
+  }
+}
+
+export function saveArchivedJournalIds(ids: string[]): void {
+  localStorage.setItem(STORAGE_KEYS.archivedJournalIds, JSON.stringify(ids));
 }
 
 export function addJournalEntry(text: string, tags?: string[], photos?: JournalPhoto[]): JournalEntry {
