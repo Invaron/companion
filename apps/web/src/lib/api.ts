@@ -178,10 +178,13 @@ export async function getJournalEntries(limit?: number): Promise<JournalEntry[] 
   }
 }
 
-export async function getDailyJournalSummary(date?: string): Promise<DailyJournalSummary | null> {
+export async function getDailyJournalSummary(options: { date?: string; forceRefresh?: boolean } = {}): Promise<DailyJournalSummary | null> {
   const params = new URLSearchParams();
-  if (date) {
-    params.set("date", date);
+  if (options.date) {
+    params.set("date", options.date);
+  }
+  if (options.forceRefresh) {
+    params.set("force", "1");
   }
   const query = params.toString();
   const endpoint = query ? `/api/journal/daily-summary?${query}` : "/api/journal/daily-summary";

@@ -37,7 +37,7 @@ import { generateAnalyticsCoachInsight } from "./analytics-coach.js";
 import { PostgresRuntimeSnapshotStore } from "./postgres-persistence.js";
 import type { PostgresPersistenceDiagnostics } from "./postgres-persistence.js";
 import { Notification, NotificationPreferencesPatch } from "./types.js";
-import type { Goal, Habit, IntegrationSyncName, IntegrationSyncRootCause } from "./types.js";
+import type { DailyJournalSummary, Goal, Habit, IntegrationSyncName, IntegrationSyncRootCause } from "./types.js";
 import { SyncFailureRecoveryTracker, SyncRecoveryPrompt } from "./sync-failure-recovery.js";
 import { nowIso } from "./utils.js";
 
@@ -122,6 +122,59 @@ const GITHUB_ON_DEMAND_SYNC_MIN_INTERVAL_MS = 10 * 60 * 1000;
 const GITHUB_ON_DEMAND_SYNC_STALE_MS = 6 * 60 * 60 * 1000;
 let githubOnDemandSyncInFlight: Promise<void> | null = null;
 let lastGithubOnDemandSyncAt = 0;
+const MAX_DAILY_SUMMARY_CACHE_DAYS = 45;
+
+interface DailySummaryCacheEntry {
+  signature: string;
+  summary: DailyJournalSummary;
+}
+
+const dailySummaryCache = new Map<string, DailySummaryCacheEntry>();
+
+function toDateKey(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function startsWithDateKey(value: string, dateKey: string): boolean {
+  return typeof value === "string" && value.startsWith(dateKey);
+}
+
+function latestIso(values: string[]): string {
+  return values.reduce((latest, value) => (value > latest ? value : latest), "");
+}
+
+function buildDailySummarySignature(dateKey: string): string {
+  const journals = store
+    .getJournalEntries(220)
+    .filter((entry) => startsWithDateKey(entry.timestamp, dateKey));
+
+  const chats = store
+    .getRecentChatMessages(320)
+    .filter(
+      (message) =>
+        message.role === "user" &&
+        message.content.trim().length > 0 &&
+        startsWithDateKey(message.timestamp, dateKey)
+    );
+
+  return [
+    `j:${journals.length}:${latestIso(journals.map((entry) => entry.timestamp))}`,
+    `c:${chats.length}:${latestIso(chats.map((message) => message.timestamp))}`
+  ].join("|");
+}
+
+function setCachedDailySummary(dateKey: string, entry: DailySummaryCacheEntry): void {
+  dailySummaryCache.delete(dateKey);
+  dailySummaryCache.set(dateKey, entry);
+
+  while (dailySummaryCache.size > MAX_DAILY_SUMMARY_CACHE_DAYS) {
+    const oldestKey = dailySummaryCache.keys().next().value;
+    if (!oldestKey) {
+      break;
+    }
+    dailySummaryCache.delete(oldestKey);
+  }
+}
 
 runtime.start();
 syncService.start();
@@ -1097,7 +1150,22 @@ app.get("/api/journal/daily-summary", async (req, res) => {
     return res.status(400).json({ error: "Invalid date parameter" });
   }
 
+  const forceRefreshRaw = typeof req.query.force === "string" ? req.query.force.trim().toLowerCase() : "";
+  const forceRefresh = forceRefreshRaw === "1" || forceRefreshRaw === "true" || forceRefreshRaw === "yes";
+
+  const dateKey = toDateKey(referenceDate);
+  const signature = buildDailySummarySignature(dateKey);
+  const cached = dailySummaryCache.get(dateKey);
+
+  if (!forceRefresh && cached && cached.signature === signature) {
+    return res.json({ summary: cached.summary });
+  }
+
   const summary = await generateDailyJournalSummary(store, { now: referenceDate });
+  setCachedDailySummary(dateKey, {
+    signature,
+    summary
+  });
   return res.json({ summary });
 });
 
