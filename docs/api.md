@@ -145,6 +145,10 @@ Response `201`:
 }
 ```
 
+### `PATCH /api/nutrition/meals/:id`
+
+Updates a meal log (supports quick portion changes by patching calories/macros without full form re-entry). Response `200` with `{ "meal": ... }`.
+
 ### `DELETE /api/nutrition/meals/:id`
 
 Deletes a meal log. Response `204` or `404`.

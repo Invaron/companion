@@ -3015,6 +3015,78 @@ export class RuntimeStore {
     }));
   }
 
+  updateNutritionMeal(
+    id: string,
+    patch: Partial<Omit<NutritionMeal, "id" | "createdAt">>
+  ): NutritionMeal | null {
+    const existing = this.getNutritionMealById(id);
+    if (!existing) {
+      return null;
+    }
+
+    const name = typeof patch.name === "string" ? patch.name.trim() : existing.name;
+    if (!name) {
+      return null;
+    }
+
+    const next: NutritionMeal = {
+      ...existing,
+      ...patch,
+      name,
+      mealType:
+        patch.mealType !== undefined
+          ? this.normalizeNutritionMealType(patch.mealType)
+          : existing.mealType,
+      consumedAt:
+        typeof patch.consumedAt === "string"
+          ? this.normalizeIsoOrNow(patch.consumedAt)
+          : existing.consumedAt,
+      calories:
+        typeof patch.calories === "number"
+          ? this.clampNutritionMetric(patch.calories, existing.calories, 10000)
+          : existing.calories,
+      proteinGrams:
+        typeof patch.proteinGrams === "number"
+          ? this.clampNutritionMetric(patch.proteinGrams, existing.proteinGrams, 1000)
+          : existing.proteinGrams,
+      carbsGrams:
+        typeof patch.carbsGrams === "number"
+          ? this.clampNutritionMetric(patch.carbsGrams, existing.carbsGrams, 1500)
+          : existing.carbsGrams,
+      fatGrams:
+        typeof patch.fatGrams === "number"
+          ? this.clampNutritionMetric(patch.fatGrams, existing.fatGrams, 600)
+          : existing.fatGrams,
+      ...(Object.prototype.hasOwnProperty.call(patch, "notes")
+        ? patch.notes && patch.notes.trim().length > 0
+          ? { notes: patch.notes.trim() }
+          : {}
+        : existing.notes
+          ? { notes: existing.notes }
+          : {})
+    };
+
+    this.db
+      .prepare(
+        `UPDATE nutrition_meals SET
+          name = ?, mealType = ?, consumedAt = ?, calories = ?, proteinGrams = ?, carbsGrams = ?, fatGrams = ?, notes = ?
+         WHERE id = ?`
+      )
+      .run(
+        next.name,
+        next.mealType,
+        next.consumedAt,
+        next.calories,
+        next.proteinGrams,
+        next.carbsGrams,
+        next.fatGrams,
+        next.notes ?? null,
+        id
+      );
+
+    return next;
+  }
+
   deleteNutritionMeal(id: string): boolean {
     const result = this.db.prepare("DELETE FROM nutrition_meals WHERE id = ?").run(id);
     return result.changes > 0;

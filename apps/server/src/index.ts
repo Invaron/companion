@@ -975,6 +975,10 @@ const nutritionMealCreateSchema = z.object({
   notes: z.string().trim().max(300).optional()
 });
 
+const nutritionMealUpdateSchema = nutritionMealCreateSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, "At least one field is required");
+
 const nutritionMealsQuerySchema = z.object({
   date: nutritionDateSchema.optional(),
   from: z.string().datetime().optional(),
@@ -2087,6 +2091,20 @@ app.post("/api/nutrition/meals", (req, res) => {
   });
 
   return res.status(201).json({ meal });
+});
+
+app.patch("/api/nutrition/meals/:id", (req, res) => {
+  const parsed = nutritionMealUpdateSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid nutrition meal payload", issues: parsed.error.issues });
+  }
+
+  const meal: NutritionMeal | null = store.updateNutritionMeal(req.params.id, parsed.data);
+  if (!meal) {
+    return res.status(404).json({ error: "Meal not found" });
+  }
+
+  return res.json({ meal });
 });
 
 app.delete("/api/nutrition/meals/:id", (req, res) => {
