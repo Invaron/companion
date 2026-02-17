@@ -1,7 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { sendChatMessage, getChatHistory, submitJournalEntry } from "../lib/api";
 import { ChatMessage } from "../types";
-import { addJournalEntry, enqueueJournalEntry } from "../lib/storage";
+import { addJournalEntry, enqueueJournalEntry, loadTalkModeEnabled, saveTalkModeEnabled } from "../lib/storage";
+
+function getSpeechRecognitionCtor(): (new () => SpeechRecognition) | null {
+  if (typeof window === "undefined") return null;
+  const speechWindow = window as Window & { webkitSpeechRecognition?: typeof SpeechRecognition };
+  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+}
+
+function latestAssistantMessage(messages: ChatMessage[]): ChatMessage | null {
+  const assistantMessages = messages.filter((message) => message.role === "assistant" && !message.streaming && message.content);
+  if (assistantMessages.length === 0) {
+    return null;
+  }
+
+  return assistantMessages.reduce((latest, current) => {
+    return new Date(current.timestamp).getTime() > new Date(latest.timestamp).getTime() ? current : latest;
+  });
+}
 
 export function ChatView(): JSX.Element {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -10,8 +27,17 @@ export function ChatView(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [savedMessageIds, setSavedMessageIds] = useState<Set<string>>(new Set());
   const [savingMessageId, setSavingMessageId] = useState<string | null>(null);
+  const [talkModeEnabled, setTalkModeEnabled] = useState<boolean>(() => loadTalkModeEnabled());
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const lastSpokenAssistantIdRef = useRef<string | null>(null);
+
+  const recognitionCtor = getSpeechRecognitionCtor();
+  const speechRecognitionSupported = Boolean(recognitionCtor);
+  const speechSynthesisSupported = typeof window !== "undefined" && "speechSynthesis" in window;
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = (): void => {
@@ -28,6 +54,8 @@ export function ChatView(): JSX.Element {
       try {
         const response = await getChatHistory();
         setMessages(response.history.messages);
+        const latestAssistant = latestAssistantMessage(response.history.messages);
+        lastSpokenAssistantIdRef.current = latestAssistant?.id ?? null;
       } catch (err) {
         setError("Failed to load chat history");
         console.error(err);
@@ -36,6 +64,110 @@ export function ChatView(): JSX.Element {
 
     void loadHistory();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+      if (speechSynthesisSupported) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [speechSynthesisSupported]);
+
+  useEffect(() => {
+    if (!talkModeEnabled || !speechSynthesisSupported) {
+      return;
+    }
+
+    const latestAssistant = latestAssistantMessage(messages);
+    if (!latestAssistant || latestAssistant.id === lastSpokenAssistantIdRef.current) {
+      return;
+    }
+
+    lastSpokenAssistantIdRef.current = latestAssistant.id;
+    const utterance = new SpeechSynthesisUtterance(latestAssistant.content);
+    utterance.lang = "en-US";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }, [messages, talkModeEnabled, speechSynthesisSupported]);
+
+  const startListening = (): void => {
+    if (!recognitionCtor) {
+      setError("Voice input is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new recognitionCtor();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setError(null);
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInputText(transcript.trim());
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      setIsListening(false);
+      if (event.error === "not-allowed") {
+        setError("Microphone permission denied.");
+      } else if (event.error === "no-speech") {
+        setError("No speech detected. Try again.");
+      } else {
+        setError("Voice input failed. Try again.");
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const stopListening = (): void => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setIsListening(false);
+  };
+
+  const toggleVoiceInput = (): void => {
+    if (isListening) {
+      stopListening();
+      return;
+    }
+    startListening();
+  };
+
+  const toggleTalkMode = (): void => {
+    const next = !talkModeEnabled;
+    setTalkModeEnabled(next);
+    saveTalkModeEnabled(next);
+
+    if (!next) {
+      stopListening();
+      if (speechSynthesisSupported) {
+        window.speechSynthesis.cancel();
+      }
+      setIsSpeaking(false);
+    }
+  };
 
   const handleSend = async (): Promise<void> => {
     const trimmedText = inputText.trim();
@@ -135,6 +267,28 @@ export function ChatView(): JSX.Element {
 
   return (
     <div className="chat-view">
+      <div className="chat-toolbar">
+        <button
+          type="button"
+          className={`chat-talk-mode-btn ${talkModeEnabled ? "chat-talk-mode-btn-on" : ""}`}
+          onClick={toggleTalkMode}
+        >
+          Talk mode: {talkModeEnabled ? "On" : "Off"}
+        </button>
+
+        {talkModeEnabled && (
+          <div className="chat-talk-wave" aria-live="polite" aria-label={isListening ? "Listening" : isSpeaking ? "Speaking" : "Idle"}>
+            <span className={isListening ? "listening" : isSpeaking ? "speaking" : ""}></span>
+            <span className={isListening ? "listening" : isSpeaking ? "speaking" : ""}></span>
+            <span className={isListening ? "listening" : isSpeaking ? "speaking" : ""}></span>
+          </div>
+        )}
+      </div>
+
+      {talkModeEnabled && (!speechRecognitionSupported || !speechSynthesisSupported) && (
+        <div className="chat-error">Talk mode has limited support in this browser.</div>
+      )}
+
       <div className="chat-messages">
         {messages.length === 0 && (
           <div className="chat-welcome">
@@ -203,6 +357,16 @@ export function ChatView(): JSX.Element {
       {error && <div className="chat-error">{error}</div>}
 
       <div className="chat-input-container">
+        <button
+          type="button"
+          className={`chat-voice-button ${isListening ? "chat-voice-button-listening" : ""}`}
+          onClick={toggleVoiceInput}
+          disabled={isSending || !speechRecognitionSupported}
+          aria-label={isListening ? "Stop voice input" : "Start voice input"}
+          title={isListening ? "Stop voice input" : "Start voice input"}
+        >
+          🎤
+        </button>
         <input
           ref={inputRef}
           type="text"

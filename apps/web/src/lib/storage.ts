@@ -39,6 +39,7 @@ const STORAGE_KEYS = {
   onboarding: "companion:onboarding",
   notificationPreferences: "companion:notification-preferences",
   theme: "companion:theme",
+  talkModeEnabled: "companion:talk-mode-enabled",
   canvasSettings: "companion:canvas-settings",
   canvasStatus: "companion:canvas-status"
 } as const;
@@ -122,6 +123,18 @@ export function loadThemePreference(): ThemePreference {
 
 export function saveThemePreference(preference: ThemePreference): void {
   localStorage.setItem(STORAGE_KEYS.theme, preference);
+}
+
+export function loadTalkModeEnabled(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.talkModeEnabled) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function saveTalkModeEnabled(enabled: boolean): void {
+  localStorage.setItem(STORAGE_KEYS.talkModeEnabled, enabled ? "true" : "false");
 }
 
 export function loadCanvasSettings(): CanvasSettings {
