@@ -107,7 +107,7 @@ export class YouTubeSyncService {
     const queries: string[] = [];
     const now = new Date();
     const deadlines = this.store
-      .getDeadlines(now)
+      .getAcademicDeadlines(now)
       .filter((deadline) => !deadline.completed)
       .slice(0, 8);
     const schedule = this.store.getScheduleEvents().slice(0, 8);

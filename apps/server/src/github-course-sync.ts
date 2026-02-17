@@ -2,6 +2,7 @@ import { RuntimeStore } from "./store.js";
 import { GitHubCourseClient } from "./github-course-client.js";
 import { Deadline, GitHubCourseDocument } from "./types.js";
 import { SyncAutoHealingPolicy, SyncAutoHealingState } from "./sync-auto-healing.js";
+import { hasAssignmentOrExamKeyword } from "./deadline-eligibility.js";
 
 export interface CourseRepo {
   owner: string;
@@ -41,16 +42,6 @@ const COURSE_DOC_KEYWORDS = [
 const EXCLUDED_DOC_PATHS = [
   /\/(node_modules|dist|build|vendor)\//i,
   /^\.github\//i
-];
-
-const DEADLINE_TASK_PATTERNS = [
-  /\bassignment(s)?\b/i,
-  /\bexam(s)?\b/i,
-  /\beksamen\b/i,
-  /\bmidterm\b/i,
-  /\bfinal\b/i,
-  /\boblig\b/i,
-  /\binnlevering\b/i
 ];
 
 export class GitHubCourseSyncService {
@@ -224,7 +215,7 @@ export class GitHubCourseSyncService {
 
   private isAssignmentOrExamTask(task: string): boolean {
     const normalized = task.replace(/\*\*/g, "").trim();
-    return DEADLINE_TASK_PATTERNS.some((pattern) => pattern.test(normalized));
+    return hasAssignmentOrExamKeyword(normalized);
   }
 
   /**

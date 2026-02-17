@@ -58,6 +58,7 @@ import {
   ChatPendingAction,
   GmailMessage
 } from "./types.js";
+import { isAssignmentOrExamDeadline } from "./deadline-eligibility.js";
 import { makeId, nowIso } from "./utils.js";
 
 const agentNames: AgentName[] = [
@@ -1544,6 +1545,7 @@ export class RuntimeStore {
       dueDate: string;
       priority: string;
       completed: number;
+      canvasAssignmentId: number | null;
     }>;
 
     const deadlinesCompleted = deadlinesInWindow.filter((d) => d.completed).length;
@@ -2046,6 +2048,23 @@ export class RuntimeStore {
       ...(row.effortHoursRemaining !== null ? { effortHoursRemaining: row.effortHoursRemaining } : {}),
       ...(row.effortConfidence ? { effortConfidence: row.effortConfidence as Deadline["effortConfidence"] } : {})
     })).map((deadline) => (applyEscalation ? this.applyDeadlinePriorityEscalation(deadline, referenceDate) : deadline));
+  }
+
+  getAcademicDeadlines(referenceDate: Date = new Date(), applyEscalation = true): Deadline[] {
+    return this.getDeadlines(referenceDate, applyEscalation).filter((deadline) => isAssignmentOrExamDeadline(deadline));
+  }
+
+  purgeNonAcademicDeadlines(): number {
+    const stale = this.getDeadlines(new Date(), false).filter((deadline) => !isAssignmentOrExamDeadline(deadline));
+    let removed = 0;
+
+    stale.forEach((deadline) => {
+      if (this.deleteDeadline(deadline.id)) {
+        removed += 1;
+      }
+    });
+
+    return removed;
   }
 
   getDeadlineById(id: string, applyEscalation = true, referenceDate: Date = new Date()): Deadline | null {
@@ -2764,7 +2783,7 @@ export class RuntimeStore {
 
     const cooldownMs = Math.max(0, cooldownMinutes) * 60_000;
 
-    const deadlines = this.getDeadlines(reference);
+    const deadlines = this.getAcademicDeadlines(reference);
 
     return deadlines.filter((deadline) => {
       if (deadline.completed) {
@@ -3150,7 +3169,7 @@ export class RuntimeStore {
   }
 
   getSnapshot(): DashboardSnapshot {
-    const deadlines = this.getDeadlines();
+    const deadlines = this.getAcademicDeadlines();
     const trackedPendingDeadlines = deadlines.filter((deadline) => !deadline.completed).length;
 
     const events = this.db.prepare("SELECT * FROM agent_events ORDER BY insertOrder DESC").all() as Array<{

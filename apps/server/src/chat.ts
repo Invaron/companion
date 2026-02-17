@@ -221,7 +221,7 @@ function buildSocialMediaContextSummary(store: RuntimeStore, now: Date = new Dat
 
 function buildContentRecommendationSummary(store: RuntimeStore, now: Date = new Date()): string {
   const result = generateContentRecommendations(
-    store.getDeadlines(now),
+    store.getAcademicDeadlines(now),
     store.getScheduleEvents(),
     store.getYouTubeData(),
     store.getXData(),
@@ -275,7 +275,7 @@ export function buildChatContext(store: RuntimeStore, now: Date = new Date(), hi
     .filter((event) => isSameDay(new Date(event.startTime), now));
 
   const upcomingDeadlines = store
-    .getDeadlines(now)
+    .getAcademicDeadlines(now)
     .filter((deadline) => {
       const due = new Date(deadline.dueDate);
       if (Number.isNaN(due.getTime())) {
