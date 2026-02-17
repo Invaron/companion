@@ -393,3 +393,4 @@ Features are built in priority order. The orchestrator reads this section to dec
 | ⬜ todo | `analytics-gemini-coach` | fullstack-engineer | Replace chart-first analytics with Gemini narrative coaching over selectable windows (7/14/30 days), with strengths, risks, and steering recommendations. |
 | ✅ done | `pwa-icon-surface-fix` | frontend-engineer | Ensure favicon/manifest/apple-touch assets resolve correctly under GitHub Pages `/companion/` base so custom Companion icon appears in tab and installed PWA surfaces. |
 | ✅ done | `onboarding-env-config-simplification` | frontend-engineer | Simplify onboarding to profile/preferences only and remove API token/key prompts that are already provided via Railway environment variables. |
+| ✅ done | `onboarding-one-tap-defaults` | frontend-engineer | Trim onboarding to one-tap start with fixed defaults (`Europe/Oslo`, balanced tone) and no manual profile fields (name/baseline/timezone prompts removed). |
