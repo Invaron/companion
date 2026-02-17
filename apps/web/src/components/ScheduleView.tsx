@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { getDeadlines, getSchedule } from "../lib/api";
 import { Deadline, LectureEvent, Priority } from "../types";
 import { loadDeadlines, loadSchedule, loadScheduleCachedAt } from "../lib/storage";
-import { usePullToRefresh } from "../hooks/usePullToRefresh";
-import { PullToRefreshIndicator } from "./PullToRefreshIndicator";
 
 const SCHEDULE_STALE_MS = 12 * 60 * 60 * 1000;
 
@@ -99,20 +97,17 @@ function formatRoomLabel(location: string | undefined): string | null {
   }
 
   const compact = location.replace(/\r\n/g, " ").replace(/\s+/g, " ").trim();
+  const explicitRoom = compact.match(/\b([A-Za-z]{1,4}-\d{2,4}[A-Za-z]?)\b/);
+  if (explicitRoom?.[1]) {
+    return explicitRoom[1].toUpperCase();
+  }
+
+  const spacedRoom = compact.match(/\b([A-Za-z]{1,4})\s+(\d{2,4}[A-Za-z]?)\b/);
+  if (spacedRoom?.[1] && spacedRoom?.[2]) {
+    return `${spacedRoom[1]}-${spacedRoom[2]}`.toUpperCase();
+  }
+
   const segment = compact.split(/[,;|]/).map((value) => value.trim()).filter(Boolean).pop() ?? compact;
-
-  const sectionPattern = /^([A-Za-z]{2,})\s+[A-Za-z]-?(\d{2,4}[A-Za-z]?)$/;
-  const sectionMatch = segment.match(sectionPattern);
-  if (sectionMatch) {
-    return `${sectionMatch[1]}-${sectionMatch[2]}`.toUpperCase();
-  }
-
-  const buildingPattern = /^([A-Za-z]{2,})\s+(\d{2,4}[A-Za-z]?)$/;
-  const buildingMatch = segment.match(buildingPattern);
-  if (buildingMatch) {
-    return `${buildingMatch[1]}-${buildingMatch[2]}`.toUpperCase();
-  }
-
   return segment.replace(/\s*-\s*/g, "-");
 }
 
@@ -185,6 +180,16 @@ function allocatePlannedBlocks(
   return segments;
 }
 
+function formatDayTimelineLabel(segment: DayTimelineSegment): string {
+  if (segment.type !== "event") {
+    return segment.suggestion ?? "Focus block";
+  }
+
+  const title = formatLectureTitle(segment.event?.title ?? "Scheduled block");
+  const roomLabel = formatRoomLabel(segment.event?.location);
+  return roomLabel ? `${title} • ${roomLabel}` : title;
+}
+
 function buildDayTimeline(
   scheduleBlocks: LectureEvent[],
   referenceDate: Date,
@@ -255,11 +260,6 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
     setCachedAt(loadScheduleCachedAt());
     setRefreshing(false);
   };
-
-  const { containerRef, isPulling, pullDistance, isRefreshing } = usePullToRefresh<HTMLDivElement>({
-    onRefresh: handleRefresh,
-    threshold: 80
-  });
 
   useEffect(() => {
     let disposed = false;
@@ -420,9 +420,7 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
                   <span>{formatDuration(minutesBetween(segment.start, segment.end))}</span>
                 </div>
                 <p className="day-timeline-item-label">
-                  {segment.type === "event"
-                    ? formatLectureTitle(segment.event?.title ?? "Scheduled block")
-                    : segment.suggestion ?? "Focus block"}
+                  {formatDayTimelineLabel(segment)}
                 </p>
               </li>
             ))}
@@ -447,62 +445,6 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
         </div>
       </section>
 
-      <div 
-        ref={containerRef}
-        className="pull-to-refresh-container"
-      >
-        {(isPulling || isRefreshing) && (
-          <PullToRefreshIndicator
-            pullDistance={pullDistance}
-            threshold={80}
-            isRefreshing={isRefreshing}
-          />
-        )}
-        {todayBlocks.length > 0 ? (
-          <ul className="schedule-list">
-            {todayBlocks.map((lecture) => {
-              const minutesUntil = getMinutesUntil(lecture.startTime);
-              const isUpcoming = minutesUntil >= 0 && minutesUntil < 120;
-              const roomLabel = formatRoomLabel(lecture.location);
-              
-              return (
-                <li 
-                  key={lecture.id} 
-                  id={`lecture-${lecture.id}`}
-                  className={`schedule-item ${isUpcoming ? "schedule-item-upcoming" : ""} ${
-                    focusLectureId === lecture.id ? "schedule-item-focused" : ""
-                  }`}
-                >
-                  <div className="schedule-item-header">
-                    <h3 className="schedule-item-title">{formatLectureTitle(lecture.title)}</h3>
-                  </div>
-                  <div className="schedule-item-details">
-                    <span className="schedule-date">{formatDate(lecture.startTime)}</span>
-                    <span className="schedule-separator">•</span>
-                    <span className="schedule-time">{formatTime(lecture.startTime)}</span>
-                    <span className="schedule-separator">•</span>
-                    <span className="schedule-duration">{lecture.durationMinutes}min</span>
-                    {roomLabel && (
-                      <>
-                        <span className="schedule-separator">•</span>
-                        <span className="schedule-location">{roomLabel}</span>
-                      </>
-                    )}
-                    {isUpcoming && (
-                      <>
-                        <span className="schedule-separator">•</span>
-                        <span className="schedule-until">{getTimeUntilLabel(lecture.startTime)}</span>
-                      </>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="schedule-empty">No schedule blocks for today.</p>
-        )}
-      </div>
     </section>
   );
 }
