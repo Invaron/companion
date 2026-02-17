@@ -269,8 +269,13 @@ describe("GitHubCourseSyncService", () => {
       
       // Ensure store is empty before sync
       expect(freshStore.getDeadlines()).toHaveLength(0);
+      const notifications: Array<{ source: string; title: string; message: string; url?: string }> = [];
+      const unsubscribe = freshStore.onNotification((notification) => {
+        notifications.push(notification);
+      });
       
       const result = await service.sync();
+      unsubscribe();
 
       expect(result.success).toBe(true);
       expect(result.error).toBeUndefined();
@@ -278,6 +283,14 @@ describe("GitHubCourseSyncService", () => {
       expect(result.reposProcessed).toBe(3);
       expect(result.deadlinesCreated).toBe(1);
       expect(result.courseDocsSynced).toBeGreaterThan(0);
+      expect(notifications).toHaveLength(1);
+      expect(notifications[0]).toMatchObject({
+        source: "assignment-tracker",
+        title: "New assignment published",
+        url: expect.stringContaining("/companion/?tab=schedule&deadlineId=")
+      });
+      expect(notifications[0]?.message).toContain("DAT520");
+      expect(notifications[0]?.message).toContain("Assignment 1: Introduction to Go");
 
       const deadlines = freshStore.getDeadlines();
       expect(deadlines.length).toBeGreaterThan(0);

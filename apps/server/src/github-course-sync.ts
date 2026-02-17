@@ -3,6 +3,7 @@ import { GitHubCourseClient } from "./github-course-client.js";
 import { Deadline, GitHubCourseDocument } from "./types.js";
 import { SyncAutoHealingPolicy, SyncAutoHealingState } from "./sync-auto-healing.js";
 import { hasAssignmentOrExamKeyword } from "./deadline-eligibility.js";
+import { publishNewDeadlineReleaseNotifications } from "./deadline-release-notifications.js";
 
 export interface CourseRepo {
   owner: string;
@@ -676,6 +677,7 @@ export class GitHubCourseSyncService {
     let deadlinesUpdated = 0;
     let deadlinesObserved = 0;
     let reposProcessed = 0;
+    const createdDeadlines: Deadline[] = [];
     const syncErrors: string[] = [];
     const courseDocuments: GitHubCourseDocument[] = [];
     const lastSyncedAt = new Date().toISOString();
@@ -734,8 +736,9 @@ export class GitHubCourseSyncService {
 
             if (!existing) {
               // Create new deadline
-              this.store.createDeadline(newDeadline);
+              const created = this.store.createDeadline(newDeadline);
               deadlinesCreated++;
+              createdDeadlines.push(created);
             } else if (existing.dueDate !== newDeadline.dueDate && !existing.completed) {
               // Update deadline if date changed and it's not completed
               this.store.updateDeadline(existing.id, {
@@ -755,6 +758,7 @@ export class GitHubCourseSyncService {
       }
 
       if (reposProcessed > 0) {
+        publishNewDeadlineReleaseNotifications(this.store, "github", createdDeadlines);
         this.store.setGitHubCourseData({
           repositories: COURSE_REPOS,
           documents: courseDocuments,

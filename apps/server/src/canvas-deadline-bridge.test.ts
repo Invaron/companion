@@ -41,6 +41,12 @@ describe("CanvasDeadlineBridge", () => {
       expect(result.created).toBe(1);
       expect(result.updated).toBe(0);
       expect(result.skipped).toBe(0);
+      expect(result.createdDeadlines).toHaveLength(1);
+      expect(result.createdDeadlines[0]).toMatchObject({
+        task: "Lab 1: UDP Echo Server",
+        course: "DAT520-1",
+        dueDate: "2026-01-15T22:59:00.000Z"
+      });
 
       const deadlines = store.getDeadlines(new Date(), false);
       expect(deadlines).toHaveLength(1);
@@ -173,6 +179,7 @@ describe("CanvasDeadlineBridge", () => {
       expect(result.created).toBe(0);
       expect(result.updated).toBe(1);
       expect(result.completed).toBe(1);
+      expect(result.createdDeadlines).toHaveLength(0);
 
       const deadlines = store.getDeadlines(new Date(), false);
       expect(deadlines).toHaveLength(1);

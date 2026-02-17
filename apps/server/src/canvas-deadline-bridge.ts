@@ -8,6 +8,7 @@ export interface CanvasDeadlineBridgeResult {
   completed: number;
   removed: number;
   skipped: number;
+  createdDeadlines: Deadline[];
 }
 
 /**
@@ -35,7 +36,8 @@ export class CanvasDeadlineBridge {
       updated: 0,
       completed: 0,
       removed: 0,
-      skipped: 0
+      skipped: 0,
+      createdDeadlines: []
     };
 
     // Build a map of course IDs to course codes for naming
@@ -106,8 +108,9 @@ export class CanvasDeadlineBridge {
           canvasAssignmentId: assignment.id
         };
 
-        this.store.createDeadline(deadline);
+        const created = this.store.createDeadline(deadline);
         result.created++;
+        result.createdDeadlines.push(created);
 
         if (isSubmitted) {
           result.completed++;

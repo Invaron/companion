@@ -109,6 +109,49 @@ describe("Canvas Integration", () => {
       expect(canvasData?.assignments[0]?.id).toBe(1);
     });
 
+    it("emits notification payloads for newly discovered Canvas deadlines", async () => {
+      const dueAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+      const mockClient = {
+        getCourses: async () => [
+          { id: 7, name: "DAT560", course_code: "DAT560", workflow_state: "available" }
+        ],
+        getAllAssignments: async () => [
+          {
+            id: 7001,
+            name: "Assignment 2",
+            description: null,
+            due_at: dueAt,
+            points_possible: 100,
+            course_id: 7,
+            submission_types: ["online_upload"],
+            has_submitted_submissions: false
+          }
+        ],
+        getAllModules: async () => [],
+        getAnnouncements: async () => []
+      } as unknown as CanvasClient;
+
+      const notifications: Array<{ title: string; message: string; source: string; url?: string }> = [];
+      const unsubscribe = store.onNotification((notification) => {
+        notifications.push(notification);
+      });
+
+      const service = new CanvasSyncService(store, mockClient);
+      const result = await service.triggerSync();
+      unsubscribe();
+
+      expect(result.success).toBe(true);
+      expect(result.deadlineBridge?.created).toBe(1);
+      expect(notifications).toHaveLength(1);
+      expect(notifications[0]).toMatchObject({
+        source: "assignment-tracker",
+        title: "New assignment published",
+        url: expect.stringContaining("/companion/?tab=schedule&deadlineId=")
+      });
+      expect(notifications[0]?.message).toContain("DAT560");
+      expect(notifications[0]?.message).toContain("Assignment 2");
+    });
+
     it("applies scoped Canvas course IDs across stored courses, assignments, and announcements", async () => {
       const dueAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const getAllAssignments = vi.fn(async () => [

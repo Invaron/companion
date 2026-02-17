@@ -3,6 +3,7 @@ import { CanvasClient } from "./canvas-client.js";
 import { filterCanvasAssignmentsByDateWindow } from "./integration-date-window.js";
 import { CanvasData } from "./types.js";
 import { CanvasDeadlineBridge, CanvasDeadlineBridgeResult } from "./canvas-deadline-bridge.js";
+import { publishNewDeadlineReleaseNotifications } from "./deadline-release-notifications.js";
 import { SyncAutoHealingPolicy, SyncAutoHealingState } from "./sync-auto-healing.js";
 
 export interface CanvasSyncResult {
@@ -152,6 +153,7 @@ export class CanvasSyncService {
 
         // Bridge Canvas assignments to deadlines
         const deadlineBridge = this.deadlineBridge.syncAssignments(scopedCourses, filteredAssignments);
+        publishNewDeadlineReleaseNotifications(this.store, "canvas", deadlineBridge.createdDeadlines);
 
         return {
           success: true,
