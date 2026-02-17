@@ -529,6 +529,48 @@ The `GET /api/sync/status` response adds a `gmail` field:
 }
 ```
 
+### GET `/api/deadlines/duplicates`
+
+Detect likely duplicate deadlines and propose canonical merge suggestions.
+
+Response:
+
+```json
+{
+  "generatedAt": "2026-02-17T12:00:00.000Z",
+  "totalDeadlines": 12,
+  "duplicateGroups": 1,
+  "suggestions": [
+    {
+      "canonicalId": "deadline-manual-1",
+      "canonicalSource": "manual",
+      "duplicateIds": ["deadline-canvas-1", "github-dat560-assignment-3-report"],
+      "confidence": "high",
+      "score": 0.93,
+      "reason": "3 deadlines appear duplicated for DAT560; tasks are textually similar with same due day.",
+      "mergedPreview": {
+        "course": "DAT560",
+        "task": "Assignment 3 Report",
+        "dueDate": "2026-03-20T23:59:00.000Z",
+        "priority": "high",
+        "completed": false
+      },
+      "members": [
+        {
+          "id": "deadline-manual-1",
+          "source": "manual",
+          "course": "DAT560",
+          "task": "Assignment 3 Report",
+          "dueDate": "2026-03-20T23:59:00.000Z",
+          "priority": "high",
+          "completed": false
+        }
+      ]
+    }
+  ]
+}
+```
+
 ### POST `/api/study-plan/generate`
 
 Generate a deterministic weekly study plan from upcoming deadlines and open schedule gaps.
