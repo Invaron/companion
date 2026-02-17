@@ -17,7 +17,7 @@ export function buildDailyDigest(store: RuntimeStore, referenceDate: Date = new 
   const start = startOfDay(referenceDate);
   const windowEndIso = referenceDate.toISOString();
 
-  const deadlines = store.getDeadlines();
+  const deadlines = store.getAcademicDeadlines();
   const dueSoonLimit = new Date(referenceDate.getTime() + 2 * MS_IN_DAY);
   const dueSoon = deadlines.filter(
     (deadline) =>

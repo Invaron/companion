@@ -296,7 +296,7 @@ export async function checkProactiveTriggers(store: RuntimeStore, now: Date = ne
     });
 
   const upcomingDeadlines = store
-    .getDeadlines(now)
+    .getAcademicDeadlines(now)
     .filter((deadline) => {
       const dueDate = new Date(deadline.dueDate);
       return dueDate.getTime() > now.getTime();

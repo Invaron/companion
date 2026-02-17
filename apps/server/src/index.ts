@@ -6,6 +6,7 @@ import { BackgroundSyncService } from "./background-sync.js";
 import { buildCalendarImportPreview, parseICS } from "./calendar-import.js";
 import { config } from "./config.js";
 import { buildDeadlineDedupResult } from "./deadline-dedup.js";
+import { isAssignmentOrExamDeadline } from "./deadline-eligibility.js";
 import { generateDeadlineSuggestions } from "./deadline-suggestions.js";
 import { executePendingChatAction } from "./gemini-tools.js";
 import {
@@ -94,6 +95,13 @@ async function initializeRuntimeStore(): Promise<RuntimePersistenceContext> {
 
 const persistenceContext = await initializeRuntimeStore();
 const store = persistenceContext.store;
+const prunedNonAcademicDeadlines = store.purgeNonAcademicDeadlines();
+if (prunedNonAcademicDeadlines > 0) {
+  if (persistenceContext.postgresSnapshotStore) {
+    await persistenceContext.postgresSnapshotStore.persistSnapshot(store.serializeDatabase());
+  }
+  console.info(`[startup] Removed ${prunedNonAcademicDeadlines} non-assignment deadline entries.`);
+}
 const storageDiagnostics = (): PostgresPersistenceDiagnostics =>
   persistenceContext.postgresSnapshotStore
     ? persistenceContext.postgresSnapshotStore.getDiagnostics(persistenceContext.sqlitePath)
@@ -523,7 +531,7 @@ const scheduleUpdateSchema = scheduleCreateSchema.partial().refine(
   "At least one field is required"
 );
 
-const deadlineCreateSchema = z.object({
+const deadlineBaseSchema = z.object({
   course: z.string().trim().min(1).max(200),
   task: z.string().trim().min(1).max(300),
   dueDate: z.string().datetime(),
@@ -533,7 +541,18 @@ const deadlineCreateSchema = z.object({
   effortConfidence: z.enum(["low", "medium", "high"]).optional()
 });
 
-const deadlineUpdateSchema = deadlineCreateSchema.partial().refine(
+const deadlineCreateSchema = deadlineBaseSchema
+  .refine(
+    (value) =>
+      isAssignmentOrExamDeadline({
+        course: value.course,
+        task: value.task,
+        canvasAssignmentId: undefined
+      }),
+    "Deadlines must be assignment or exam work."
+  );
+
+const deadlineUpdateSchema = deadlineBaseSchema.partial().refine(
   (value) => Object.keys(value).length > 0,
   "At least one field is required"
 );
@@ -1139,15 +1158,15 @@ app.post("/api/deadlines", (req, res) => {
 });
 
 app.get("/api/deadlines", (_req, res) => {
-  return res.json({ deadlines: store.getDeadlines() });
+  return res.json({ deadlines: store.getAcademicDeadlines() });
 });
 
 app.get("/api/deadlines/duplicates", (_req, res) => {
-  return res.json(buildDeadlineDedupResult(store.getDeadlines()));
+  return res.json(buildDeadlineDedupResult(store.getAcademicDeadlines()));
 });
 
 app.get("/api/deadlines/suggestions", (_req, res) => {
-  const deadlines = store.getDeadlines();
+  const deadlines = store.getAcademicDeadlines();
   const scheduleEvents = store.getScheduleEvents();
   const userContext = store.getUserContext();
 
@@ -1168,7 +1187,7 @@ app.post("/api/study-plan/generate", (req, res) => {
     return res.status(400).json({ error: "Invalid study plan payload", issues: parsed.error.issues });
   }
 
-  const plan = generateWeeklyStudyPlan(store.getDeadlines(), store.getScheduleEvents(), {
+  const plan = generateWeeklyStudyPlan(store.getAcademicDeadlines(), store.getScheduleEvents(), {
     horizonDays: parsed.data.horizonDays,
     minSessionMinutes: parsed.data.minSessionMinutes,
     maxSessionMinutes: parsed.data.maxSessionMinutes,
@@ -1246,7 +1265,7 @@ app.get("/api/study-plan/export", (req, res) => {
     return res.status(400).json({ error: "Invalid study plan export query", issues: parsed.error.issues });
   }
 
-  const plan = generateWeeklyStudyPlan(store.getDeadlines(), store.getScheduleEvents(), {
+  const plan = generateWeeklyStudyPlan(store.getAcademicDeadlines(), store.getScheduleEvents(), {
     horizonDays: parsed.data.horizonDays,
     minSessionMinutes: parsed.data.minSessionMinutes,
     maxSessionMinutes: parsed.data.maxSessionMinutes,
@@ -1264,7 +1283,7 @@ app.get("/api/study-plan/export", (req, res) => {
 app.get("/api/deadlines/:id", (req, res) => {
   const deadline = store.getDeadlineById(req.params.id);
 
-  if (!deadline) {
+  if (!deadline || !isAssignmentOrExamDeadline(deadline)) {
     return res.status(404).json({ error: "Deadline not found" });
   }
 
@@ -1276,6 +1295,20 @@ app.patch("/api/deadlines/:id", (req, res) => {
 
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid deadline payload", issues: parsed.error.issues });
+  }
+
+  const existing = store.getDeadlineById(req.params.id, false);
+  if (!existing || !isAssignmentOrExamDeadline(existing)) {
+    return res.status(404).json({ error: "Deadline not found" });
+  }
+
+  const mergedCandidate = {
+    ...existing,
+    ...parsed.data
+  };
+
+  if (!isAssignmentOrExamDeadline(mergedCandidate)) {
+    return res.status(400).json({ error: "Deadlines must stay assignment or exam work." });
   }
 
   const deadline = store.updateDeadline(req.params.id, parsed.data);
@@ -1294,6 +1327,11 @@ app.post("/api/deadlines/:id/confirm-status", (req, res) => {
     return res.status(400).json({ error: "Invalid deadline status payload", issues: parsed.error.issues });
   }
 
+  const existing = store.getDeadlineById(req.params.id, false);
+  if (!existing || !isAssignmentOrExamDeadline(existing)) {
+    return res.status(404).json({ error: "Deadline not found" });
+  }
+
   const confirmation = store.confirmDeadlineStatus(req.params.id, parsed.data.completed);
 
   if (!confirmation) {
@@ -1304,6 +1342,11 @@ app.post("/api/deadlines/:id/confirm-status", (req, res) => {
 });
 
 app.delete("/api/deadlines/:id", (req, res) => {
+  const existing = store.getDeadlineById(req.params.id, false);
+  if (!existing || !isAssignmentOrExamDeadline(existing)) {
+    return res.status(404).json({ error: "Deadline not found" });
+  }
+
   const deleted = store.deleteDeadline(req.params.id);
 
   if (!deleted) {
@@ -1888,7 +1931,7 @@ app.get("/api/recommendations/content", (req, res) => {
   }
 
   const result = generateContentRecommendations(
-    store.getDeadlines(),
+    store.getAcademicDeadlines(),
     store.getScheduleEvents(),
     store.getYouTubeData(),
     store.getXData(),

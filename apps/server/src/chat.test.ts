@@ -818,7 +818,7 @@ describe("chat service", () => {
     for (let index = 0; index < 12; index += 1) {
       store.createDeadline({
         course: "DAT560",
-        task: `Project task ${index + 1} with very long context details that are useful but should be bounded`,
+        task: `Assignment ${index + 1} with very long context details that are useful but should be bounded`,
         dueDate: new Date(now + (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
         priority: "medium",
         completed: false

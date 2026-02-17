@@ -112,7 +112,7 @@ describe("gemini-tools", () => {
 
       const deadline = store.createDeadline({
         course: "DAT520",
-        task: "Lab 1",
+        task: "Assignment 1",
         dueDate: tomorrow.toISOString(),
         priority: "high",
         completed: false
@@ -130,7 +130,7 @@ describe("gemini-tools", () => {
 
       const deadline = store.createDeadline({
         course: "DAT520",
-        task: "Lab 1",
+        task: "Assignment 1",
         dueDate: farFuture.toISOString(),
         priority: "high",
         completed: false
@@ -149,7 +149,7 @@ describe("gemini-tools", () => {
 
       const deadline = store.createDeadline({
         course: "DAT520",
-        task: "Lab 1",
+        task: "Assignment 1",
         dueDate: yesterday.toISOString(),
         priority: "high",
         completed: false

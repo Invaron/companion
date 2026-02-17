@@ -1,3 +1,4 @@
+import { hasAssignmentOrExamKeyword } from "./deadline-eligibility.js";
 import { Deadline, LectureEvent, Priority } from "./types.js";
 
 export interface ImportedCalendarEvent {
@@ -22,16 +23,6 @@ export interface CalendarImportPreview {
   lectures: Array<Omit<LectureEvent, "id">>;
   deadlines: Array<Omit<Deadline, "id">>;
 }
-
-const ASSIGNMENT_OR_EXAM_PATTERNS = [
-  /\bassignment(s)?\b/i,
-  /\bexam(s)?\b/i,
-  /\beksamen\b/i,
-  /\bmidterm\b/i,
-  /\bfinal\b/i,
-  /\boblig\b/i,
-  /\binnlevering\b/i
-];
 
 export function parseICS(icsContent: string): ImportedCalendarEvent[] {
   const events: ImportedCalendarEvent[] = [];
@@ -88,7 +79,7 @@ export function parseICS(icsContent: string): ImportedCalendarEvent[] {
 
 export function classifyEventType(event: ImportedCalendarEvent): "deadline" | "lecture" {
   const text = `${event.summary} ${event.description ?? ""}`;
-  if (ASSIGNMENT_OR_EXAM_PATTERNS.some((pattern) => pattern.test(text))) {
+  if (hasAssignmentOrExamKeyword(text)) {
     return "deadline";
   }
 

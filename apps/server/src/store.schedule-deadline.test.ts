@@ -222,6 +222,40 @@ describe("RuntimeStore - Schedule and Deadlines", () => {
         vi.useRealTimers();
       }
     });
+
+    it("exposes only academic deadlines via academic view and can purge leaked non-academic records", () => {
+      store.createDeadline({
+        course: "DAT560",
+        task: "LLM foundations – part 1",
+        dueDate: "2026-03-02T02:00:00.000Z",
+        priority: "medium",
+        completed: false
+      });
+      store.createDeadline({
+        course: "DAT560",
+        task: "Assignment 2",
+        dueDate: "2026-03-03T02:00:00.000Z",
+        priority: "high",
+        completed: false
+      });
+      store.createDeadline({
+        course: "DAT560",
+        task: "Language Models – part 2",
+        dueDate: "2026-03-04T02:00:00.000Z",
+        priority: "medium",
+        completed: false,
+        canvasAssignmentId: 998
+      });
+
+      const academic = store.getAcademicDeadlines(new Date("2026-03-01T00:00:00.000Z"), false);
+      expect(academic).toHaveLength(2);
+      expect(academic.some((deadline) => deadline.task.includes("Assignment 2"))).toBe(true);
+      expect(academic.some((deadline) => deadline.canvasAssignmentId === 998)).toBe(true);
+
+      const removed = store.purgeNonAcademicDeadlines();
+      expect(removed).toBe(1);
+      expect(store.getDeadlines(new Date("2026-03-01T00:00:00.000Z"), false)).toHaveLength(2);
+    });
   });
 
   describe("dashboard summary integration", () => {

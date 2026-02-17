@@ -275,7 +275,7 @@ export function handleGetDeadlines(
   const daysAhead = (args.daysAhead as number) ?? 14;
   const now = new Date();
 
-  const deadlines = store.getDeadlines(now).filter((deadline) => {
+  const deadlines = store.getAcademicDeadlines(now).filter((deadline) => {
     const due = new Date(deadline.dueDate);
     if (Number.isNaN(due.getTime())) {
       return false;

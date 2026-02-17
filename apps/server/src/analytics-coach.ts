@@ -120,7 +120,7 @@ function buildDataset(store: RuntimeStore, periodDays: 7 | 14 | 30, now: Date): 
   const windowEndIso = toIsoDate(now);
   const nextWeekMs = nowMs + 7 * 24 * 60 * 60 * 1000;
 
-  const deadlines = store.getDeadlines(now);
+  const deadlines = store.getAcademicDeadlines(now);
   const deadlinesInWindow = sortDeadlinesAscending(deadlines).filter((deadline) =>
     inWindow(deadline.dueDate, windowStartMs, nowMs)
   );
