@@ -2766,7 +2766,7 @@ button:disabled {
 
   .chat-input {
     padding: 10px 12px;
-    font-size: 0.95rem;
+    font-size: 16px;
   }
 }
 
@@ -3113,9 +3113,31 @@ body.keyboard-open .tab-content-area {
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
+body.keyboard-open .app-shell-chat-active {
+  padding:
+    max(2px, calc(2px + env(safe-area-inset-top)))
+    0
+    0
+    0;
+}
+
+body.keyboard-open .app-shell-chat-active .tab-content-area {
+  padding-bottom: 0;
+}
+
+body.keyboard-open .app-shell-chat-active .chat-tab {
+  width: 100%;
+  margin: 0;
+}
+
 body.keyboard-open .chat-view {
   height: var(--app-viewport-height);
   max-height: var(--app-viewport-height);
+  border-radius: 0;
+}
+
+body.keyboard-open .chat-input-container {
+  padding: 8px 8px 8px;
 }
 
 body.keyboard-open .pull-to-refresh-container {
