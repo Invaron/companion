@@ -637,7 +637,7 @@ describe("chat service", () => {
     expect(firstRequest.systemInstruction).toContain("Tool plan: Call getSchedule");
   });
 
-  it("normalizes markdown-heavy assistant output to plain-text chat formatting", async () => {
+  it("preserves markdown styling in assistant output", async () => {
     generateChatResponse = vi.fn(async () => ({
       text: "**OK**. Today's schedule includes:\n\n* **DAT520 Laboratorium /Lab** from 09:15 to 11:00\n* **DAT520 Forelesning /Lecture** from 11:15 to 13:00",
       finishReason: "stop"
@@ -651,10 +651,9 @@ describe("chat service", () => {
       useFunctionCalling: true
     });
 
-    expect(result.reply).toContain("OK. Today's schedule includes");
-    expect(result.reply).toContain("- DAT520 Laboratorium /Lab from 09:15 to 11:00");
-    expect(result.reply).not.toContain("**");
-    expect(result.reply).not.toContain("\n* ");
+    expect(result.reply).toContain("**OK**. Today's schedule includes");
+    expect(result.reply).toContain("* **DAT520 Laboratorium /Lab** from 09:15 to 11:00");
+    expect(result.reply).toContain("* **DAT520 Forelesning /Lecture** from 11:15 to 13:00");
   });
 
   it("compacts large tool responses before sending functionResponse payloads to Gemini", async () => {
