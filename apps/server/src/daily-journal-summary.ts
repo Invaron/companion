@@ -26,6 +26,18 @@ function snippet(value: string, maxLength = 180): string {
   return `${value.slice(0, maxLength)}...`;
 }
 
+function enforceSecondPersonVoice(text: string): string {
+  return text
+    .replace(/\bthis user\b/gi, "you")
+    .replace(/\bthe user\b/gi, "you")
+    .replace(/\buser['’]s\b/gi, "your")
+    .replace(/\bthis student\b/gi, "you")
+    .replace(/\bthe student\b/gi, "you")
+    .replace(/\bstudent['’]s\b/gi, "your")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function collectTodayJournals(store: RuntimeStore, dateKey: string): JournalEntry[] {
   return store
     .getJournalEntries(80)
@@ -92,7 +104,8 @@ function buildPrompt(dateKey: string, journals: JournalEntry[], chats: ChatMessa
     .map((message) => `- [${message.timestamp}] ${snippet(message.content, 220)}`)
     .join("\n");
 
-  return `Analyze this user's daily reflection data for ${dateKey}. Focus on study consistency, stress/friction signals, and habit strengthening opportunities.
+  return `Analyze daily reflection data for ${dateKey}. Focus on study consistency, stress/friction signals, and habit strengthening opportunities.
+Address Lucy directly in second person (you/your). Never refer to "the user" or "the student".
 
 Return strict JSON with this shape only:
 {
@@ -153,8 +166,11 @@ function parseJsonInsights(raw: string): { summary: string; highlights: string[]
   }
 
   return {
-    summary,
-    highlights
+    summary: enforceSecondPersonVoice(summary),
+    highlights: highlights
+      .map((item) => enforceSecondPersonVoice(item))
+      .filter((item) => item.length > 0)
+      .slice(0, 5)
   };
 }
 
@@ -180,7 +196,7 @@ export async function generateDailyJournalSummary(
   try {
     const response = await gemini.generateChatResponse({
       systemInstruction:
-        "You are an academic coaching analyst. Output strict JSON only and base analysis strictly on provided user data.",
+        "You are an academic coaching analyst. Output strict JSON only, base analysis strictly on provided data, and address Lucy directly in second person.",
       messages: [
         {
           role: "user",
@@ -197,7 +213,7 @@ export async function generateDailyJournalSummary(
     return {
       ...fallback,
       generatedAt: nowIso(),
-      summary: parsed.summary,
+      summary: enforceSecondPersonVoice(parsed.summary),
       highlights: parsed.highlights.length > 0 ? parsed.highlights : fallback.highlights
     };
   } catch {

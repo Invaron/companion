@@ -63,6 +63,18 @@ function normalizeText(text: string, maxLength: number): string {
   return `${compact.slice(0, maxLength)}...`;
 }
 
+function enforceSecondPersonVoice(text: string): string {
+  return text
+    .replace(/\bthis user\b/gi, "you")
+    .replace(/\bthe user\b/gi, "you")
+    .replace(/\buser['’]s\b/gi, "your")
+    .replace(/\bthis student\b/gi, "you")
+    .replace(/\bthe student\b/gi, "you")
+    .replace(/\bstudent['’]s\b/gi, "your")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function toMs(value: string): number | null {
   const parsed = Date.parse(value);
   return Number.isNaN(parsed) ? null : parsed;
@@ -311,7 +323,8 @@ function buildPrompt(dataset: AnalyticsDataset): string {
     .map((message) => `- [${message.timestamp}] ${normalizeText(message.content, 180)}`)
     .join("\n");
 
-  return `Analyze this student's behavior patterns for the last ${dataset.periodDays} days.
+  return `Analyze behavior patterns for the last ${dataset.periodDays} days.
+Address Lucy directly in second person (you/your). Never refer to "the user" or "the student".
 
 Return strict JSON only:
 {
@@ -404,10 +417,10 @@ function parseInsightJson(raw: string): ParsedCoachInsight | null {
   }
 
   return {
-    summary,
-    strengths: uniqueTrimmed(strengths, 5),
-    risks: uniqueTrimmed(risks, 5),
-    recommendations: uniqueTrimmed(recommendations, 5)
+    summary: enforceSecondPersonVoice(summary),
+    strengths: uniqueTrimmed(strengths.map((item) => enforceSecondPersonVoice(item)), 5),
+    risks: uniqueTrimmed(risks.map((item) => enforceSecondPersonVoice(item)), 5),
+    recommendations: uniqueTrimmed(recommendations.map((item) => enforceSecondPersonVoice(item)), 5)
   };
 }
 
@@ -428,7 +441,7 @@ export async function generateAnalyticsCoachInsight(
   try {
     const response = await gemini.generateChatResponse({
       systemInstruction:
-        "You are an academic habit coach. Return strict JSON only, grounded exclusively in provided data.",
+        "You are an academic habit coach. Return strict JSON only, grounded exclusively in provided data, and address Lucy directly in second person.",
       messages: [
         {
           role: "user",
@@ -446,7 +459,7 @@ export async function generateAnalyticsCoachInsight(
       ...fallback,
       generatedAt: nowIso(),
       source: "gemini",
-      summary: parsed.summary,
+      summary: enforceSecondPersonVoice(parsed.summary),
       strengths: mergeListWithFallback(parsed.strengths, fallback.strengths, 2, 5),
       risks: mergeListWithFallback(parsed.risks, fallback.risks, 2, 5),
       recommendations: mergeListWithFallback(parsed.recommendations, fallback.recommendations, 3, 5)

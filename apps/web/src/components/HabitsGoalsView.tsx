@@ -96,7 +96,7 @@ export function HabitsGoalsView(): JSX.Element {
   const refreshSummary = async (): Promise<void> => {
     setSummaryLoading(true);
     setSummaryMessage("");
-    const nextSummary = await getDailyJournalSummary();
+    const nextSummary = await getDailyJournalSummary({ forceRefresh: true });
     if (nextSummary) {
       setDailySummary(nextSummary);
     } else {
@@ -603,6 +603,16 @@ export function HabitsGoalsView(): JSX.Element {
       {goalMessage && <p className="warning-text">{goalMessage}</p>}
       {summaryMessage && <p className="warning-text">{summaryMessage}</p>}
 
+      <div className="habit-grid">
+        {habits.map(renderHabit)}
+        {habits.length === 0 && <p className="muted">No habits yet. Ask Gemini to create one, then edit it here.</p>}
+      </div>
+
+      <div className="habit-grid">
+        {goals.map(renderGoal)}
+        {goals.length === 0 && <p className="muted">No goals tracked yet. Ask Gemini to create one, then edit it here.</p>}
+      </div>
+
       <section className="daily-summary-panel">
         <header className="panel-header">
           <h3>Daily Reflection Summary</h3>
@@ -627,16 +637,6 @@ export function HabitsGoalsView(): JSX.Element {
           </>
         )}
       </section>
-
-      <div className="habit-grid">
-        {habits.map(renderHabit)}
-        {habits.length === 0 && <p className="muted">No habits yet. Ask Gemini to create one, then edit it here.</p>}
-      </div>
-
-      <div className="habit-grid">
-        {goals.map(renderGoal)}
-        {goals.length === 0 && <p className="muted">No goals tracked yet. Ask Gemini to create one, then edit it here.</p>}
-      </div>
     </section>
   );
 }

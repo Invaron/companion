@@ -20,7 +20,7 @@ function seedAnalyticsData(store: RuntimeStore, referenceNow: Date): void {
 
   store.createDeadline({
     course: "DAT520",
-    task: "Lab report",
+    task: "Assignment lab report",
     dueDate: dueYesterday,
     priority: "medium",
     completed: true
@@ -128,5 +128,35 @@ describe("analytics-coach", () => {
     expect(insight.source).toBe("fallback");
     expect(insight.periodDays).toBe(30);
     expect(insight.recommendations.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("normalizes third-person references to second-person voice", async () => {
+    const store = new RuntimeStore(":memory:");
+    const now = new Date("2026-02-17T14:00:00.000Z");
+    seedAnalyticsData(store, now);
+
+    const fakeGemini = {
+      isConfigured: () => true,
+      generateChatResponse: vi.fn().mockResolvedValue({
+        text: JSON.stringify({
+          summary: "The student is doing well, but the user should protect focus blocks.",
+          strengths: ["The user maintains streaks."],
+          risks: ["The student may miss deadlines without planning."],
+          recommendations: ["The user should lock one deep-work block tonight."]
+        })
+      })
+    } as unknown as GeminiClient;
+
+    const insight = await generateAnalyticsCoachInsight(store, {
+      periodDays: 7,
+      now,
+      geminiClient: fakeGemini
+    });
+
+    expect(insight.summary.toLowerCase()).not.toContain("the student");
+    expect(insight.summary.toLowerCase()).not.toContain("the user");
+    expect(insight.strengths.join(" ").toLowerCase()).not.toContain("the user");
+    expect(insight.risks.join(" ").toLowerCase()).not.toContain("the student");
+    expect(insight.recommendations.join(" ").toLowerCase()).not.toContain("the user");
   });
 });
