@@ -4,6 +4,7 @@ import { z } from "zod";
 import { BackgroundSyncService } from "./background-sync.js";
 import { buildCalendarImportPreview, parseICS } from "./calendar-import.js";
 import { config } from "./config.js";
+import { buildDeadlineDedupResult } from "./deadline-dedup.js";
 import { generateDeadlineSuggestions } from "./deadline-suggestions.js";
 import { executePendingChatAction } from "./gemini-tools.js";
 import {
@@ -908,6 +909,10 @@ app.post("/api/deadlines", (req, res) => {
 
 app.get("/api/deadlines", (_req, res) => {
   return res.json({ deadlines: store.getDeadlines() });
+});
+
+app.get("/api/deadlines/duplicates", (_req, res) => {
+  return res.json(buildDeadlineDedupResult(store.getDeadlines()));
 });
 
 app.get("/api/deadlines/suggestions", (_req, res) => {

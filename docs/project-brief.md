@@ -349,6 +349,6 @@ Features are built in priority order. The orchestrator reads this section to dec
 | | **— Phase 6: Reliability & Integration Controls —** | | |
 | ✅ done | `integration-scope-settings-ui` | frontend-engineer | Add integration scope controls in Settings: selectable Canvas courses, editable TP course IDs, and date-window inputs with a preview of records that will sync before applying changes. |
 | ✅ done | `integration-scope-enforcement` | backend-engineer | Enforce per-user integration scope in TP/Canvas ingestion and sync pipelines so only selected courses and in-window records are stored and bridged into deadlines/schedule. |
-| ⬜ todo | `deadline-dedup-merge` | backend-engineer | Add duplicate deadline detection across Canvas, GitHub, and manual sources with merge suggestions and a canonical-record strategy to prevent multi-source assignment duplicates. |
+| ✅ done | `deadline-dedup-merge` | backend-engineer | Add duplicate deadline detection across Canvas, GitHub, and manual sources with merge suggestions and a canonical-record strategy to prevent multi-source assignment duplicates. |
 | ⬜ todo | `notification-digest-batching` | backend-engineer | Batch non-urgent nudges into configurable morning/evening digest notifications with deep links, while preserving immediate delivery for critical reminders. |
 | ⬜ todo | `offline-readonly-cache-ui` | frontend-engineer | Cache last-known schedule, deadlines, study plan, and social digest snapshots for offline viewing with stale-data indicators and one-tap refresh when back online. |
