@@ -2,12 +2,10 @@ import { useEffect, useState } from "react";
 import {
   getCanvasStatus,
   getGeminiStatus,
-  getTPStatus,
-  triggerCanvasSync,
-  triggerTPSync
+  triggerCanvasSync
 } from "../lib/api";
 import { loadCanvasSettings, saveCanvasStatus } from "../lib/storage";
-import type { CanvasStatus, TPStatus, GeminiStatus } from "../types";
+import type { CanvasStatus, GeminiStatus } from "../types";
 
 function formatRelative(timestamp: string | null): string {
   if (!timestamp) return "Never";
@@ -31,11 +29,6 @@ export function IntegrationStatusView(): JSX.Element {
     lastSyncedAt: null,
     courses: []
   });
-  const [tpStatus, setTPStatus] = useState<TPStatus>({
-    lastSyncedAt: null,
-    eventsCount: 0,
-    isSyncing: false
-  });
   const [geminiStatus, setGeminiStatus] = useState<GeminiStatus>({
     apiConfigured: false,
     model: "unknown",
@@ -44,19 +37,15 @@ export function IntegrationStatusView(): JSX.Element {
   });
 
   const [canvasSyncing, setCanvasSyncing] = useState(false);
-  const [tpSyncing, setTPSyncing] = useState(false);
   const [canvasMessage, setCanvasMessage] = useState("");
-  const [tpMessage, setTPMessage] = useState("");
 
   useEffect(() => {
     const loadStatuses = async (): Promise<void> => {
-      const [canvas, tp, gemini] = await Promise.all([
+      const [canvas, gemini] = await Promise.all([
         getCanvasStatus(),
-        getTPStatus(),
         getGeminiStatus()
       ]);
       setCanvasStatus(canvas);
-      setTPStatus(tp);
       setGeminiStatus(gemini);
     };
 
@@ -77,18 +66,6 @@ export function IntegrationStatusView(): JSX.Element {
     setCanvasSyncing(false);
   };
 
-  const handleTPSync = async (): Promise<void> => {
-    setTPSyncing(true);
-    setTPMessage("");
-
-    const result = await triggerTPSync();
-    setTPMessage(result.success ? "TP schedule synced successfully." : result.error ?? "TP sync failed.");
-
-    const nextStatus = await getTPStatus();
-    setTPStatus(nextStatus);
-    setTPSyncing(false);
-  };
-
   const canvasStatusLabel = canvasSyncing 
     ? "Syncing..." 
     : canvasStatus.lastSyncedAt 
@@ -97,17 +74,6 @@ export function IntegrationStatusView(): JSX.Element {
   const canvasStatusClass = canvasSyncing 
     ? "status-running" 
     : canvasStatus.lastSyncedAt 
-      ? "status-running" 
-      : "status-idle";
-
-  const tpStatusLabel = tpSyncing || tpStatus.isSyncing
-    ? "Syncing..." 
-    : tpStatus.lastSyncedAt 
-      ? "Connected" 
-      : "Not synced yet";
-  const tpStatusClass = tpSyncing || tpStatus.isSyncing
-    ? "status-running" 
-    : tpStatus.lastSyncedAt 
       ? "status-running" 
       : "status-idle";
 
@@ -153,32 +119,11 @@ export function IntegrationStatusView(): JSX.Element {
         <div className="panel">
           <header className="panel-header">
             <h3>TP EduCloud Schedule</h3>
-            <span className={`status ${tpStatusClass}`}>{tpStatusLabel}</span>
+            <span className="status status-idle">Manual import</span>
           </header>
-
-          <div className="panel-header">
-            <div>
-              <p className="muted">Last synced</p>
-              <strong>{formatRelative(tpStatus.lastSyncedAt)}</strong>
-            </div>
-            <button 
-              type="button" 
-              onClick={() => void handleTPSync()} 
-              disabled={tpSyncing || tpStatus.isSyncing}
-            >
-              {tpSyncing || tpStatus.isSyncing ? "Syncing..." : "Sync now"}
-            </button>
-          </div>
-
-          {tpMessage && <p>{tpMessage}</p>}
-
-          {tpStatus.error && (
-            <p className="error">{tpStatus.error}</p>
-          )}
-
-          <div>
-            <p className="muted">Schedule events: {tpStatus.eventsCount}</p>
-          </div>
+          <p className="muted">
+            TP lecture plans are imported from your iCal URL in the Calendar Import section below.
+          </p>
         </div>
 
         {/* Gemini AI */}
