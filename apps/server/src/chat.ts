@@ -589,12 +589,39 @@ Core behavior:
 - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
 - For mutating requests, always use queue* action tools and require explicit user confirmation.
 - Keep replies concise, practical, and conversational.
+- Output plain text only. Do not use Markdown emphasis (like **bold** or *italic*), headings, tables, or fenced code blocks.
+- For lists, use simple '- ' prefixed lines.
 - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
 
 Detected intent: ${intent}
 ${buildIntentGuidance(intent)}
 
 ${buildFewShotIntentExamplesPrompt()}`;
+}
+
+function normalizeAssistantReply(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  let normalized = trimmed
+    .replace(/^\s*#{1,6}\s+/gm, "")
+    .replace(/^\s*[*+-]\s+/gm, "- ")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1: $2")
+    .replace(/^\s*>\s?/gm, "");
+
+  // Remove inline italic markers while preserving surrounding punctuation/spacing.
+  normalized = normalized
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?:;]|$)/g, "$1$2")
+    .replace(/(^|[\s(])_([^_\n]+)_(?=[\s).,!?:;]|$)/g, "$1$2")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return normalized.length > 0 ? normalized : trimmed;
 }
 
 function extractPendingActions(value: unknown): ChatPendingAction[] {
@@ -1336,7 +1363,7 @@ export async function sendChatMessage(
       };
     }
 
-    const assistantMessage = store.recordChatMessage("assistant", assistantReply, assistantMetadata);
+    const assistantMessage = store.recordChatMessage("assistant", normalizeAssistantReply(assistantReply), assistantMetadata);
     const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
     const citations = assistantMessage.metadata?.citations ?? [];
 
@@ -1445,7 +1472,7 @@ export async function sendChatMessage(
             ? { citations: Array.from(citations.values()).slice(0, MAX_CHAT_CITATIONS) }
             : {})
         };
-        const assistantMessage = store.recordChatMessage("assistant", fallbackReply, assistantMetadata);
+        const assistantMessage = store.recordChatMessage("assistant", normalizeAssistantReply(fallbackReply), assistantMetadata);
         const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
 
         return {
@@ -1490,7 +1517,7 @@ export async function sendChatMessage(
         ? { citations: Array.from(citations.values()).slice(0, MAX_CHAT_CITATIONS) }
         : {})
     };
-    const assistantMessage = store.recordChatMessage("assistant", fallbackReply, assistantMetadata);
+    const assistantMessage = store.recordChatMessage("assistant", normalizeAssistantReply(fallbackReply), assistantMetadata);
     const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
 
     return {
@@ -1505,14 +1532,14 @@ export async function sendChatMessage(
   }
 
   const finalReply = response.text.trim().length > 0
-    ? response.text
+    ? normalizeAssistantReply(response.text)
     : executedFunctionResponses.length > 0
-      ? buildToolDataFallbackReply(
+      ? normalizeAssistantReply(buildToolDataFallbackReply(
           executedFunctionResponses,
           pendingActionsFromTooling,
           "I fetched your data:"
-        )
-      : buildPendingActionFallbackReply(pendingActionsFromTooling);
+        ))
+      : normalizeAssistantReply(buildPendingActionFallbackReply(pendingActionsFromTooling));
 
   const assistantMetadata: ChatMessageMetadata = {
     contextWindow,
