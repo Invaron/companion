@@ -1842,6 +1842,70 @@ button:disabled {
   overflow: hidden;
 }
 
+.chat-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--card);
+}
+
+.chat-talk-mode-btn {
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-talk-mode-btn-on {
+  border-color: var(--accent-border);
+  background: var(--accent-surface);
+}
+
+.chat-talk-wave {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-talk-wave span {
+  width: 4px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.chat-talk-wave span.listening,
+.chat-talk-wave span.speaking {
+  animation: chatWavePulse 1s ease-in-out infinite;
+  background: var(--accent);
+}
+
+.chat-talk-wave span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.chat-talk-wave span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes chatWavePulse {
+  0%, 100% {
+    transform: scaleY(0.8);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scaleY(2);
+    opacity: 1;
+  }
+}
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -2045,6 +2109,41 @@ button:disabled {
   background: var(--card);
   border-top: 1px solid var(--border-soft);
   align-items: center;
+}
+
+.chat-voice-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.chat-voice-button-listening {
+  border-color: var(--accent-border);
+  background: var(--accent-surface);
+  animation: chatVoiceListening 1s ease-in-out infinite;
+}
+
+.chat-voice-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes chatVoiceListening {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 .chat-input {
