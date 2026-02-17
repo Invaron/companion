@@ -139,6 +139,10 @@ export default function App(): JSX.Element {
     const KEYBOARD_GAP_THRESHOLD_PX = 80;
     const VIEWPORT_DROP_THRESHOLD_PX = 110;
     let baselineViewportHeight = Math.round(window.visualViewport?.height ?? window.innerHeight);
+    const isCoarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches ?? false;
+    const isIOS =
+      /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
     const hasEditableFocus = (): boolean => {
       const active = document.activeElement;
@@ -155,20 +159,28 @@ export default function App(): JSX.Element {
       const viewport = window.visualViewport;
       const viewportHeight = Math.round(viewport?.height ?? window.innerHeight);
       const viewportOffsetTop = Math.round(viewport?.offsetTop ?? 0);
-      root.style.setProperty("--app-viewport-height", `${viewportHeight}px`);
-      root.style.setProperty("--app-viewport-offset-top", `${viewportOffsetTop}px`);
 
       const editableFocused = hasEditableFocus();
+      const chatTabActive = document.body.classList.contains("chat-tab-active");
+      const mobileChatInputFocused = editableFocused && chatTabActive && (isIOS || isCoarsePointer);
       if (!editableFocused) {
         baselineViewportHeight = Math.max(baselineViewportHeight, viewportHeight);
       }
+
+      // Keep layout height stable while typing in chat on iOS/touch devices.
+      // This prevents Safari keyboard viewport resizes from shifting the full app shell.
+      const cssViewportHeight = mobileChatInputFocused ? baselineViewportHeight : viewportHeight;
+      const cssViewportOffsetTop = mobileChatInputFocused ? 0 : viewportOffsetTop;
+      root.style.setProperty("--app-viewport-height", `${cssViewportHeight}px`);
+      root.style.setProperty("--app-viewport-offset-top", `${cssViewportOffsetTop}px`);
 
       // iOS Safari can keep innerHeight and visualViewport in sync while the keyboard is open.
       // Detect keyboard-open via either direct gap or a significant viewport height drop while focused.
       const keyboardGap = Math.max(0, Math.round(window.innerHeight - viewportHeight - viewportOffsetTop));
       const viewportDrop = Math.max(0, baselineViewportHeight - viewportHeight);
       const keyboardOpen =
-        editableFocused && (keyboardGap > KEYBOARD_GAP_THRESHOLD_PX || viewportDrop > VIEWPORT_DROP_THRESHOLD_PX);
+        mobileChatInputFocused ||
+        (editableFocused && (keyboardGap > KEYBOARD_GAP_THRESHOLD_PX || viewportDrop > VIEWPORT_DROP_THRESHOLD_PX));
       document.body.classList.toggle("keyboard-open", keyboardOpen);
     };
 

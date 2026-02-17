@@ -3104,21 +3104,22 @@ button:disabled {
 }
 
 body.keyboard-open .tab-bar {
-  transform: translateY(120%);
+  transform: translateY(130%);
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
+  display: none;
 }
 
 body.keyboard-open .app-shell {
   max-width: none;
   width: 100%;
   margin: 0;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding-bottom: max(4px, env(safe-area-inset-bottom));
 }
 
 body.keyboard-open .tab-content-area {
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding-bottom: max(4px, env(safe-area-inset-bottom));
 }
 
 body.keyboard-open .app-shell-chat-active {
