@@ -1,30 +1,19 @@
-import { useState } from "react";
 import { OnboardingProfile } from "../types";
 
 interface OnboardingFlowProps {
   onComplete: (profile: OnboardingProfile) => void;
 }
 
-const tones: Array<OnboardingProfile["nudgeTone"]> = ["gentle", "balanced", "direct"];
+const DEFAULT_TIMEZONE = "Europe/Oslo";
+const DEFAULT_NUDGE_TONE: NonNullable<OnboardingProfile["nudgeTone"]> = "balanced";
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps): JSX.Element {
-  const [name, setName] = useState("");
-  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
-  const [baselineSchedule, setBaselineSchedule] = useState("");
-  const [nudgeTone, setNudgeTone] = useState<OnboardingProfile["nudgeTone"]>("balanced");
-
-  const handleSubmit = (event: React.FormEvent): void => {
+  const handleContinue = (event: React.FormEvent): void => {
     event.preventDefault();
 
-    if (!name.trim() || !timezone.trim() || !baselineSchedule.trim()) {
-      return;
-    }
-
     const profile: OnboardingProfile = {
-      name: name.trim(),
-      timezone: timezone.trim(),
-      baselineSchedule: baselineSchedule.trim(),
-      nudgeTone,
+      timezone: DEFAULT_TIMEZONE,
+      nudgeTone: DEFAULT_NUDGE_TONE,
       completedAt: new Date().toISOString()
     };
     onComplete(profile);
@@ -35,45 +24,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps): JSX.Element
       <header className="panel-header">
         <h2>Welcome to Companion</h2>
       </header>
-      <p>Set up your profile so reminders and coaching fit your routine.</p>
-      <p className="muted">Integrations are managed from server environment variables and Settings.</p>
-      <form className="journal-input-form" onSubmit={handleSubmit}>
-        <label>
-          Name
-          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Lucy" />
-        </label>
-
-        <label>
-          Timezone
-          <input
-            value={timezone}
-            onChange={(event) => setTimezone(event.target.value)}
-            placeholder="Europe/Copenhagen"
-          />
-        </label>
-
-        <label>
-          Baseline schedule
-          <textarea
-            value={baselineSchedule}
-            onChange={(event) => setBaselineSchedule(event.target.value)}
-            rows={3}
-            placeholder="Classes Mon–Fri 9-15, gym Tue/Thu 17:00"
-          />
-        </label>
-
-        <label>
-          Preferred nudge tone
-          <select value={nudgeTone} onChange={(event) => setNudgeTone(event.target.value as OnboardingProfile["nudgeTone"])}>
-            {tones.map((tone) => (
-              <option key={tone} value={tone}>
-                {tone}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <button type="submit" disabled={!name.trim() || !timezone.trim() || !baselineSchedule.trim()}>
+      <p>Onboarding uses defaults and starts immediately.</p>
+      <p className="muted">Timezone defaults to Norway (`Europe/Oslo`) and nudge tone defaults to balanced.</p>
+      <form className="journal-input-form" onSubmit={handleContinue}>
+        <button type="submit">
           Start using Companion
         </button>
       </form>
