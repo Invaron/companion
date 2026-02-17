@@ -3182,19 +3182,16 @@ body.keyboard-open .app-shell {
   max-width: none;
   width: 100%;
   margin: 0;
-  padding-bottom: 0;
+  padding: 0;
 }
 
 body.keyboard-open .tab-content-area {
   padding-bottom: 0;
+  min-height: 0;
 }
 
 body.keyboard-open .app-shell-chat-active {
-  padding:
-    max(2px, calc(2px + env(safe-area-inset-top)))
-    0
-    0
-    0;
+  padding: 0;
 }
 
 body.keyboard-open .app-shell-chat-active .tab-content-area {
@@ -3235,15 +3232,18 @@ body.keyboard-open .chat-talk-mode-btn {
 }
 
 body.keyboard-open .chat-input-container {
-  position: sticky;
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: 0;
-  z-index: 4;
-  padding: 4px 6px max(4px, env(safe-area-inset-bottom));
+  z-index: 6;
+  padding: 4px 6px 2px;
+  border-top: 1px solid var(--border-soft);
   background: rgba(7, 14, 20, 0.96);
 }
 
 body.keyboard-open .chat-messages {
-  padding: 8px 8px 10px;
+  padding: 8px 8px 62px;
   background: #091019;
 }
 
