@@ -27,7 +27,6 @@ import {
   CanvasSettings,
   CanvasStatus,
   CanvasSyncResult,
-  TPStatus,
   TPSyncResult,
   IntegrationScopePreview,
   GeminiStatus,
@@ -687,18 +686,6 @@ export async function getCanvasStatus(): Promise<CanvasStatus> {
     return status;
   } catch {
     return loadCanvasStatus();
-  }
-}
-
-export async function getTPStatus(): Promise<TPStatus> {
-  try {
-    return await jsonOrThrow<TPStatus>("/api/tp/status");
-  } catch {
-    return {
-      lastSyncedAt: null,
-      eventsCount: 0,
-      isSyncing: false
-    };
   }
 }
 
