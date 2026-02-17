@@ -99,20 +99,17 @@ function formatRoomLabel(location: string | undefined): string | null {
   }
 
   const compact = location.replace(/\r\n/g, " ").replace(/\s+/g, " ").trim();
+  const explicitRoom = compact.match(/\b([A-Za-z]{1,4}-\d{2,4}[A-Za-z]?)\b/);
+  if (explicitRoom?.[1]) {
+    return explicitRoom[1].toUpperCase();
+  }
+
+  const spacedRoom = compact.match(/\b([A-Za-z]{1,4})\s+(\d{2,4}[A-Za-z]?)\b/);
+  if (spacedRoom?.[1] && spacedRoom?.[2]) {
+    return `${spacedRoom[1]}-${spacedRoom[2]}`.toUpperCase();
+  }
+
   const segment = compact.split(/[,;|]/).map((value) => value.trim()).filter(Boolean).pop() ?? compact;
-
-  const sectionPattern = /^([A-Za-z]{2,})\s+[A-Za-z]-?(\d{2,4}[A-Za-z]?)$/;
-  const sectionMatch = segment.match(sectionPattern);
-  if (sectionMatch) {
-    return `${sectionMatch[1]}-${sectionMatch[2]}`.toUpperCase();
-  }
-
-  const buildingPattern = /^([A-Za-z]{2,})\s+(\d{2,4}[A-Za-z]?)$/;
-  const buildingMatch = segment.match(buildingPattern);
-  if (buildingMatch) {
-    return `${buildingMatch[1]}-${buildingMatch[2]}`.toUpperCase();
-  }
-
   return segment.replace(/\s*-\s*/g, "-");
 }
 
@@ -183,6 +180,16 @@ function allocatePlannedBlocks(
   }
 
   return segments;
+}
+
+function formatDayTimelineLabel(segment: DayTimelineSegment): string {
+  if (segment.type !== "event") {
+    return segment.suggestion ?? "Focus block";
+  }
+
+  const title = formatLectureTitle(segment.event?.title ?? "Scheduled block");
+  const roomLabel = formatRoomLabel(segment.event?.location);
+  return roomLabel ? `${title} • ${roomLabel}` : title;
 }
 
 function buildDayTimeline(
@@ -420,9 +427,7 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
                   <span>{formatDuration(minutesBetween(segment.start, segment.end))}</span>
                 </div>
                 <p className="day-timeline-item-label">
-                  {segment.type === "event"
-                    ? formatLectureTitle(segment.event?.title ?? "Scheduled block")
-                    : segment.suggestion ?? "Focus block"}
+                  {formatDayTimelineLabel(segment)}
                 </p>
               </li>
             ))}
