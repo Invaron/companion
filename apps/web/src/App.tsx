@@ -181,6 +181,8 @@ export default function App(): JSX.Element {
       const keyboardOpen =
         mobileChatInputFocused ||
         (editableFocused && (keyboardGap > KEYBOARD_GAP_THRESHOLD_PX || viewportDrop > VIEWPORT_DROP_THRESHOLD_PX));
+      const effectiveKeyboardGap = keyboardOpen ? Math.max(keyboardGap, viewportDrop) : 0;
+      root.style.setProperty("--keyboard-gap", `${effectiveKeyboardGap}px`);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
     };
 
@@ -210,6 +212,7 @@ export default function App(): JSX.Element {
       window.visualViewport?.removeEventListener("scroll", updateViewportVars);
       root.style.removeProperty("--app-viewport-height");
       root.style.removeProperty("--app-viewport-offset-top");
+      root.style.removeProperty("--keyboard-gap");
       document.body.classList.remove("keyboard-open");
     };
   }, []);
