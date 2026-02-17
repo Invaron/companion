@@ -305,6 +305,8 @@ interface ParsedActionCommand {
   actionId: string;
 }
 
+type ChatIntent = "schedule" | "deadlines" | "journal" | "emails" | "social" | "actions" | "general";
+
 interface ExecutedFunctionResponse {
   name: string;
   rawResponse: unknown;
@@ -321,6 +323,109 @@ function parseActionCommand(input: string): ParsedActionCommand | null {
     type: match[1].toLowerCase() as ParsedActionCommand["type"],
     actionId: match[2]
   };
+}
+
+const INTENT_PATTERNS: Array<{ intent: Exclude<ChatIntent, "general">; patterns: RegExp[] }> = [
+  {
+    intent: "schedule",
+    patterns: [
+      /\bschedule\b/i,
+      /\blecture\b/i,
+      /\bclass(es)?\b/i,
+      /\bcalendar\b/i,
+      /\bfree time\b/i,
+      /\bwhat('?s| is) (on|in) (my )?(day|today)\b/i
+    ]
+  },
+  {
+    intent: "deadlines",
+    patterns: [
+      /\bdeadline(s)?\b/i,
+      /\bdue\b/i,
+      /\bassignment(s)?\b/i,
+      /\bhomework\b/i,
+      /\bsubmission\b/i
+    ]
+  },
+  {
+    intent: "journal",
+    patterns: [
+      /\bjournal\b/i,
+      /\bdiary\b/i,
+      /\bwrite\b/i,
+      /\breflection\b/i,
+      /\bwhat have i written\b/i
+    ]
+  },
+  {
+    intent: "emails",
+    patterns: [
+      /\bemail(s)?\b/i,
+      /\binbox\b/i,
+      /\bgmail\b/i,
+      /\bmessage(s)?\b/i,
+      /\bunread\b/i
+    ]
+  },
+  {
+    intent: "social",
+    patterns: [
+      /\byoutube\b/i,
+      /\bvideo(s)?\b/i,
+      /\btwitter\b/i,
+      /\bx\b/i,
+      /\bthread(s)?\b/i,
+      /\bsocial\b/i
+    ]
+  },
+  {
+    intent: "actions",
+    patterns: [
+      /\bcomplete\b/i,
+      /\bsnooze\b/i,
+      /\bmark\b/i,
+      /\barchive\b/i,
+      /\bdelete\b/i,
+      /\badd\b/i,
+      /\bcreate\b/i,
+      /\bupdate\b/i
+    ]
+  }
+];
+
+function detectChatIntent(userInput: string): ChatIntent {
+  let bestIntent: ChatIntent = "general";
+  let bestScore = 0;
+
+  for (const rule of INTENT_PATTERNS) {
+    const score = rule.patterns.reduce((count, pattern) => (pattern.test(userInput) ? count + 1 : count), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestIntent = rule.intent;
+    }
+  }
+
+  return bestIntent;
+}
+
+function buildIntentGuidance(intent: ChatIntent): string {
+  switch (intent) {
+    case "schedule":
+      return "Intent hint: schedule. Prefer getSchedule first and answer with specific times.";
+    case "deadlines":
+      return "Intent hint: deadlines. Prefer getDeadlines and highlight urgency/order clearly.";
+    case "journal":
+      return "Intent hint: journal. Prefer searchJournal before answering memory/reflection questions.";
+    case "emails":
+      return "Intent hint: emails. Prefer getEmails for inbox-related requests.";
+    case "social":
+      return "Intent hint: social. Prefer getSocialDigest for YouTube/X requests.";
+    case "actions":
+      return "Intent hint: action request. Use queue* action tools and require explicit confirmation.";
+    case "general":
+    default:
+      return "Intent hint: general. Ask a short clarification only if needed, otherwise use tools on demand.";
+  }
 }
 
 function extractPendingActions(value: unknown): ChatPendingAction[] {
@@ -1078,6 +1183,7 @@ export async function sendChatMessage(
 
   const gemini = options.geminiClient ?? getGeminiClient();
   const useFunctionCalling = options.useFunctionCalling ?? true;
+  const intent = detectChatIntent(userInput);
   
   // Build lightweight context for function calling mode (or full context for legacy mode)
   const { contextWindow, history } = useFunctionCalling 
@@ -1089,7 +1195,10 @@ export async function sendChatMessage(
 
 When you need information about the user's schedule, deadlines, journal entries, emails, or social media, use the available tools to fetch that data on demand.
 For actions that change data, use queue* action tools and clearly request explicit user confirmation.
-Keep responses concise, encouraging, and conversational.`
+Keep responses concise, encouraging, and conversational.
+
+Detected intent: ${intent}
+${buildIntentGuidance(intent)}`
     : buildSystemPrompt(config.USER_NAME, contextWindow);
 
   const messages = toGeminiMessages(history, userInput);

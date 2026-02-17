@@ -571,6 +571,38 @@ describe("chat service", () => {
     expect(result.reply).toContain("Schedule today");
   });
 
+  it("injects schedule intent guidance into function-calling instruction", async () => {
+    await sendChatMessage(store, "What's my lecture schedule today?", {
+      geminiClient: fakeGemini,
+      useFunctionCalling: true
+    });
+
+    const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
+    expect(firstRequest.systemInstruction).toContain("Detected intent: schedule");
+    expect(firstRequest.systemInstruction).toContain("Prefer getSchedule first");
+  });
+
+  it("injects journal intent guidance into function-calling instruction", async () => {
+    await sendChatMessage(store, "What have I written in my journal?", {
+      geminiClient: fakeGemini,
+      useFunctionCalling: true
+    });
+
+    const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
+    expect(firstRequest.systemInstruction).toContain("Detected intent: journal");
+    expect(firstRequest.systemInstruction).toContain("Prefer searchJournal");
+  });
+
+  it("falls back to general intent when no specific domain keywords are present", async () => {
+    await sendChatMessage(store, "Hello there", {
+      geminiClient: fakeGemini,
+      useFunctionCalling: true
+    });
+
+    const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
+    expect(firstRequest.systemInstruction).toContain("Detected intent: general");
+  });
+
   it("compacts large tool responses before sending functionResponse payloads to Gemini", async () => {
     const now = Date.now();
     for (let index = 0; index < 12; index += 1) {
