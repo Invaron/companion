@@ -916,6 +916,17 @@ export interface NutritionMealCreatePayload {
   notes?: string;
 }
 
+export interface NutritionMealUpdatePayload {
+  name?: string;
+  mealType?: "breakfast" | "lunch" | "dinner" | "snack" | "other";
+  consumedAt?: string;
+  calories?: number;
+  proteinGrams?: number;
+  carbsGrams?: number;
+  fatGrams?: number;
+  notes?: string;
+}
+
 export interface NutritionCustomFoodCreatePayload {
   name: string;
   unitLabel?: string;
@@ -1087,6 +1098,21 @@ export async function createNutritionMeal(payload: NutritionMealCreatePayload): 
   try {
     const response = await jsonOrThrow<{ meal: NutritionMeal }>("/api/nutrition/meals", {
       method: "POST",
+      body: JSON.stringify(payload)
+    });
+    return response.meal;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateNutritionMeal(
+  mealId: string,
+  payload: NutritionMealUpdatePayload
+): Promise<NutritionMeal | null> {
+  try {
+    const response = await jsonOrThrow<{ meal: NutritionMeal }>(`/api/nutrition/meals/${mealId}`, {
+      method: "PATCH",
       body: JSON.stringify(payload)
     });
     return response.meal;

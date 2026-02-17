@@ -75,6 +75,31 @@ describe("RuntimeStore - nutrition", () => {
     expect(store.getNutritionMealById(keep.id)).toBeNull();
   });
 
+  it("updates a logged meal for quick portion adjustments", () => {
+    const meal = store.createNutritionMeal({
+      name: "Protein shake",
+      mealType: "snack",
+      consumedAt: "2026-02-17T10:00:00.000Z",
+      calories: 200,
+      proteinGrams: 30,
+      carbsGrams: 8,
+      fatGrams: 3
+    });
+
+    const updated = store.updateNutritionMeal(meal.id, {
+      calories: 250,
+      proteinGrams: 37.5,
+      carbsGrams: 10,
+      fatGrams: 3.8
+    });
+
+    expect(updated).not.toBeNull();
+    expect(updated?.calories).toBe(250);
+    expect(updated?.proteinGrams).toBe(37.5);
+    expect(updated?.carbsGrams).toBe(10);
+    expect(updated?.fatGrams).toBe(3.8);
+  });
+
   it("upserts meal plan blocks and includes them in daily summary", () => {
     const created = store.upsertNutritionMealPlanBlock({
       title: "Pre-workout snack",

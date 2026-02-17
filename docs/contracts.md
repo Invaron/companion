@@ -195,6 +195,37 @@ Response:
 }
 ```
 
+### PATCH `/api/nutrition/meals/:id`
+
+Request (all fields optional, at least one required):
+
+```json
+{
+  "calories": 250,
+  "proteinGrams": 37.5,
+  "carbsGrams": 10,
+  "fatGrams": 3.8
+}
+```
+
+Response:
+
+```json
+{
+  "meal": {
+    "id": "meal-123",
+    "name": "Protein shake",
+    "mealType": "snack",
+    "consumedAt": "2026-02-17T10:00:00.000Z",
+    "calories": 250,
+    "proteinGrams": 37.5,
+    "carbsGrams": 10,
+    "fatGrams": 3.8,
+    "createdAt": "2026-02-17T10:00:01.000Z"
+  }
+}
+```
+
 ### GET `/api/nutrition/plan?date=YYYY-MM-DD`
 
 Response:

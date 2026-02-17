@@ -3401,6 +3401,18 @@ body.keyboard-open .pull-to-refresh-container {
   min-width: 58px;
 }
 
+.nutrition-quick-controls {
+  gap: 8px;
+}
+
+.nutrition-quick-controls button {
+  min-width: 56px;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+
 .nutrition-item-title {
   margin: 0;
   font-weight: 700;
