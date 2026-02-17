@@ -140,7 +140,6 @@ export default function App(): JSX.Element {
     const VIEWPORT_DROP_THRESHOLD_PX = 70;
     let baselineViewportHeight = Math.round(window.visualViewport?.height ?? window.innerHeight);
     let bodyLocked = false;
-    let lockedScrollY = 0;
     const isCoarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches ?? false;
     const isIOS =
       /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
@@ -151,11 +150,9 @@ export default function App(): JSX.Element {
         return;
       }
 
-      lockedScrollY = window.scrollY || window.pageYOffset || 0;
+      window.scrollTo(0, 0);
       document.body.style.position = "fixed";
-      document.body.style.top = `-${lockedScrollY}px`;
-      document.body.style.left = "0";
-      document.body.style.right = "0";
+      document.body.style.inset = "0";
       document.body.style.width = "100%";
       document.body.style.overflow = "hidden";
       bodyLocked = true;
@@ -167,12 +164,9 @@ export default function App(): JSX.Element {
       }
 
       document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
+      document.body.style.inset = "";
       document.body.style.width = "";
       document.body.style.overflow = "";
-      window.scrollTo(0, lockedScrollY);
       bodyLocked = false;
     };
 
