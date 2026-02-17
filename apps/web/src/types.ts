@@ -251,8 +251,13 @@ export interface SendChatMessageResponse {
 }
 
 export interface GetChatHistoryResponse {
-  messages: ChatMessage[];
-  hasMore: boolean;
+  history: {
+    messages: ChatMessage[];
+    page: number;
+    pageSize: number;
+    total: number;
+    hasMore: boolean;
+  };
 }
 
 export interface CanvasCourse {

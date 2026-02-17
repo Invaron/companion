@@ -27,7 +27,7 @@ export function ChatView(): JSX.Element {
     const loadHistory = async (): Promise<void> => {
       try {
         const response = await getChatHistory();
-        setMessages(response.messages);
+        setMessages(response.history.messages);
       } catch (err) {
         setError("Failed to load chat history");
         console.error(err);
