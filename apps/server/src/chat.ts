@@ -2807,6 +2807,10 @@ export async function sendChatMessage(
   const maxFunctionRounds = 8;
   const workingMessages: GeminiMessage[] = [...messages];
   const requiresThoughtSignatureReplay = /gemini-3/i.test(config.GEMINI_LIVE_MODEL);
+  const getThoughtSignature = (call: { thought_signature?: unknown; thoughtSignature?: unknown }): string | undefined => {
+    const signature = call.thought_signature ?? call.thoughtSignature;
+    return typeof signature === "string" && signature.trim().length > 0 ? signature : undefined;
+  };
 
   try {
     for (let round = 0; round < maxFunctionRounds; round += 1) {
@@ -2858,25 +2862,21 @@ export async function sendChatMessage(
         ...roundResponses.flatMap((fnResp) => extractPendingActions(fnResp.rawResponse))
       ];
 
-      const replayableRoundEntries = functionCalls
-        .map((call, index) => ({ call, responseEntry: roundResponses[index] }))
-        .filter(({ call }) => {
-          if (!requiresThoughtSignatureReplay) {
-            return true;
-          }
-          const signature = (call as unknown as { thought_signature?: unknown; thoughtSignature?: unknown })
-            .thought_signature
-            ?? (call as unknown as { thought_signature?: unknown; thoughtSignature?: unknown }).thoughtSignature;
-          return typeof signature === "string" && signature.trim().length > 0;
-        });
-      if (replayableRoundEntries.length === 0) {
-        response = {
-          text: "",
-          finishReason: roundResponse.finishReason,
-          usageMetadata: roundResponse.usageMetadata
-        };
-        break;
-      }
+      const hasAnyThoughtSignature = functionCalls.some((call) =>
+        Boolean(getThoughtSignature(call as unknown as { thought_signature?: unknown; thoughtSignature?: unknown }))
+      );
+      const replayCalls = requiresThoughtSignatureReplay && !hasAnyThoughtSignature
+        ? functionCalls.map((call, index) => {
+            if (index !== 0) {
+              return call;
+            }
+            return {
+              ...(call as unknown as Record<string, unknown>),
+              thought_signature: "skip_thought_signature_validator"
+            };
+          })
+        : functionCalls;
+      const replayableRoundEntries = replayCalls.map((call, index) => ({ call, responseEntry: roundResponses[index] }));
 
       workingMessages.push({
         role: "model",
