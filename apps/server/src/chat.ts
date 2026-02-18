@@ -717,7 +717,8 @@ Core behavior:
 - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
 - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
 - For email follow-ups like "what did it contain?" after inbox discussion, call getEmails again and answer from sender/subject/snippet.
-- For deadline mutations, use queueDeadlineAction and require explicit user confirmation.
+- For deadline completion, use queueDeadlineAction and require explicit user confirmation.
+- For deadline snooze/extension requests, use queueDeadlineAction and apply immediately (no confirmation step).
 - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
 - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
 - For journal-save requests, call createJournalEntry directly and do not ask for confirm/cancel commands.
@@ -2309,6 +2310,25 @@ function collectToolCitations(
 
   if (functionName === "queueDeadlineAction") {
     const payload = asRecord(response);
+    const directDeadline = asRecord(payload?.deadline);
+    const directDeadlineId = asNonEmptyString(directDeadline?.id);
+    if (directDeadlineId) {
+      const deadline = store.getDeadlineById(directDeadlineId, false);
+      const course = asNonEmptyString(directDeadline?.course) ?? deadline?.course;
+      const task = asNonEmptyString(directDeadline?.task) ?? deadline?.task;
+      const dueDate = asNonEmptyString(directDeadline?.dueDate) ?? deadline?.dueDate;
+      if (course && task) {
+        return [
+          {
+            id: directDeadlineId,
+            type: "deadline",
+            label: dueDate ? `${course} ${task} (due ${dueDate})` : `${course} ${task}`,
+            timestamp: dueDate ?? undefined
+          }
+        ];
+      }
+    }
+
     const pendingAction = asRecord(payload?.pendingAction);
     const actionPayload = asRecord(pendingAction?.payload);
     const deadlineId = asNonEmptyString(actionPayload?.deadlineId);

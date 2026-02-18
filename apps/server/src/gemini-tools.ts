@@ -511,7 +511,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: "queueDeadlineAction",
     description:
-      "Queue a deadline action that REQUIRES explicit user confirmation before execution. Use this to request complete or snooze for a specific deadline.",
+      "Modify a deadline by action. completion REQUIRES explicit user confirmation; snooze applies immediately.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -521,7 +521,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
         },
         action: {
           type: SchemaType.STRING,
-          description: "Action to queue: complete or snooze"
+          description: "Action: complete or snooze"
         },
         snoozeHours: {
           type: SchemaType.NUMBER,
@@ -2025,6 +2025,15 @@ export interface PendingActionToolResponse {
   message: string;
 }
 
+export interface ImmediateDeadlineActionResponse {
+  success: true;
+  requiresConfirmation: false;
+  action: "snooze";
+  snoozeHours: number;
+  message: string;
+  deadline: Deadline;
+}
+
 export interface PendingActionExecutionResult {
   actionId: string;
   actionType: ChatActionType;
@@ -2165,7 +2174,7 @@ function toPendingActionResponse(action: ChatPendingAction, message: string): Pe
 export function handleQueueDeadlineAction(
   store: RuntimeStore,
   args: Record<string, unknown> = {}
-): PendingActionToolResponse | { error: string } {
+): PendingActionToolResponse | ImmediateDeadlineActionResponse | { error: string } {
   const deadlineId = asTrimmedString(args.deadlineId);
   const action = asTrimmedString(args.action)?.toLowerCase();
 
@@ -2195,16 +2204,25 @@ export function handleQueueDeadlineAction(
   }
 
   const snoozeHours = clampNumber(args.snoozeHours, 24, 1, 168);
-  const pending = store.createPendingChatAction({
-    actionType: "snooze-deadline",
-    summary: `Snooze ${deadline.course} ${deadline.task} by ${snoozeHours} hours`,
-    payload: {
-      deadlineId: deadline.id,
-      snoozeHours
-    }
-  });
+  const dueDate = new Date(deadline.dueDate);
+  if (Number.isNaN(dueDate.getTime())) {
+    return { error: "Deadline due date is invalid." };
+  }
 
-  return toPendingActionResponse(pending, "Action queued. Ask user for explicit confirmation before executing.");
+  dueDate.setHours(dueDate.getHours() + snoozeHours);
+  const updated = store.updateDeadline(deadline.id, { dueDate: dueDate.toISOString() });
+  if (!updated) {
+    return { error: "Unable to snooze deadline." };
+  }
+
+  return {
+    success: true,
+    requiresConfirmation: false,
+    action: "snooze",
+    snoozeHours,
+    message: `Snoozed ${updated.course} ${updated.task} by ${snoozeHours} hours.`,
+    deadline: updated
+  };
 }
 
 export function handleCreateScheduleBlock(

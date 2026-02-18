@@ -706,7 +706,10 @@ describe("chat service", () => {
     expect(firstRequest.systemInstruction).toContain("For factual questions about schedule, deadlines, journal, email");
     expect(firstRequest.systemInstruction).toContain("For journal-save requests, call createJournalEntry directly");
     expect(firstRequest.systemInstruction).toContain(
-      "For deadline mutations, use queueDeadlineAction and require explicit user confirmation."
+      "For deadline completion, use queueDeadlineAction and require explicit user confirmation."
+    );
+    expect(firstRequest.systemInstruction).toContain(
+      "For deadline snooze/extension requests, use queueDeadlineAction and apply immediately (no confirmation step)."
     );
     expect(firstRequest.systemInstruction).toContain(
       "For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow."
@@ -1004,6 +1007,65 @@ describe("chat service", () => {
     expect(result.assistantMessage.metadata?.pendingActions?.length).toBe(1);
     expect(result.reply).toContain("need your confirmation");
     expect(result.reply).toContain("confirm ");
+  });
+
+  it("applies deadline snooze immediately without creating pending confirmation", async () => {
+    const deadline = store.createDeadline({
+      course: "DAT560",
+      task: "Assignment 2",
+      dueDate: "2026-02-18T12:00:00.000Z",
+      priority: "high",
+      completed: false
+    });
+
+    generateChatResponse = vi
+      .fn()
+      .mockResolvedValueOnce({
+        text: "",
+        finishReason: "stop",
+        functionCalls: [
+          {
+            name: "queueDeadlineAction",
+            args: { deadlineId: deadline.id, action: "snooze", snoozeHours: 96 }
+          }
+        ],
+        usageMetadata: {
+          promptTokenCount: 12,
+          candidatesTokenCount: 7,
+          totalTokenCount: 19
+        }
+      })
+      .mockResolvedValueOnce({
+        text: "Done. I moved that deadline to the new date.",
+        finishReason: "stop",
+        usageMetadata: {
+          promptTokenCount: 9,
+          candidatesTokenCount: 6,
+          totalTokenCount: 15
+        }
+      });
+    fakeGemini = {
+      generateChatResponse,
+      generateLiveChatResponse
+    } as unknown as GeminiClient;
+
+    const result = await sendChatMessage(store, "Extend DAT560 Assignment 2 by four days", {
+      geminiClient: fakeGemini
+    });
+
+    expect(generateChatResponse).toHaveBeenCalledTimes(2);
+    expect(result.reply).toContain("Done. I moved that deadline");
+    expect(result.assistantMessage.metadata?.pendingActions).toBeUndefined();
+    expect(store.getPendingChatActions()).toHaveLength(0);
+    expect(store.getDeadlineById(deadline.id, false)?.dueDate).toBe("2026-02-22T12:00:00.000Z");
+    expect(result.citations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: deadline.id,
+          type: "deadline"
+        })
+      ])
+    );
   });
 
   it("autocaptures repeated commitment language into a habit creation pending action", async () => {
