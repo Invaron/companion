@@ -3,7 +3,7 @@
   --app-viewport-height: 100dvh;
   --app-viewport-offset-top: 0px;
   --keyboard-gap: 0px;
-  --tab-bar-safe-space: max(80px, calc(80px + env(safe-area-inset-bottom)));
+  --tab-bar-safe-space: max(62px, calc(54px + env(safe-area-inset-bottom)));
   --bg: radial-gradient(circle at top right, #1f5a76 0%, #0f1f2f 35%, #091019 100%);
   --card: rgba(255, 255, 255, 0.08);
   --card-border: rgba(255, 255, 255, 0.2);
