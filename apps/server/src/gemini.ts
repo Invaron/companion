@@ -77,7 +77,7 @@ export class RateLimitError extends GeminiError {
 export class GeminiClient {
   private client: GoogleGenerativeAI | null = null;
   private model: GenerativeModel | null = null;
-  private readonly fallbackModelName = "gemini-3-flash-preview";
+  private readonly fallbackModelName = "gemini-2.5-flash";
   private readonly liveModelName: string;
   private readonly apiKey?: string;
 

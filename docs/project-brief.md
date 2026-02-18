@@ -188,7 +188,7 @@ This is more powerful (the AI decides what data it needs) but requires more impl
 - **Course website**: `https://dat520.github.io/#/` — public docs built from `dat520-2026/info` repo
 
 ### Google Gemini API
-- **Model**: `gemini-3-flash-preview`
+- **Model**: `gemini-2.5-flash`
 - **Auth**: API key stored as `GEMINI_API_KEY` secret
 - **Usage**: Chat responses, proactive nudge generation, weekly review narration, deadline coaching, social media summarization
 - **System prompt**: Includes user's schedule, upcoming deadlines, recent journal entries, energy/stress state
