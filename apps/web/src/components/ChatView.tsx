@@ -135,6 +135,7 @@ function renderAssistantContent(content: string): ReactNode {
 }
 
 const MAX_ATTACHMENTS = 3;
+const SUPPORTED_CHAT_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 async function toDataUrl(file: File): Promise<string> {
   return await new Promise((resolve, reject) => {
@@ -149,6 +150,58 @@ async function toDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error ?? new Error("Unable to read file"));
     reader.readAsDataURL(file);
   });
+}
+
+function normalizeMimeType(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+  if (normalized === "image/jpg") {
+    return "image/jpeg";
+  }
+  return normalized;
+}
+
+function mimeTypeFromDataUrl(dataUrl: string): string | null {
+  const match = dataUrl.match(/^data:([^;]+);base64,/i);
+  return normalizeMimeType(match?.[1]);
+}
+
+async function convertImageFileToJpegDataUrl(file: File): Promise<string | null> {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const next = new Image();
+      next.onload = () => resolve(next);
+      next.onerror = () => reject(new Error("Image decode failed"));
+      next.src = objectUrl;
+    });
+
+    const width = Math.max(1, Math.round(image.naturalWidth || image.width));
+    const height = Math.max(1, Math.round(image.naturalHeight || image.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return null;
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL("image/jpeg", 0.92);
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 function renderMessageAttachments(attachments: ChatImageAttachment[]): ReactNode {
@@ -435,19 +488,42 @@ export function ChatView(): JSX.Element {
 
     const nextFiles = files.slice(0, availableSlots);
     try {
-      const nextAttachments = await Promise.all(
-        nextFiles.map(async (file) => {
-          const dataUrl = await toDataUrl(file);
-          return {
-            id: crypto.randomUUID(),
-            dataUrl,
-            mimeType: file.type || undefined,
-            fileName: file.name || undefined
-          } as ChatImageAttachment;
-        })
-      );
+      const nextAttachments: ChatImageAttachment[] = [];
+      const failedFiles: string[] = [];
+
+      for (const file of nextFiles) {
+        let dataUrl = await toDataUrl(file);
+        let mimeType = normalizeMimeType(file.type) ?? mimeTypeFromDataUrl(dataUrl);
+
+        if (!mimeType || !SUPPORTED_CHAT_IMAGE_MIME_TYPES.has(mimeType)) {
+          const converted = await convertImageFileToJpegDataUrl(file);
+          if (!converted) {
+            failedFiles.push(file.name || "image");
+            continue;
+          }
+          dataUrl = converted;
+          mimeType = "image/jpeg";
+        }
+
+        nextAttachments.push({
+          id: crypto.randomUUID(),
+          dataUrl,
+          mimeType,
+          fileName: file.name || undefined
+        });
+      }
+
+      if (nextAttachments.length === 0 && failedFiles.length > 0) {
+        setError("One or more images use an unsupported format on this device. Try JPEG/PNG.");
+        return;
+      }
+
       setPendingAttachments((prev) => [...prev, ...nextAttachments].slice(0, MAX_ATTACHMENTS));
-      setError(null);
+      if (failedFiles.length > 0) {
+        setError("Some selected images were skipped due to unsupported format. JPEG/PNG work best.");
+      } else {
+        setError(null);
+      }
     } catch {
       setError("Could not attach one or more images.");
     } finally {
