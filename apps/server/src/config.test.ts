@@ -68,7 +68,7 @@ describe("config", () => {
       delete process.env.GEMINI_LIVE_MODEL;
       const { config } = await import("./config.js");
       expect(config.GEMINI_USE_LIVE_API).toBe(true);
-      expect(config.GEMINI_LIVE_MODEL).toBe("gemini-live-2.5-flash-native-audio");
+      expect(config.GEMINI_LIVE_MODEL).toBe("gemini-2.5-flash-native-audio-preview-12-2025");
     });
 
     it("should default AUTH_REQUIRED to false outside production", async () => {

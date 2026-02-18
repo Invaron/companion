@@ -54,7 +54,7 @@ const schema = z.object({
   GEMINI_USE_LIVE_API: z
     .preprocess((value) => parseBooleanEnv(value), z.boolean())
     .default(true),
-  GEMINI_LIVE_MODEL: z.string().default("gemini-live-2.5-flash-native-audio"),
+  GEMINI_LIVE_MODEL: z.string().default("gemini-2.5-flash-native-audio-preview-12-2025"),
   GEMINI_LIVE_ENDPOINT: z
     .string()
     .url()
