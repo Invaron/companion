@@ -32,15 +32,13 @@ This file documents all environment variables required to run the Companion serv
 
 ### AI / LLM
 - `GEMINI_USE_LIVE_API` (default: `true`) — Use Gemini Live API (WebSocket) for chat + tool calling
-- `GEMINI_LIVE_PLATFORM` (default: `vertex`) — Live platform (`vertex` or `developer`)
 - `GEMINI_LIVE_MODEL` (default: `gemini-live-2.5-flash-native-audio`) — Live model name
-- `GEMINI_LIVE_ENDPOINT` (optional) — Override WebSocket endpoint; default is computed from platform
-- `GEMINI_VERTEX_PROJECT_ID` (required for `vertex` unless `GEMINI_LIVE_MODEL` is already a full `projects/...` model resource)
+- `GEMINI_LIVE_ENDPOINT` (optional) — Override Vertex Live WebSocket endpoint
+- `GEMINI_VERTEX_PROJECT_ID` (required unless `GEMINI_LIVE_MODEL` is already a full `projects/...` model resource)
   - Alias supported: `GCP_PROJECT_ID`
-- `GEMINI_VERTEX_LOCATION` (default: `us-central1`) — Vertex model region for endpoint/model path
+- `GEMINI_VERTEX_LOCATION` (default: `us-central1`) — Vertex region for endpoint/model path
   - Alias supported: `GCP_LOCATION`
-- `GEMINI_API_KEY` (required for `developer`) — Gemini Developer API key
-- `GOOGLE_SERVICE_ACCOUNT_JSON` (optional for `vertex`) — Raw service-account JSON credentials (Railway-friendly alternative to credentials file)
+- `GOOGLE_SERVICE_ACCOUNT_JSON` (optional) — Raw service-account JSON credentials (Railway-friendly alternative to credentials file)
   - Alias supported: `GOOGLE_APPLICATION_CREDENTIALS_JSON`
 - `GOOGLE_APPLICATION_CREDENTIALS` (recommended for `vertex`) — Service-account JSON path for Google IAM auth (or use other ADC methods)
 - `GEMINI_LIVE_TIMEOUT_MS` (default: `25000`) — Live socket read timeout in milliseconds
@@ -90,7 +88,7 @@ This file documents all environment variables required to run the Companion serv
 
 ## Deployment Checklist
 
-1. **Set required variables**: `TIMEZONE`, `USER_NAME`, and Live auth vars (`GEMINI_LIVE_PLATFORM=vertex` with Vertex IAM or `GEMINI_LIVE_PLATFORM=developer` with `GEMINI_API_KEY`)
+1. **Set required variables**: `TIMEZONE`, `USER_NAME`, and Vertex Live auth vars (`GEMINI_VERTEX_PROJECT_ID` + service account auth)
 2. **Generate VAPID keys**: `npx web-push generate-vapid-keys`
 3. **Set VAPID keys**: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
 4. **Configure auth**: Set `AUTH_ADMIN_EMAIL` and `AUTH_ADMIN_PASSWORD` (and optionally `AUTH_REQUIRED=true`)
@@ -125,7 +123,6 @@ VAPID_SUBJECT=mailto:companion@example.com
 
 # AI (Vertex Live API)
 GEMINI_USE_LIVE_API=true
-GEMINI_LIVE_PLATFORM=vertex
 GEMINI_LIVE_MODEL=gemini-live-2.5-flash-native-audio
 GEMINI_VERTEX_PROJECT_ID=your-gcp-project-id
 GEMINI_VERTEX_LOCATION=us-central1

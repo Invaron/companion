@@ -94,10 +94,7 @@ export class GeminiClient {
   }
 
   canUseLiveApi(): boolean {
-    if (config.GEMINI_LIVE_PLATFORM === "vertex") {
-      return true;
-    }
-    return Boolean(this.apiKey);
+    return true;
   }
 
   private extractStatusCode(error: unknown): number | undefined {
@@ -123,14 +120,6 @@ export class GeminiClient {
     return undefined;
   }
 
-  private normalizeDeveloperLiveModelName(): string {
-    const trimmed = this.liveModelName.trim();
-    if (trimmed.startsWith("models/")) {
-      return trimmed;
-    }
-    return `models/${trimmed}`;
-  }
-
   private normalizeVertexLiveModelName(): string {
     const trimmed = this.liveModelName.trim();
     if (trimmed.startsWith("projects/")) {
@@ -144,13 +133,6 @@ export class GeminiClient {
     }
     const location = config.GEMINI_VERTEX_LOCATION.trim();
     return `projects/${projectId}/locations/${location}/publishers/google/models/${trimmed}`;
-  }
-
-  private resolveDeveloperLiveEndpoint(): string {
-    return (
-      config.GEMINI_LIVE_ENDPOINT ??
-      "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent"
-    );
   }
 
   private resolveVertexLiveEndpoint(): string {
@@ -453,34 +435,19 @@ export class GeminiClient {
 
   async generateLiveChatResponse(request: GeminiLiveChatRequest): Promise<GeminiChatResponse> {
     if (!this.canUseLiveApi()) {
-      if (config.GEMINI_LIVE_PLATFORM === "developer") {
-        throw new GeminiError("Gemini API key not configured. Set GEMINI_API_KEY for developer Live API.");
-      }
       throw new GeminiError("Vertex Live API is enabled but configuration is incomplete.");
     }
     if (request.messages.length === 0) {
       throw new GeminiError("At least one message is required");
     }
 
-    const vertexMode = config.GEMINI_LIVE_PLATFORM === "vertex";
     const nativeAudioModel = this.liveModelName.toLowerCase().includes("native-audio");
     const responseModalities = nativeAudioModel ? ["AUDIO"] : ["TEXT"];
-    const liveUrl = (() => {
-      if (vertexMode) {
-        return this.resolveVertexLiveEndpoint();
-      }
-      const endpoint = this.resolveDeveloperLiveEndpoint();
-      const separator = endpoint.includes("?") ? "&" : "?";
-      return `${endpoint}${separator}key=${encodeURIComponent(this.apiKey ?? "")}`;
-    })();
-    const modelName = vertexMode ? this.normalizeVertexLiveModelName() : this.normalizeDeveloperLiveModelName();
-    const wsHeaders: Record<string, string> = vertexMode
-      ? {
-          Authorization: `Bearer ${await this.getVertexAccessToken()}`
-        }
-      : {
-          "x-goog-api-key": this.apiKey ?? ""
-        };
+    const liveUrl = this.resolveVertexLiveEndpoint();
+    const modelName = this.normalizeVertexLiveModelName();
+    const wsHeaders: Record<string, string> = {
+      Authorization: `Bearer ${await this.getVertexAccessToken()}`
+    };
 
     const ws = new WebSocket(liveUrl, {
       headers: wsHeaders
@@ -582,51 +549,27 @@ export class GeminiClient {
 
     try {
       await waitForOpen();
-      if (vertexMode) {
-        sendJson({
-          setup: {
-            model: modelName,
-            generation_config: {
-              response_modalities: responseModalities
-            },
-            ...(nativeAudioModel ? { output_audio_transcription: {} } : {}),
-            ...(request.systemInstruction && request.systemInstruction.trim().length > 0
-              ? {
-                  system_instruction: {
-                    parts: [{ text: request.systemInstruction }]
-                  }
+      sendJson({
+        setup: {
+          model: modelName,
+          generation_config: {
+            response_modalities: responseModalities
+          },
+          ...(nativeAudioModel ? { output_audio_transcription: {} } : {}),
+          ...(request.systemInstruction && request.systemInstruction.trim().length > 0
+            ? {
+                system_instruction: {
+                  parts: [{ text: request.systemInstruction }]
                 }
-              : {}),
-            ...(request.tools && request.tools.length > 0
-              ? {
-                  tools: [{ function_declarations: request.tools }]
-                }
-              : {})
-          }
-        });
-      } else {
-        sendJson({
-          setup: {
-            model: modelName,
-            generationConfig: {
-              responseModalities
-            },
-            ...(nativeAudioModel ? { outputAudioTranscription: {} } : {}),
-            ...(request.systemInstruction && request.systemInstruction.trim().length > 0
-              ? {
-                  systemInstruction: {
-                    parts: [{ text: request.systemInstruction }]
-                  }
-                }
-              : {}),
-            ...(request.tools && request.tools.length > 0
-              ? {
-                  tools: [{ functionDeclarations: request.tools }]
-                }
-              : {})
-          }
-        });
-      }
+              }
+            : {}),
+          ...(request.tools && request.tools.length > 0
+            ? {
+                tools: [{ function_declarations: request.tools }]
+              }
+            : {})
+        }
+      });
 
       while (true) {
         const setupMessage = (await nextMessageWithTimeout()) as
@@ -658,21 +601,12 @@ export class GeminiClient {
         .map((message) => this.toLiveTurn(message))
         .filter((message): message is { role: "user" | "model"; parts: Array<Record<string, unknown>> } => Boolean(message));
 
-      sendJson(
-        vertexMode
-          ? {
-              client_content: {
-                turns,
-                turn_complete: true
-              }
-            }
-          : {
-              clientContent: {
-                turns,
-                turnComplete: true
-              }
-            }
-      );
+      sendJson({
+        client_content: {
+          turns,
+          turn_complete: true
+        }
+      });
 
       let text = "";
       let finishReason: string | undefined = undefined;
@@ -728,19 +662,11 @@ export class GeminiClient {
           }
           const toolResponses = await request.onToolCall(toolCalls);
           const functionResponses = this.buildLiveFunctionResponses(toolCalls, toolResponses);
-          sendJson(
-            vertexMode
-              ? {
-                  tool_response: {
-                    function_responses: functionResponses
-                  }
-                }
-              : {
-                  toolResponse: {
-                    functionResponses
-                  }
-                }
-          );
+          sendJson({
+            tool_response: {
+              function_responses: functionResponses
+            }
+          });
         }
 
         const serverContent = (envelope?.serverContent ?? envelope?.server_content) as
@@ -802,7 +728,7 @@ export class GeminiClient {
         throw new RateLimitError(`Gemini API rate limit exceeded: ${providerMessage}`, error);
       }
       if (statusCode === 401 || statusCode === 403) {
-        throw new GeminiError("Invalid Gemini API key", statusCode, error);
+        throw new GeminiError("Invalid Vertex credentials or missing IAM permissions", statusCode, error);
       }
       if (error instanceof GeminiError) {
         throw error;

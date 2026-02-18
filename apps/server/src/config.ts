@@ -58,7 +58,6 @@ const schema = z.object({
   GEMINI_USE_LIVE_API: z
     .preprocess((value) => parseBooleanEnv(value), z.boolean())
     .default(true),
-  GEMINI_LIVE_PLATFORM: z.enum(["vertex", "developer"]).default("vertex"),
   GEMINI_LIVE_MODEL: z.string().default("gemini-live-2.5-flash-native-audio"),
   GEMINI_LIVE_ENDPOINT: z.string().url().optional(),
   GEMINI_VERTEX_PROJECT_ID: z.string().optional(),
