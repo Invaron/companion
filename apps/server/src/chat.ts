@@ -1065,7 +1065,7 @@ function buildFewShotIntentExamplesPrompt(): string {
   return lines.join("\n");
 }
 
-function buildFunctionCallingSystemInstruction(userName: string, intent: ChatIntent): string {
+function buildFunctionCallingSystemInstruction(userName: string): string {
   return `You are Companion, a personal AI assistant for ${userName}, a university student at UiS (University of Stavanger).
 
 Core behavior:
@@ -1085,11 +1085,7 @@ Core behavior:
   - plain paragraphs separated by blank lines
 - Do not use HTML, tables, headings (#), blockquotes, or code fences.
 - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
-
-Detected intent: ${intent}
-${buildIntentGuidance(intent)}
-
-${buildFewShotIntentExamplesPrompt()}`;
+- Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.`;
 }
 
 function extractPendingActions(value: unknown): ChatPendingAction[] {
@@ -2763,7 +2759,6 @@ export async function sendChatMessage(
 
   const gemini = options.geminiClient ?? getGeminiClient();
   const useFunctionCalling = options.useFunctionCalling ?? true;
-  const intent = detectChatIntent(userInput, recentHistoryForIntent);
   
   // Build lightweight context for function calling mode (or full context for legacy mode)
   const { contextWindow, history } = useFunctionCalling 
@@ -2771,7 +2766,7 @@ export async function sendChatMessage(
     : buildChatContext(store, now);
 
   const systemInstruction = useFunctionCalling
-    ? buildFunctionCallingSystemInstruction(config.USER_NAME, intent)
+    ? buildFunctionCallingSystemInstruction(config.USER_NAME)
     : buildSystemPrompt(config.USER_NAME, contextWindow);
 
   const messages = toGeminiMessages(history, userInput, attachments);

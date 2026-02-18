@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getCanvasStatus, previewIntegrationScope, triggerCanvasSync, triggerTPSync } from "../lib/api";
+import { getCanvasStatus, previewIntegrationScope, triggerCanvasSync } from "../lib/api";
 import {
   loadIntegrationScopeSettings,
   saveIntegrationScopeSettings
@@ -23,9 +23,9 @@ function clampFutureDays(value: number): number {
   return Math.max(1, Math.min(730, Math.round(value)));
 }
 
-function normalizeScopeSettings(settings: IntegrationScopeSettings, tpCourseInput: string): IntegrationScopeSettings {
+function normalizeScopeSettings(settings: IntegrationScopeSettings, icalCourseInput: string): IntegrationScopeSettings {
   const canvasCourseIds = Array.from(new Set(settings.canvasCourseIds.filter((id) => Number.isInteger(id) && id > 0)));
-  const tpCourseIds = parseCourseIds(tpCourseInput);
+  const tpCourseIds = parseCourseIds(icalCourseInput);
   return {
     semester: settings.semester.trim() || "26v",
     tpCourseIds: tpCourseIds.length > 0 ? tpCourseIds : ["DAT520,1", "DAT560,1", "DAT600,1"],
@@ -37,7 +37,7 @@ function normalizeScopeSettings(settings: IntegrationScopeSettings, tpCourseInpu
 
 export function IntegrationScopeSettings(): JSX.Element {
   const [settings, setSettings] = useState<IntegrationScopeSettings>(loadIntegrationScopeSettings());
-  const [tpCourseInput, setTPCourseInput] = useState(() => loadIntegrationScopeSettings().tpCourseIds.join("; "));
+  const [icalCourseInput, setIcalCourseInput] = useState(() => loadIntegrationScopeSettings().tpCourseIds.join("; "));
   const [canvasStatus, setCanvasStatus] = useState<CanvasStatus>({
     baseUrl: "",
     lastSyncedAt: null,
@@ -81,9 +81,9 @@ export function IntegrationScopeSettings(): JSX.Element {
     setError("");
     setMessage("");
 
-    const normalized = normalizeScopeSettings(settings, tpCourseInput);
+    const normalized = normalizeScopeSettings(settings, icalCourseInput);
     updateSettings(normalized);
-    setTPCourseInput(normalized.tpCourseIds.join("; "));
+    setIcalCourseInput(normalized.tpCourseIds.join("; "));
 
     try {
       const result = await previewIntegrationScope({
@@ -106,29 +106,20 @@ export function IntegrationScopeSettings(): JSX.Element {
     setError("");
     setMessage("");
 
-    const normalized = normalizeScopeSettings(settings, tpCourseInput);
+    const normalized = normalizeScopeSettings(settings, icalCourseInput);
     updateSettings(normalized);
-    setTPCourseInput(normalized.tpCourseIds.join("; "));
+    setIcalCourseInput(normalized.tpCourseIds.join("; "));
 
-    const [canvasResult, tpResult] = await Promise.all([
-      triggerCanvasSync(undefined, {
-        courseIds: normalized.canvasCourseIds,
-        pastDays: normalized.pastDays,
-        futureDays: normalized.futureDays
-      }),
-      triggerTPSync({
-        semester: normalized.semester,
-        courseIds: normalized.tpCourseIds,
-        pastDays: normalized.pastDays,
-        futureDays: normalized.futureDays
-      })
-    ]);
+    const canvasResult = await triggerCanvasSync(undefined, {
+      courseIds: normalized.canvasCourseIds,
+      pastDays: normalized.pastDays,
+      futureDays: normalized.futureDays
+    });
 
-    if (canvasResult.success && tpResult.success) {
-      setMessage("Scope applied and integrations synced.");
+    if (canvasResult.success) {
+      setMessage("Canvas scope applied and synced.");
     } else {
-      const errors = [canvasResult.error, tpResult.error].filter(Boolean);
-      setError(errors.join(" | ") || "Scope apply completed with errors.");
+      setError(canvasResult.error ?? "Canvas scope apply completed with errors.");
     }
 
     const latestCanvasStatus = await getCanvasStatus();
@@ -158,7 +149,7 @@ export function IntegrationScopeSettings(): JSX.Element {
 
       <div className="settings-stack">
         <label>
-          TP semester
+          iCal semester
           <input
             type="text"
             value={settings.semester}
@@ -168,11 +159,11 @@ export function IntegrationScopeSettings(): JSX.Element {
         </label>
 
         <label>
-          TP course IDs
+          iCal course IDs
           <textarea
-            value={tpCourseInput}
+            value={icalCourseInput}
             onChange={(event) => {
-              setTPCourseInput(event.target.value);
+              setIcalCourseInput(event.target.value);
               updateSettings({ ...settings, tpCourseIds: parseCourseIds(event.target.value) });
             }}
             rows={2}
@@ -272,7 +263,7 @@ export function IntegrationScopeSettings(): JSX.Element {
               Canvas assignments in window: {preview.canvas.assignmentsMatched} / {preview.canvas.assignmentsTotal}
             </p>
             <p>
-              TP events in window: {preview.tp.eventsMatched} / {preview.tp.eventsTotal}
+              iCal events in window: {preview.tp.eventsMatched} / {preview.tp.eventsTotal}
             </p>
             <p className="muted">
               Window: {preview.window.start} to {preview.window.end}

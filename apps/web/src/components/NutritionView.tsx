@@ -831,6 +831,27 @@ export function NutritionView(): JSX.Element {
     });
   };
 
+  const handleQuickAddCustomFood = (foodId: string): void => {
+    if (!foodId) {
+      return;
+    }
+
+    const nextItem = toMealItemDraft(
+      {
+        customFoodId: foodId,
+        amount: "100"
+      },
+      customFoods[0]?.id ?? ""
+    );
+
+    setMealItemDrafts((previous) => {
+      const singleBlank =
+        previous.length === 1 &&
+        (!previous[0]?.customFoodId || !customFoodsById.has(previous[0].customFoodId));
+      return singleBlank ? [nextItem] : [...previous, nextItem];
+    });
+  };
+
   const resetCustomFoodDraft = (): void => {
     setEditingCustomFoodId(null);
     setCustomFoodDraft({
@@ -940,6 +961,34 @@ export function NutritionView(): JSX.Element {
 
       {activeTab === "settings" && (
         <>
+          <article className="nutrition-card nutrition-plan-hero">
+            <div className="nutrition-plan-hero-main">
+              <h3>Bulking Meal Plan</h3>
+              <p className="nutrition-plan-hero-badge">Temporary Changes (Today)</p>
+            </div>
+            <div className="nutrition-plan-hero-actions">
+              <button
+                type="button"
+                className="nutrition-secondary-button"
+                onClick={() => void handleResetDay()}
+                disabled={dayControlBusy || loading}
+              >
+                Reset Day
+              </button>
+              <button type="button" onClick={handleSaveDaySnapshot} disabled={dayControlBusy || loading}>
+                Save
+              </button>
+              <button
+                type="button"
+                className="nutrition-secondary-button"
+                onClick={() => void handleLoadDaySnapshot()}
+                disabled={dayControlBusy || !selectedDaySnapshotId}
+              >
+                Load ({daySnapshots.length})
+              </button>
+            </div>
+          </article>
+
           <article className="nutrition-card nutrition-day-controls">
             <div className="nutrition-day-controls-header">
               <h3>Day controls</h3>
@@ -1123,48 +1172,68 @@ export function NutritionView(): JSX.Element {
             ) : (
               <div className="nutrition-list">
                 {meals.map((meal) => (
-                  <article key={meal.id} className="nutrition-list-item">
-                    <div>
-                      <p className="nutrition-item-title">{meal.name}</p>
-                      <p className="nutrition-item-meta">
-                        {meal.calories} kcal • {meal.proteinGrams}P/{meal.carbsGrams}C/{meal.fatGrams}F •{" "}
-                        {formatDateTime(meal.consumedAt)}
-                      </p>
-                      {meal.items.length > 0 && (
-                        <ul className="nutrition-meal-item-list">
-                          {meal.items.map((item) => {
-                            const itemCalories = Math.round(item.quantity * item.caloriesPerUnit);
-                            const itemProtein = roundToTenth(item.quantity * item.proteinGramsPerUnit);
-                            const itemCarbs = roundToTenth(item.quantity * item.carbsGramsPerUnit);
-                            const itemFat = roundToTenth(item.quantity * item.fatGramsPerUnit);
-                            return (
-                              <li key={item.id}>
-                                {item.name} • {formatMetric(item.quantity)} {item.unitLabel} • {itemCalories} kcal •{" "}
-                                {itemProtein}P/{itemCarbs}C/{itemFat}F
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
+                  <article key={meal.id} className="nutrition-list-item nutrition-meal-card">
+                    <div className="nutrition-meal-card-header">
+                      <div>
+                        <p className="nutrition-item-title">{meal.name}</p>
+                        <p className="nutrition-item-meta">{formatDateTime(meal.consumedAt)}</p>
+                      </div>
+                      <div className="nutrition-list-item-actions nutrition-quick-controls">
+                        <button
+                          type="button"
+                          onClick={() => void handleAdjustMealPortion(meal.id, "down")}
+                          aria-label="Decrease portion"
+                        >
+                          -
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleAdjustMealPortion(meal.id, "up")}
+                          aria-label="Increase portion"
+                        >
+                          +
+                        </button>
+                        <button type="button" onClick={() => void handleDeleteMeal(meal.id)}>
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                    <div className="nutrition-list-item-actions nutrition-quick-controls">
-                      <button
-                        type="button"
-                        onClick={() => void handleAdjustMealPortion(meal.id, "down")}
-                        aria-label="Decrease portion"
-                      >
-                        -
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleAdjustMealPortion(meal.id, "up")}
-                        aria-label="Increase portion"
-                      >
-                        +
-                      </button>
-                      <button type="button" onClick={() => void handleDeleteMeal(meal.id)}>
-                        Delete
-                      </button>
+
+                    {meal.items.length > 0 && (
+                      <ul className="nutrition-meal-item-list nutrition-meal-food-list">
+                        {meal.items.map((item) => {
+                          const itemCalories = Math.round(item.quantity * item.caloriesPerUnit);
+                          return (
+                            <li key={item.id} className="nutrition-meal-food-item">
+                              <span>{item.name}</span>
+                              <span>
+                                {formatMetric(item.quantity)}
+                                {item.unitLabel}
+                              </span>
+                              <span>{itemCalories} kcal</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+
+                    <div className="nutrition-meal-macro-grid">
+                      <p>
+                        <span>Protein</span>
+                        <strong>{formatMetric(meal.proteinGrams)}g</strong>
+                      </p>
+                      <p>
+                        <span>Carbs</span>
+                        <strong>{formatMetric(meal.carbsGrams)}g</strong>
+                      </p>
+                      <p>
+                        <span>Fat</span>
+                        <strong>{formatMetric(meal.fatGrams)}g</strong>
+                      </p>
+                      <p>
+                        <span>Calories</span>
+                        <strong>{Math.round(meal.calories)}</strong>
+                      </p>
                     </div>
                   </article>
                 ))}
@@ -1191,12 +1260,27 @@ export function NutritionView(): JSX.Element {
                 </label>
               </div>
 
+              {customFoods.length > 0 && (
+                <div className="nutrition-quick-food-grid" aria-label="Quick add custom foods">
+                  {customFoods.map((food) => (
+                    <button
+                      key={food.id}
+                      type="button"
+                      className="nutrition-quick-food-chip"
+                      onClick={() => handleQuickAddCustomFood(food.id)}
+                    >
+                      + {food.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="nutrition-item-editor-list">
                 {mealItemDrafts.map((item) => {
                   const selectedFood = customFoodsById.get(item.customFoodId);
                   return (
                     <article key={item.id} className="nutrition-item-editor">
-                      <div className="nutrition-form-row">
+                      <div className="nutrition-form-row nutrition-meal-item-row">
                         <label>
                           Food
                           <select

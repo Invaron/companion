@@ -628,86 +628,28 @@ describe("chat service", () => {
     expect(result.reply).toContain("Schedule today");
   });
 
-  it("injects schedule intent guidance into function-calling instruction", async () => {
+  it("uses model-driven tool routing instruction without local intent markers", async () => {
     await sendChatMessage(store, "What's my lecture schedule today?", {
       geminiClient: fakeGemini,
       useFunctionCalling: true
     });
 
     const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
-    expect(firstRequest.systemInstruction).toContain("Detected intent: schedule");
-    expect(firstRequest.systemInstruction).toContain("Prefer getSchedule first");
+    expect(firstRequest.systemInstruction).toContain("Tool routing is model-driven");
+    expect(firstRequest.systemInstruction).not.toContain("Detected intent:");
+    expect(firstRequest.systemInstruction).not.toContain("Few-shot intent routing examples");
   });
 
-  it("injects journal intent guidance into function-calling instruction", async () => {
-    await sendChatMessage(store, "What have I written in my journal?", {
-      geminiClient: fakeGemini,
-      useFunctionCalling: true
-    });
-
-    const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
-    expect(firstRequest.systemInstruction).toContain("Detected intent: journal");
-    expect(firstRequest.systemInstruction).toContain("Prefer searchJournal");
-  });
-
-  it("injects habits/goals intent guidance with tool hints", async () => {
-    await sendChatMessage(store, "Can you check in my study sprint habit today?", {
-      geminiClient: fakeGemini,
-      useFunctionCalling: true
-    });
-
-    const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
-    expect(firstRequest.systemInstruction).toContain("Detected intent: habits-goals");
-    expect(firstRequest.systemInstruction).toContain("getHabitsGoalsStatus");
-    expect(firstRequest.systemInstruction).toContain("updateHabitCheckIn");
-    expect(firstRequest.systemInstruction).toContain("createHabit");
-    expect(firstRequest.systemInstruction).toContain("deleteHabit");
-    expect(firstRequest.systemInstruction).toContain("createGoal");
-    expect(firstRequest.systemInstruction).toContain("deleteGoal");
-  });
-
-  it("falls back to general intent when no specific domain keywords are present", async () => {
-    await sendChatMessage(store, "Hello there", {
-      geminiClient: fakeGemini,
-      useFunctionCalling: true
-    });
-
-    const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
-    expect(firstRequest.systemInstruction).toContain("Detected intent: general");
-  });
-
-  it("detects integration intent for sync/status questions", async () => {
-    await sendChatMessage(store, "Is Canvas sync working and is Gmail connected?", {
-      geminiClient: fakeGemini,
-      useFunctionCalling: true
-    });
-
-    const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
-    expect(firstRequest.systemInstruction).toContain("Detected intent: integrations");
-    expect(firstRequest.systemInstruction).toContain("sync status");
-  });
-
-  it("detects data-management intent for export/import requests", async () => {
+  it("keeps generic tool-use behavior hints in function-calling instruction", async () => {
     await sendChatMessage(store, "How do I export a backup and restore it later?", {
       geminiClient: fakeGemini,
       useFunctionCalling: true
     });
 
     const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
-    expect(firstRequest.systemInstruction).toContain("Detected intent: data-management");
-    expect(firstRequest.systemInstruction).toContain("import/export/backup/restore");
-  });
-
-  it("injects few-shot routing examples into function-calling instruction", async () => {
-    await sendChatMessage(store, "How is my schedule looking today?", {
-      geminiClient: fakeGemini,
-      useFunctionCalling: true
-    });
-
-    const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
-    expect(firstRequest.systemInstruction).toContain("Few-shot intent routing examples");
-    expect(firstRequest.systemInstruction).toContain("User: \"How is my schedule looking today?\"");
-    expect(firstRequest.systemInstruction).toContain("Tool plan: Call getSchedule");
+    expect(firstRequest.systemInstruction).toContain("For factual questions about schedule, deadlines, journal, email");
+    expect(firstRequest.systemInstruction).toContain("For journal-save requests, call createJournalEntry directly");
+    expect(firstRequest.systemInstruction).toContain("use queue* action tools and require explicit user confirmation");
   });
 
   it("preserves markdown styling in assistant output", async () => {
@@ -729,7 +671,7 @@ describe("chat service", () => {
     expect(result.reply).toContain("* **DAT520 Forelesning /Lecture** from 11:15 to 13:00");
   });
 
-  it("routes ambiguous follow-up questions to email intent when recent email context exists", async () => {
+  it("keeps email follow-up handling model-driven (no local email intent override marker)", async () => {
     store.recordChatMessage("assistant", "Recent emails (1): DAT560 Assignment update", {
       citations: [
         {
@@ -746,7 +688,8 @@ describe("chat service", () => {
     });
 
     const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
-    expect(firstRequest.systemInstruction).toContain("Detected intent: emails");
+    expect(firstRequest.systemInstruction).toContain("Tool routing is model-driven");
+    expect(firstRequest.systemInstruction).not.toContain("Detected intent: emails");
   });
 
   it("includes Gmail snippet/from/receivedAt in getEmails functionResponse payload", async () => {

@@ -3330,6 +3330,49 @@ body.keyboard-open .pull-to-refresh-container {
   margin: 0;
 }
 
+.nutrition-plan-hero {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(145deg, rgba(64, 92, 168, 0.34), rgba(50, 73, 132, 0.34));
+  border-color: rgba(109, 137, 218, 0.42);
+}
+
+.nutrition-plan-hero-main {
+  display: grid;
+  gap: 6px;
+}
+
+.nutrition-plan-hero-badge {
+  margin: 0;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--warn-border);
+  color: var(--warn);
+  background: var(--warn-surface);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.nutrition-plan-hero-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nutrition-plan-hero-actions button {
+  min-height: 40px;
+  min-width: 74px;
+}
+
+@media (min-width: 920px) {
+  .nutrition-plan-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
 .nutrition-day-controls {
   gap: 12px;
 }
@@ -3426,6 +3469,20 @@ body.keyboard-open .pull-to-refresh-container {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.nutrition-meal-item-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nutrition-meal-item-row label {
+  min-width: 0;
+}
+
+@media (max-width: 719px) {
+  .nutrition-meal-item-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (min-width: 920px) {
@@ -3552,9 +3609,11 @@ body.keyboard-open .pull-to-refresh-container {
 
 .nutrition-amount-control {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 40px minmax(74px, 112px) 40px;
   gap: 6px;
   align-items: center;
+  justify-content: start;
+  max-width: 100%;
 }
 
 .nutrition-amount-button {
@@ -3570,6 +3629,9 @@ body.keyboard-open .pull-to-refresh-container {
 }
 
 .nutrition-amount-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   text-align: center;
 }
 
@@ -3607,6 +3669,86 @@ body.keyboard-open .pull-to-refresh-container {
 
 .nutrition-list-item-actions button {
   min-width: 58px;
+}
+
+.nutrition-meal-card {
+  display: grid;
+  gap: 12px;
+  align-items: stretch;
+  background: rgba(80, 102, 165, 0.26);
+  border-color: rgba(128, 152, 219, 0.35);
+  padding: 14px;
+}
+
+.nutrition-meal-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.nutrition-meal-food-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.nutrition-meal-food-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.82rem;
+}
+
+.nutrition-meal-food-item span:first-child {
+  font-weight: 700;
+}
+
+.nutrition-meal-food-item span:nth-child(2) {
+  color: var(--muted);
+}
+
+.nutrition-meal-food-item span:nth-child(3) {
+  color: #eecf96;
+  font-weight: 700;
+}
+
+.nutrition-meal-macro-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.nutrition-meal-macro-grid p {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.nutrition-meal-macro-grid span {
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.nutrition-meal-macro-grid strong {
+  font-size: 0.98rem;
+}
+
+@media (min-width: 720px) {
+  .nutrition-meal-macro-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .nutrition-quick-controls {
@@ -3689,6 +3831,22 @@ body.keyboard-open .pull-to-refresh-container {
   color: var(--muted);
 }
 
+.nutrition-quick-food-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(134px, 1fr));
+  gap: 8px;
+}
+
+.nutrition-quick-food-chip {
+  border: 1px solid rgba(106, 149, 238, 0.45);
+  border-radius: 10px;
+  background: rgba(65, 98, 176, 0.3);
+  color: #b7cef8;
+  font-weight: 700;
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
 @media (max-width: 719px) {
   .nutrition-list-item {
     flex-direction: column;
@@ -3697,6 +3855,14 @@ body.keyboard-open .pull-to-refresh-container {
 
   .nutrition-delta {
     text-align: left;
+  }
+
+  .nutrition-meal-food-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .nutrition-meal-food-item span:nth-child(3) {
+    grid-column: 1 / -1;
   }
 }
 
