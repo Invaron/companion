@@ -96,6 +96,13 @@ export interface LectureEvent {
   workload: "low" | "medium" | "high";
 }
 
+export interface ScheduleSuggestionMute {
+  id: string;
+  startTime: string;
+  endTime: string;
+  createdAt: string;
+}
+
 export interface Deadline {
   id: string;
   course: string;

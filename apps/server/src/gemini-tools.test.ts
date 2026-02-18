@@ -123,7 +123,7 @@ describe("gemini-tools", () => {
   });
 
   describe("handleGetSchedule", () => {
-    it("should return today's schedule events", () => {
+    it("should return today's schedule events (and may include suggestion blocks)", () => {
       const today = new Date();
       today.setHours(10, 0, 0, 0);
 
@@ -136,14 +136,14 @@ describe("gemini-tools", () => {
 
       const result = handleGetSchedule(store);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]?.id).toBe(event.id);
-      expect(result[0]?.title).toBe("DAT520 Lecture");
+      expect(result.map((item) => item.id)).toContain(event.id);
+      expect(result.some((item) => item.title === "DAT520 Lecture")).toBe(true);
     });
 
     it("should return empty array if no events today", () => {
       const result = handleGetSchedule(store);
-      expect(result).toEqual([]);
+      const fixedEvents = result.filter((item) => item.recurrenceParentId !== "timeline-suggested");
+      expect(fixedEvents).toEqual([]);
     });
   });
 

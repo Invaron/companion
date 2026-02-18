@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { getDeadlines, getSchedule } from "../lib/api";
-import { Deadline, LectureEvent } from "../types";
+import { getDeadlines, getSchedule, getScheduleSuggestionMutes } from "../lib/api";
+import { Deadline, LectureEvent, ScheduleSuggestionMute } from "../types";
 import { loadDeadlines, loadSchedule, loadScheduleCachedAt } from "../lib/storage";
 
 const SCHEDULE_STALE_MS = 12 * 60 * 60 * 1000;
@@ -169,7 +169,8 @@ function formatDayTimelineLabel(segment: DayTimelineSegment): string {
 function buildDayTimeline(
   scheduleBlocks: LectureEvent[],
   referenceDate: Date,
-  deadlineSuggestions: string[]
+  deadlineSuggestions: string[],
+  suggestionMutes: ScheduleSuggestionMute[]
 ): DayTimelineSegment[] {
   const sorted = [...scheduleBlocks].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   const firstStart = sorted.length > 0 ? new Date(sorted[0].startTime) : new Date(referenceDate);
@@ -214,7 +215,19 @@ function buildDayTimeline(
     );
   }
 
-  return segments;
+  return segments.filter((segment) => {
+    if (segment.type !== "planned") {
+      return true;
+    }
+    return !suggestionMutes.some((mute) => {
+      const muteStart = new Date(mute.startTime);
+      const muteEnd = new Date(mute.endTime);
+      if (Number.isNaN(muteStart.getTime()) || Number.isNaN(muteEnd.getTime())) {
+        return false;
+      }
+      return segment.start.getTime() < muteEnd.getTime() && segment.end.getTime() > muteStart.getTime();
+    });
+  });
 }
 
 interface ScheduleViewProps {
@@ -224,15 +237,21 @@ interface ScheduleViewProps {
 export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element {
   const [schedule, setSchedule] = useState<LectureEvent[]>(() => loadSchedule());
   const [deadlines, setDeadlines] = useState<Deadline[]>(() => loadDeadlines());
+  const [suggestionMutes, setSuggestionMutes] = useState<ScheduleSuggestionMute[]>([]);
   const [cachedAt, setCachedAt] = useState<string | null>(() => loadScheduleCachedAt());
   const [isOnline, setIsOnline] = useState<boolean>(() => navigator.onLine);
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async (): Promise<void> => {
     setRefreshing(true);
-    const [refreshedSchedule, refreshedDeadlines] = await Promise.all([getSchedule(), getDeadlines()]);
+    const [refreshedSchedule, refreshedDeadlines, refreshedSuggestionMutes] = await Promise.all([
+      getSchedule(),
+      getDeadlines(),
+      getScheduleSuggestionMutes(new Date())
+    ]);
     setSchedule(refreshedSchedule);
     setDeadlines(refreshedDeadlines);
+    setSuggestionMutes(refreshedSuggestionMutes);
     setCachedAt(loadScheduleCachedAt());
     setRefreshing(false);
   };
@@ -241,10 +260,15 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
     let disposed = false;
 
     const load = async (): Promise<void> => {
-      const [nextSchedule, nextDeadlines] = await Promise.all([getSchedule(), getDeadlines()]);
+      const [nextSchedule, nextDeadlines, nextSuggestionMutes] = await Promise.all([
+        getSchedule(),
+        getDeadlines(),
+        getScheduleSuggestionMutes(new Date())
+      ]);
       if (!disposed) {
         setSchedule(nextSchedule);
         setDeadlines(nextDeadlines);
+        setSuggestionMutes(nextSuggestionMutes);
         setCachedAt(loadScheduleCachedAt());
       }
     };
@@ -340,7 +364,7 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
     .map((item) => item.label);
   const today = new Date();
   const todayBlocks = sortedSchedule.filter((block) => isSameLocalDate(new Date(block.startTime), today));
-  const dayTimeline = buildDayTimeline(todayBlocks, today, deadlineSuggestions);
+  const dayTimeline = buildDayTimeline(todayBlocks, today, deadlineSuggestions, suggestionMutes);
 
   return (
     <section className="panel schedule-panel">

@@ -754,13 +754,149 @@ function isSameDay(dateA: Date, dateB: Date): boolean {
   );
 }
 
+function minutesBetween(start: Date, end: Date): number {
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+}
+
+function isPlannedSuggestionMuted(start: Date, end: Date, muteWindows: Array<{ startTime: string; endTime: string }>): boolean {
+  return muteWindows.some((muteWindow) => {
+    const muteStart = new Date(muteWindow.startTime);
+    const muteEnd = new Date(muteWindow.endTime);
+    if (Number.isNaN(muteStart.getTime()) || Number.isNaN(muteEnd.getTime())) {
+      return false;
+    }
+    return start.getTime() < muteEnd.getTime() && end.getTime() > muteStart.getTime();
+  });
+}
+
+function suggestGapActivity(
+  gapStart: Date,
+  gapDurationMinutes: number,
+  deadlineSuggestions: string[],
+  consumedDeadlineIndex: { value: number }
+): string {
+  const hour = gapStart.getHours();
+
+  if (hour < 9) {
+    return "Morning routine (gym, breakfast, planning)";
+  }
+
+  if (consumedDeadlineIndex.value < deadlineSuggestions.length) {
+    const suggestion = deadlineSuggestions[consumedDeadlineIndex.value]!;
+    consumedDeadlineIndex.value += 1;
+    return suggestion;
+  }
+
+  if (gapDurationMinutes >= 90) {
+    return "Focus block for assignments or revision";
+  }
+
+  return "Buffer, review notes, or take a short reset";
+}
+
+function buildTodayTimelineSuggestions(
+  store: RuntimeStore,
+  todaySchedule: LectureEvent[],
+  now: Date
+): LectureEvent[] {
+  const sorted = [...todaySchedule].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const pendingDeadlines = store
+    .getAcademicDeadlines(now)
+    .filter((deadline) => !deadline.completed)
+    .filter((deadline) => {
+      const due = new Date(deadline.dueDate);
+      if (Number.isNaN(due.getTime())) {
+        return false;
+      }
+      const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      return diffDays >= -2 && diffDays <= 14;
+    })
+    .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())
+    .slice(0, 8)
+    .map((deadline) => `${deadline.course} ${deadline.task}`);
+
+  const firstStart = sorted.length > 0 ? new Date(sorted[0].startTime) : new Date(now);
+  const timelineStart = new Date(now);
+  timelineStart.setHours(Math.min(7, firstStart.getHours()), 0, 0, 0);
+
+  const lastLecture = sorted.length > 0 ? sorted[sorted.length - 1] : null;
+  const lastEnd = lastLecture
+    ? new Date(new Date(lastLecture.startTime).getTime() + lastLecture.durationMinutes * 60000)
+    : new Date(now);
+  const timelineEnd = new Date(now);
+  timelineEnd.setHours(Math.max(20, lastEnd.getHours() + 1), 0, 0, 0);
+
+  const muteWindows = store.getScheduleSuggestionMutes({ day: now });
+  const suggestions: LectureEvent[] = [];
+  let cursor = timelineStart;
+  let suggestionIndex = 0;
+  const consumedDeadlineIndex = { value: 0 };
+
+  const pushSuggestionsForGap = (gapStart: Date, gapEnd: Date): void => {
+    let remaining = minutesBetween(gapStart, gapEnd);
+    let blockStart = new Date(gapStart);
+
+    while (remaining >= 25) {
+      let blockMinutes: number;
+      if (remaining >= 210) {
+        blockMinutes = 90;
+      } else if (remaining >= 140) {
+        blockMinutes = 75;
+      } else if (remaining >= 95) {
+        blockMinutes = 60;
+      } else if (remaining >= 70) {
+        blockMinutes = 45;
+      } else {
+        blockMinutes = remaining;
+      }
+
+      const leftover = remaining - blockMinutes;
+      if (leftover > 0 && leftover < 25) {
+        blockMinutes = remaining;
+      }
+
+      const blockEnd = new Date(blockStart.getTime() + blockMinutes * 60000);
+      if (!isPlannedSuggestionMuted(blockStart, blockEnd, muteWindows)) {
+        const title = suggestGapActivity(blockStart, blockMinutes, pendingDeadlines, consumedDeadlineIndex);
+        suggestions.push({
+          id: `suggested-gap-${blockStart.getTime()}-${suggestionIndex}`,
+          title,
+          startTime: blockStart.toISOString(),
+          durationMinutes: blockMinutes,
+          workload: title.toLowerCase().includes("focus") ? "high" : "medium",
+          recurrenceParentId: "timeline-suggested"
+        });
+        suggestionIndex += 1;
+      }
+
+      blockStart = blockEnd;
+      remaining = minutesBetween(blockStart, gapEnd);
+    }
+  };
+
+  sorted.forEach((event) => {
+    const start = new Date(event.startTime);
+    const end = new Date(start.getTime() + event.durationMinutes * 60000);
+    if (minutesBetween(cursor, start) >= 25) {
+      pushSuggestionsForGap(new Date(cursor), start);
+    }
+    cursor = end;
+  });
+
+  if (minutesBetween(cursor, timelineEnd) >= 25) {
+    pushSuggestionsForGap(new Date(cursor), timelineEnd);
+  }
+
+  return suggestions;
+}
+
 export function handleGetSchedule(store: RuntimeStore, _args: Record<string, unknown> = {}): LectureEvent[] {
   const now = new Date();
   const todaySchedule = store
     .getScheduleEvents()
     .filter((event) => isSameDay(new Date(event.startTime), now));
-
-  return todaySchedule;
+  const timelineSuggestions = buildTodayTimelineSuggestions(store, todaySchedule, now);
+  return [...todaySchedule, ...timelineSuggestions];
 }
 
 export function handleGetRoutinePresets(
@@ -2141,13 +2277,13 @@ export function handleQueueClearScheduleWindow(
     .filter((event) => (normalizedQuery ? normalizeSearchText(event.title).includes(normalizedQuery) : true))
     .filter((event) => (includeAcademicBlocks ? true : !isAcademicScheduleBlockTitle(event.title)));
 
-  if (matchingEvents.length === 0) {
-    return { error: "No matching schedule blocks were found in that window." };
-  }
-
+  const affectedCount = matchingEvents.length;
   const pending = store.createPendingChatAction({
     actionType: "clear-schedule-window",
-    summary: `Clear ${matchingEvents.length} schedule block${matchingEvents.length === 1 ? "" : "s"} between ${startDate.toISOString()} and ${endDate.toISOString()}`,
+    summary:
+      affectedCount > 0
+        ? `Clear ${affectedCount} schedule block${affectedCount === 1 ? "" : "s"} between ${startDate.toISOString()} and ${endDate.toISOString()}`
+        : `Free timeline suggestions between ${startDate.toISOString()} and ${endDate.toISOString()}`,
     payload: {
       scheduleIds: matchingEvents.map((event) => event.id),
       startTime: startDate.toISOString(),
@@ -2459,8 +2595,7 @@ export function executePendingChatAction(
         lecture
       };
     }
-    case "delete-schedule-block":
-    case "clear-schedule-window": {
+    case "delete-schedule-block": {
       const scheduleIds = Array.isArray(pendingAction.payload.scheduleIds)
         ? pendingAction.payload.scheduleIds
             .map((entry) => asTrimmedString(entry))
@@ -2496,10 +2631,57 @@ export function executePendingChatAction(
         actionId: pendingAction.id,
         actionType: pendingAction.actionType,
         success: true,
-        message:
-          pendingAction.actionType === "delete-schedule-block"
-            ? "Deleted the schedule block."
-            : `Cleared ${deletedCount} schedule block${deletedCount === 1 ? "" : "s"} from your timeline.`
+        message: "Deleted the schedule block."
+      };
+    }
+    case "clear-schedule-window": {
+      const scheduleIds = Array.isArray(pendingAction.payload.scheduleIds)
+        ? pendingAction.payload.scheduleIds
+            .map((entry) => asTrimmedString(entry))
+            .filter((entry): entry is string => Boolean(entry))
+        : [];
+      const startTime = asTrimmedString(pendingAction.payload.startTime);
+      const endTime = asTrimmedString(pendingAction.payload.endTime);
+
+      let deletedCount = 0;
+      for (const scheduleId of new Set(scheduleIds)) {
+        if (store.deleteScheduleEvent(scheduleId)) {
+          deletedCount += 1;
+        }
+      }
+
+      let mutedSuggestions = false;
+      if (startTime && endTime) {
+        mutedSuggestions = Boolean(
+          store.createScheduleSuggestionMute({
+            startTime,
+            endTime
+          })
+        );
+      }
+
+      if (!mutedSuggestions && deletedCount === 0) {
+        return {
+          actionId: pendingAction.id,
+          actionType: pendingAction.actionType,
+          success: false,
+          message: "No matching schedule blocks or timeline suggestions were found."
+        };
+      }
+
+      const messageParts: string[] = [];
+      if (deletedCount > 0) {
+        messageParts.push(`Cleared ${deletedCount} schedule block${deletedCount === 1 ? "" : "s"}.`);
+      }
+      if (mutedSuggestions) {
+        messageParts.push("Cleared timeline suggestions for that window.");
+      }
+
+      return {
+        actionId: pendingAction.id,
+        actionType: pendingAction.actionType,
+        success: true,
+        message: messageParts.join(" ")
       };
     }
     case "create-routine-preset": {

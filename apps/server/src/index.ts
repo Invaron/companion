@@ -1747,6 +1747,21 @@ app.get("/api/schedule", async (_req, res) => {
   return res.json({ schedule: store.getScheduleEvents() });
 });
 
+app.get("/api/schedule/suggestion-mutes", (req, res) => {
+  const dayParam = typeof req.query.day === "string" ? req.query.day.trim() : "";
+  let day: Date | undefined;
+  if (dayParam.length > 0) {
+    const parsedDay = new Date(`${dayParam}T00:00:00`);
+    if (Number.isNaN(parsedDay.getTime())) {
+      return res.status(400).json({ error: "Invalid day query parameter. Use YYYY-MM-DD." });
+    }
+    day = parsedDay;
+  }
+
+  const mutes = store.getScheduleSuggestionMutes({ day });
+  return res.json({ mutes });
+});
+
 app.get("/api/schedule/:id", (req, res) => {
   const lecture = store.getScheduleEventById(req.params.id);
 

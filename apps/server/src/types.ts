@@ -253,6 +253,13 @@ export interface LectureEvent {
   recurrenceParentId?: string;
 }
 
+export interface ScheduleSuggestionMute {
+  id: string;
+  startTime: string;
+  endTime: string;
+  createdAt: string;
+}
+
 export interface RoutinePreset {
   id: string;
   title: string;

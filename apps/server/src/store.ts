@@ -15,6 +15,7 @@ import {
   JournalPhoto,
   JournalSyncPayload,
   LectureEvent,
+  ScheduleSuggestionMute,
   RoutinePreset,
   Notification,
   EmailDigest,
@@ -242,6 +243,17 @@ export class RuntimeStore {
         recurrenceParentId TEXT,
         insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000)
       );
+
+      CREATE TABLE IF NOT EXISTS schedule_suggestion_mutes (
+        id TEXT PRIMARY KEY,
+        startTime TEXT NOT NULL,
+        endTime TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_schedule_suggestion_mutes_window
+        ON schedule_suggestion_mutes(startTime, endTime);
 
       CREATE TABLE IF NOT EXISTS routine_presets (
         id TEXT PRIMARY KEY,
@@ -2168,6 +2180,88 @@ export class RuntimeStore {
   deleteScheduleEvent(id: string): boolean {
     const result = this.db.prepare("DELETE FROM schedule_events WHERE id = ?").run(id);
     return result.changes > 0;
+  }
+
+  createScheduleSuggestionMute(entry: { startTime: string; endTime: string }): ScheduleSuggestionMute | null {
+    const start = new Date(entry.startTime);
+    const end = new Date(entry.endTime);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end.getTime() <= start.getTime()) {
+      return null;
+    }
+
+    const mute: ScheduleSuggestionMute = {
+      id: makeId("schedule-mute"),
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+      createdAt: nowIso()
+    };
+
+    this.db
+      .prepare(
+        "INSERT INTO schedule_suggestion_mutes (id, startTime, endTime, createdAt) VALUES (?, ?, ?, ?)"
+      )
+      .run(mute.id, mute.startTime, mute.endTime, mute.createdAt);
+
+    return mute;
+  }
+
+  getScheduleSuggestionMutes(options: { day?: Date; now?: Date } = {}): ScheduleSuggestionMute[] {
+    const referenceNow = options.now ?? new Date();
+
+    // Opportunistic cleanup: keep mutes for 7 days after they end.
+    const cleanupBefore = new Date(referenceNow.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    this.db
+      .prepare("DELETE FROM schedule_suggestion_mutes WHERE endTime < ?")
+      .run(cleanupBefore);
+
+    if (options.day) {
+      const dayStart = new Date(options.day);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const rows = this.db
+        .prepare(
+          `SELECT id, startTime, endTime, createdAt
+             FROM schedule_suggestion_mutes
+            WHERE startTime <= ? AND endTime >= ?
+            ORDER BY startTime ASC, insertOrder ASC`
+        )
+        .all(dayEnd.toISOString(), dayStart.toISOString()) as Array<{
+          id: string;
+          startTime: string;
+          endTime: string;
+          createdAt: string;
+        }>;
+
+      return rows.map((row) => ({
+        id: row.id,
+        startTime: row.startTime,
+        endTime: row.endTime,
+        createdAt: row.createdAt
+      }));
+    }
+
+    const rows = this.db
+      .prepare(
+        `SELECT id, startTime, endTime, createdAt
+           FROM schedule_suggestion_mutes
+          WHERE endTime >= ?
+          ORDER BY startTime ASC, insertOrder ASC`
+      )
+      .all(referenceNow.toISOString()) as Array<{
+        id: string;
+        startTime: string;
+        endTime: string;
+        createdAt: string;
+      }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      startTime: row.startTime,
+      endTime: row.endTime,
+      createdAt: row.createdAt
+    }));
   }
 
   createRoutinePreset(

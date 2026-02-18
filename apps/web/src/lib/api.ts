@@ -5,6 +5,7 @@ import {
   ChatMessage,
   DashboardSnapshot,
   LectureEvent,
+  ScheduleSuggestionMute,
   Deadline,
   StudyPlan,
   StudyPlanSessionRecord,
@@ -432,6 +433,23 @@ export async function getSchedule(): Promise<LectureEvent[]> {
     return response.schedule;
   } catch {
     return loadSchedule();
+  }
+}
+
+export async function getScheduleSuggestionMutes(day?: Date): Promise<ScheduleSuggestionMute[]> {
+  try {
+    const query = new URLSearchParams();
+    if (day) {
+      const year = day.getFullYear();
+      const month = String(day.getMonth() + 1).padStart(2, "0");
+      const date = String(day.getDate()).padStart(2, "0");
+      query.set("day", `${year}-${month}-${date}`);
+    }
+    const path = query.size > 0 ? `/api/schedule/suggestion-mutes?${query.toString()}` : "/api/schedule/suggestion-mutes";
+    const response = await jsonOrThrow<{ mutes: ScheduleSuggestionMute[] }>(path);
+    return response.mutes ?? [];
+  } catch {
+    return [];
   }
 }
 
