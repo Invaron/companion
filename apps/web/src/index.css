@@ -3444,6 +3444,12 @@ body.keyboard-open .pull-to-refresh-container {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nutrition-custom-food-header .nutrition-inline-actions {
+  margin-left: auto;
+  align-items: center;
 }
 
 .nutrition-custom-food-header button {
@@ -3698,7 +3704,7 @@ body.keyboard-open .pull-to-refresh-container {
 
 .nutrition-list {
   display: grid;
-  gap: 8px;
+  gap: 12px;
 }
 
 .nutrition-list-item {
@@ -3737,9 +3743,10 @@ body.keyboard-open .pull-to-refresh-container {
   gap: 14px;
   align-items: stretch;
   background: linear-gradient(145deg, rgba(86, 110, 180, 0.28), rgba(73, 93, 157, 0.24));
-  border-color: rgba(137, 161, 227, 0.5);
+  border-width: 1px;
+  border-color: rgba(146, 171, 237, 0.62);
   padding: 14px;
-  box-shadow: 0 8px 18px rgba(4, 8, 20, 0.2);
+  box-shadow: 0 10px 22px rgba(4, 8, 20, 0.24);
 }
 
 .nutrition-meal-card-complete {
@@ -3787,15 +3794,21 @@ body.keyboard-open .pull-to-refresh-container {
 
 .nutrition-meal-food-main span:first-child {
   font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nutrition-meal-food-main span:nth-child(2) {
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .nutrition-meal-food-main span:nth-child(3) {
   color: #eecf96;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .nutrition-meal-food-actions {
@@ -4004,19 +4017,6 @@ body.keyboard-open .pull-to-refresh-container {
 
   .nutrition-delta {
     text-align: left;
-  }
-
-  .nutrition-meal-food-item {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .nutrition-meal-food-main {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .nutrition-meal-food-main span:nth-child(3) {
-    grid-column: 1 / -1;
   }
 }
 
