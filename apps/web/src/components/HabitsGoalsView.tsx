@@ -559,7 +559,6 @@ export function HabitsGoalsView(): JSX.Element {
           <span className="pill-muted">{goals.length} goals</span>
         </div>
       </header>
-      <p className="muted">Check-ins are chat-driven now. Gemini asks naturally during conversation and updates progress for you.</p>
       {habitMessage && <p className="warning-text">{habitMessage}</p>}
       {goalMessage && <p className="warning-text">{goalMessage}</p>}
       {summaryMessage && <p className="warning-text">{summaryMessage}</p>}
