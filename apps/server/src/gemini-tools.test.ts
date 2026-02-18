@@ -112,10 +112,10 @@ describe("gemini-tools", () => {
 
     it("should include queue action functions", () => {
       expect(functionDeclarations.find((f) => f.name === "queueDeadlineAction")).toBeDefined();
-      expect(functionDeclarations.find((f) => f.name === "queueScheduleBlock")).toBeDefined();
-      expect(functionDeclarations.find((f) => f.name === "queueUpdateScheduleBlock")).toBeDefined();
-      expect(functionDeclarations.find((f) => f.name === "queueDeleteScheduleBlock")).toBeDefined();
-      expect(functionDeclarations.find((f) => f.name === "queueClearScheduleWindow")).toBeDefined();
+      expect(functionDeclarations.find((f) => f.name === "createScheduleBlock")).toBeDefined();
+      expect(functionDeclarations.find((f) => f.name === "updateScheduleBlock")).toBeDefined();
+      expect(functionDeclarations.find((f) => f.name === "deleteScheduleBlock")).toBeDefined();
+      expect(functionDeclarations.find((f) => f.name === "clearScheduleWindow")).toBeDefined();
       expect(functionDeclarations.find((f) => f.name === "queueCreateRoutinePreset")).toBeDefined();
       expect(functionDeclarations.find((f) => f.name === "queueUpdateRoutinePreset")).toBeDefined();
       expect(functionDeclarations.find((f) => f.name === "createJournalEntry")).toBeDefined();
@@ -1178,7 +1178,7 @@ describe("gemini-tools", () => {
       expect(result.response).toHaveProperty("requiresConfirmation", true);
     });
 
-    it("should execute queueUpdateScheduleBlock function", () => {
+    it("should execute updateScheduleBlock function", () => {
       const scheduleBlock = store.createLectureEvent({
         title: "Focus block",
         startTime: "2026-02-24T10:00:00.000Z",
@@ -1187,16 +1187,16 @@ describe("gemini-tools", () => {
       });
 
       const result = executeFunctionCall(
-        "queueUpdateScheduleBlock",
+        "updateScheduleBlock",
         { scheduleId: scheduleBlock.id, durationMinutes: 60 },
         store
       );
 
-      expect(result.name).toBe("queueUpdateScheduleBlock");
-      expect(result.response).toHaveProperty("requiresConfirmation", true);
+      expect(result.name).toBe("updateScheduleBlock");
+      expect(result.response).toHaveProperty("success", true);
     });
 
-    it("should execute schedule delete queue functions", () => {
+    it("should execute direct schedule mutation functions", () => {
       const scheduleBlock = store.createLectureEvent({
         title: "Unblockable item",
         startTime: "2026-02-24T12:00:00.000Z",
@@ -1204,17 +1204,30 @@ describe("gemini-tools", () => {
         workload: "medium"
       });
 
+      const createResult = executeFunctionCall(
+        "createScheduleBlock",
+        {
+          title: "Evening review",
+          startTime: "2026-02-24T18:00:00.000Z",
+          durationMinutes: 45
+        },
+        store
+      );
+
+      expect(createResult.name).toBe("createScheduleBlock");
+      expect(createResult.response).toHaveProperty("success", true);
+
       const deleteResult = executeFunctionCall(
-        "queueDeleteScheduleBlock",
+        "deleteScheduleBlock",
         { scheduleId: scheduleBlock.id },
         store
       );
 
-      expect(deleteResult.name).toBe("queueDeleteScheduleBlock");
-      expect(deleteResult.response).toHaveProperty("requiresConfirmation", true);
+      expect(deleteResult.name).toBe("deleteScheduleBlock");
+      expect(deleteResult.response).toHaveProperty("success", true);
 
       const clearResult = executeFunctionCall(
-        "queueClearScheduleWindow",
+        "clearScheduleWindow",
         {
           startTime: "2026-02-24T00:00:00.000Z",
           endTime: "2026-02-24T23:59:59.999Z",
@@ -1223,8 +1236,8 @@ describe("gemini-tools", () => {
         store
       );
 
-      expect(clearResult.name).toBe("queueClearScheduleWindow");
-      expect(clearResult.response).toHaveProperty("requiresConfirmation", true);
+      expect(clearResult.name).toBe("clearScheduleWindow");
+      expect(clearResult.response).toHaveProperty("success", true);
     });
 
     it("should execute routine preset queue functions", () => {

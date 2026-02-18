@@ -204,6 +204,7 @@ export function ChatView(): JSX.Element {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const lastSpokenAssistantIdRef = useRef<string | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
+  const pendingInitialScrollRef = useRef(false);
 
   const recognitionCtor = getSpeechRecognitionCtor();
   const speechRecognitionSupported = Boolean(recognitionCtor);
@@ -239,10 +240,10 @@ export function ChatView(): JSX.Element {
     const loadHistory = async (): Promise<void> => {
       try {
         const response = await getChatHistory();
+        pendingInitialScrollRef.current = true;
         setMessages(response.history.messages);
         const latestAssistant = latestAssistantMessage(response.history.messages);
         lastSpokenAssistantIdRef.current = latestAssistant?.id ?? null;
-        scheduleScrollToBottom("auto");
       } catch (err) {
         setError("Failed to load chat history");
         console.error(err);
@@ -251,6 +252,15 @@ export function ChatView(): JSX.Element {
 
     void loadHistory();
   }, []);
+
+  useEffect(() => {
+    if (!pendingInitialScrollRef.current) {
+      return;
+    }
+
+    pendingInitialScrollRef.current = false;
+    scheduleScrollToBottom("auto");
+  }, [messages.length]);
 
   useEffect(() => {
     return () => {

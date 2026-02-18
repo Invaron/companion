@@ -532,9 +532,9 @@ export const functionDeclarations: FunctionDeclaration[] = [
     }
   },
   {
-    name: "queueScheduleBlock",
+    name: "createScheduleBlock",
     description:
-      "Queue creation of a schedule block that REQUIRES explicit user confirmation before execution.",
+      "Create a schedule block immediately. Use this when the user asks to add or plan something on their schedule.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -559,9 +559,9 @@ export const functionDeclarations: FunctionDeclaration[] = [
     }
   },
   {
-    name: "queueUpdateScheduleBlock",
+    name: "updateScheduleBlock",
     description:
-      "Queue an update to an existing schedule block that REQUIRES explicit user confirmation before execution.",
+      "Update an existing schedule block immediately.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -594,9 +594,9 @@ export const functionDeclarations: FunctionDeclaration[] = [
     }
   },
   {
-    name: "queueDeleteScheduleBlock",
+    name: "deleteScheduleBlock",
     description:
-      "Queue deletion of one schedule block that REQUIRES explicit user confirmation before execution.",
+      "Delete one schedule block immediately.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -613,9 +613,9 @@ export const functionDeclarations: FunctionDeclaration[] = [
     }
   },
   {
-    name: "queueClearScheduleWindow",
+    name: "clearScheduleWindow",
     description:
-      "Queue clearing multiple schedule blocks in a time window (for example freeing up the rest of today). REQUIRES explicit user confirmation.",
+      "Clear schedule blocks and timeline suggestions in a time window (for example freeing up the rest of today) immediately.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -2131,6 +2131,191 @@ export function handleQueueDeadlineAction(
   return toPendingActionResponse(pending, "Action queued. Ask user for explicit confirmation before executing.");
 }
 
+export function handleCreateScheduleBlock(
+  store: RuntimeStore,
+  args: Record<string, unknown> = {}
+): { success: true; lecture: LectureEvent; message: string } | { error: string } {
+  const title = asTrimmedString(args.title);
+  const startTime = asTrimmedString(args.startTime);
+  const workloadRaw = asTrimmedString(args.workload)?.toLowerCase();
+  const durationMinutes = clampNumber(args.durationMinutes, 60, 15, 240);
+
+  if (!title || !startTime) {
+    return { error: "title and startTime are required." };
+  }
+
+  const startDate = new Date(startTime);
+  if (Number.isNaN(startDate.getTime())) {
+    return { error: "startTime must be a valid ISO datetime." };
+  }
+
+  const workload: LectureEvent["workload"] =
+    workloadRaw === "low" || workloadRaw === "medium" || workloadRaw === "high" ? workloadRaw : "medium";
+
+  const lecture = store.createLectureEvent({
+    title,
+    startTime: startDate.toISOString(),
+    durationMinutes,
+    workload
+  });
+
+  return {
+    success: true,
+    lecture,
+    message: `Added "${lecture.title}" to your schedule.`
+  };
+}
+
+export function handleUpdateScheduleBlock(
+  store: RuntimeStore,
+  args: Record<string, unknown> = {}
+): { success: true; lecture: LectureEvent; message: string } | { error: string } {
+  const resolved = resolveScheduleTarget(store, args);
+  if ("error" in resolved) {
+    return resolved;
+  }
+
+  const nextTitle = asTrimmedString(args.title);
+  const nextStartTime = asTrimmedString(args.startTime);
+  const nextDurationMinutes = typeof args.durationMinutes === "number"
+    ? clampNumber(args.durationMinutes, resolved.durationMinutes, 15, 240)
+    : undefined;
+  const workloadRaw = asTrimmedString(args.workload)?.toLowerCase();
+  const nextWorkload: LectureEvent["workload"] | undefined =
+    workloadRaw === "low" || workloadRaw === "medium" || workloadRaw === "high" ? workloadRaw : undefined;
+
+  let normalizedStartTime: string | undefined;
+  if (nextStartTime) {
+    const startDate = new Date(nextStartTime);
+    if (Number.isNaN(startDate.getTime())) {
+      return { error: "startTime must be a valid ISO datetime." };
+    }
+    normalizedStartTime = startDate.toISOString();
+  }
+
+  if (!nextTitle && !normalizedStartTime && !nextDurationMinutes && !nextWorkload) {
+    return {
+      error: "Provide at least one field to update: title, startTime, durationMinutes, or workload."
+    };
+  }
+
+  const lecture = store.updateScheduleEvent(resolved.id, {
+    ...(nextTitle ? { title: nextTitle } : {}),
+    ...(normalizedStartTime ? { startTime: normalizedStartTime } : {}),
+    ...(typeof nextDurationMinutes === "number" ? { durationMinutes: nextDurationMinutes } : {}),
+    ...(nextWorkload ? { workload: nextWorkload } : {})
+  });
+
+  if (!lecture) {
+    return { error: "Unable to update schedule block." };
+  }
+
+  return {
+    success: true,
+    lecture,
+    message: `Updated "${lecture.title}" in your schedule.`
+  };
+}
+
+export function handleDeleteScheduleBlock(
+  store: RuntimeStore,
+  args: Record<string, unknown> = {}
+): { success: true; deleted: boolean; scheduleId: string; message: string } | { error: string } {
+  const resolved = resolveScheduleTarget(store, args);
+  if ("error" in resolved) {
+    return resolved;
+  }
+
+  const deleted = store.deleteScheduleEvent(resolved.id);
+  if (!deleted) {
+    return { error: "Unable to delete schedule block." };
+  }
+
+  return {
+    success: true,
+    deleted: true,
+    scheduleId: resolved.id,
+    message: `Deleted "${resolved.title}" from your schedule.`
+  };
+}
+
+export function handleClearScheduleWindow(
+  store: RuntimeStore,
+  args: Record<string, unknown> = {}
+): { success: true; deletedCount: number; mutedSuggestions: boolean; message: string } | { error: string } {
+  const now = new Date();
+  const requestedStart = asTrimmedString(args.startTime);
+  const requestedEnd = asTrimmedString(args.endTime);
+  const titleQuery = asTrimmedString(args.titleQuery);
+  const includeAcademicBlocks = args.includeAcademicBlocks === true;
+
+  const startDate = requestedStart ? new Date(requestedStart) : new Date(now);
+  if (Number.isNaN(startDate.getTime())) {
+    return { error: "startTime must be a valid ISO datetime." };
+  }
+
+  let endDate: Date;
+  if (requestedEnd) {
+    endDate = new Date(requestedEnd);
+    if (Number.isNaN(endDate.getTime())) {
+      return { error: "endTime must be a valid ISO datetime." };
+    }
+  } else {
+    endDate = new Date(startDate);
+    endDate.setHours(23, 59, 59, 999);
+  }
+
+  if (endDate.getTime() <= startDate.getTime()) {
+    return { error: "endTime must be after startTime." };
+  }
+
+  const normalizedQuery = titleQuery ? normalizeSearchText(titleQuery) : null;
+  const matchingEvents = store
+    .getScheduleEvents()
+    .filter((event) => {
+      const eventStart = new Date(event.startTime);
+      if (Number.isNaN(eventStart.getTime())) {
+        return false;
+      }
+      return eventStart.getTime() >= startDate.getTime() && eventStart.getTime() <= endDate.getTime();
+    })
+    .filter((event) => (normalizedQuery ? normalizeSearchText(event.title).includes(normalizedQuery) : true))
+    .filter((event) => (includeAcademicBlocks ? true : !isAcademicScheduleBlockTitle(event.title)));
+
+  let deletedCount = 0;
+  for (const event of matchingEvents) {
+    if (store.deleteScheduleEvent(event.id)) {
+      deletedCount += 1;
+    }
+  }
+
+  const mutedSuggestions = Boolean(
+    store.createScheduleSuggestionMute({
+      startTime: startDate.toISOString(),
+      endTime: endDate.toISOString()
+    })
+  );
+
+  if (!mutedSuggestions && deletedCount === 0) {
+    return { error: "No matching schedule blocks or timeline suggestions were found." };
+  }
+
+  const messageParts: string[] = [];
+  if (deletedCount > 0) {
+    messageParts.push(`Cleared ${deletedCount} schedule block${deletedCount === 1 ? "" : "s"}.`);
+  }
+  if (mutedSuggestions) {
+    messageParts.push("Cleared timeline suggestions for that window.");
+  }
+
+  return {
+    success: true,
+    deletedCount,
+    mutedSuggestions,
+    message: messageParts.join(" ")
+  };
+}
+
 export function handleQueueScheduleBlock(
   store: RuntimeStore,
   args: Record<string, unknown> = {}
@@ -3144,6 +3329,18 @@ export function executeFunctionCall(
       break;
     case "queueDeadlineAction":
       response = handleQueueDeadlineAction(store, args);
+      break;
+    case "createScheduleBlock":
+      response = handleCreateScheduleBlock(store, args);
+      break;
+    case "updateScheduleBlock":
+      response = handleUpdateScheduleBlock(store, args);
+      break;
+    case "deleteScheduleBlock":
+      response = handleDeleteScheduleBlock(store, args);
+      break;
+    case "clearScheduleWindow":
+      response = handleClearScheduleWindow(store, args);
       break;
     case "queueScheduleBlock":
       response = handleQueueScheduleBlock(store, args);

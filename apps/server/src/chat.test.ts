@@ -680,7 +680,12 @@ describe("chat service", () => {
     const firstRequest = generateChatResponse.mock.calls[0][0] as { systemInstruction: string };
     expect(firstRequest.systemInstruction).toContain("For factual questions about schedule, deadlines, journal, email");
     expect(firstRequest.systemInstruction).toContain("For journal-save requests, call createJournalEntry directly");
-    expect(firstRequest.systemInstruction).toContain("use queue* action tools and require explicit user confirmation");
+    expect(firstRequest.systemInstruction).toContain(
+      "For deadline mutations, use queueDeadlineAction and require explicit user confirmation."
+    );
+    expect(firstRequest.systemInstruction).toContain(
+      "For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow."
+    );
   });
 
   it("preserves markdown styling in assistant output", async () => {
