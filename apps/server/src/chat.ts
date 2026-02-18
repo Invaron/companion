@@ -1939,27 +1939,9 @@ function collectToolCitations(
     ];
   }
 
-  if (functionName === "getEmails" && Array.isArray(response)) {
-    const next: ChatCitation[] = [];
-    response.forEach((value) => {
-      const record = asRecord(value);
-      if (!record) {
-        return;
-      }
-      const id = asNonEmptyString(record.id);
-      const subject = asNonEmptyString(record.subject);
-      const receivedAt = asNonEmptyString(record.receivedAt) ?? asNonEmptyString(record.generatedAt);
-      if (!id || !subject) {
-        return;
-      }
-      next.push({
-        id,
-        type: "email",
-        label: textSnippet(subject),
-        timestamp: receivedAt ?? undefined
-      });
-    });
-    return next;
+  if (functionName === "getEmails") {
+    // Do not emit email citations in chat UI; they appear as non-actionable repeated subjects.
+    return [];
   }
 
   if (functionName === "getSocialDigest") {
