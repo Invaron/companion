@@ -2502,7 +2502,7 @@ button:disabled {
 .chat-input-container {
   display: grid;
   gap: 6px;
-  padding: 6px 8px 4px;
+  padding: 6px 8px 6px;
   background: var(--card);
   border-top: 1px solid var(--border-soft);
   position: sticky;
@@ -2684,7 +2684,7 @@ button:disabled {
 
 @media (max-width: 430px) {
   .chat-input-container {
-    padding: 5px 6px 3px;
+    padding: 5px 6px 5px;
   }
 
   .chat-input-row {
@@ -3088,7 +3088,7 @@ body.keyboard-open .chat-input-container {
   right: 0;
   bottom: var(--keyboard-gap);
   z-index: 6;
-  padding: 4px 6px 2px;
+  padding: 4px 6px 4px;
   border-top: 1px solid var(--border-soft);
   background: rgba(7, 14, 20, 0.96);
 }
@@ -4398,7 +4398,7 @@ body.keyboard-open .pull-to-refresh-container {
 
   body.keyboard-open .chat-input-container {
     bottom: var(--keyboard-gap);
-    padding-bottom: 2px;
+    padding-bottom: 4px;
   }
 }
 
