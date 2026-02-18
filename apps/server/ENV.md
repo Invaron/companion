@@ -92,7 +92,7 @@ This file documents all environment variables required to run the Companion serv
 - `WITHINGS_CLIENT_ID` (optional) — Withings OAuth client ID
 - `WITHINGS_API_SECRET` (optional) — Withings OAuth client secret
 - `WITHINGS_CALLBACK_URL` (default: `http://localhost:8787/api/auth/withings/callback`) — OAuth callback URL registered in Withings developer settings
-- `WITHINGS_SCOPE` (default: `user.info,user.metrics,user.sleepevents`) — OAuth scopes requested during connect flow
+- `WITHINGS_SCOPE` (default: `user.metrics,user.activity`) — OAuth scopes requested during connect flow
 - `WITHINGS_ACCESS_TOKEN` (optional) — Bootstrap access token for non-interactive startup
 - `WITHINGS_REFRESH_TOKEN` (optional) — Bootstrap refresh token for non-interactive startup
 
@@ -179,7 +179,7 @@ WITHINGS_API_ENDPOINT=https://wbsapi.withings.net
 WITHINGS_CLIENT_ID=your-withings-client-id
 WITHINGS_API_SECRET=your-withings-api-secret
 WITHINGS_CALLBACK_URL=https://<your-server-domain>/api/auth/withings/callback
-WITHINGS_SCOPE=user.info,user.metrics,user.sleepevents
+WITHINGS_SCOPE=user.metrics,user.activity
 WITHINGS_ACCESS_TOKEN=your-withings-access-token
 WITHINGS_REFRESH_TOKEN=your-withings-refresh-token
 ```

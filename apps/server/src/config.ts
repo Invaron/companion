@@ -80,7 +80,7 @@ const schema = z.object({
   WITHINGS_CLIENT_ID: z.string().optional(),
   WITHINGS_API_SECRET: z.string().optional(),
   WITHINGS_CALLBACK_URL: z.string().url().default("http://localhost:8787/api/auth/withings/callback"),
-  WITHINGS_SCOPE: z.string().default("user.info,user.metrics,user.sleepevents"),
+  WITHINGS_SCOPE: z.string().default("user.metrics,user.activity"),
   WITHINGS_ACCESS_TOKEN: z.string().optional(),
   WITHINGS_REFRESH_TOKEN: z.string().optional(),
   GMAIL_CLIENT_ID: z.string().optional(),
