@@ -1202,12 +1202,12 @@ function buildToolDataFallbackReply(
   ].join("\n");
 }
 
-const MAX_CHAT_CITATIONS = 8;
-const FUNCTION_CALL_HISTORY_LIMIT = 6;
-const TOOL_RESULT_ITEM_LIMIT = 6;
-const DEADLINE_TOOL_RESULT_LIMIT = 10;
-const TOOL_RESULT_TEXT_MAX_CHARS = 220;
-const TOOL_RESULT_MAX_DEPTH = 3;
+const MAX_CHAT_CITATIONS = 16;
+const FUNCTION_CALL_HISTORY_LIMIT = 12;
+const TOOL_RESULT_ITEM_LIMIT = 12;
+const DEADLINE_TOOL_RESULT_LIMIT = 24;
+const TOOL_RESULT_TEXT_MAX_CHARS = 480;
+const TOOL_RESULT_MAX_DEPTH = 5;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : null;

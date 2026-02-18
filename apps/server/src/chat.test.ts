@@ -786,7 +786,7 @@ describe("chat service", () => {
 
   it("compacts large tool responses before sending functionResponse payloads to Gemini", async () => {
     const now = Date.now();
-    for (let index = 0; index < 12; index += 1) {
+    for (let index = 0; index < 40; index += 1) {
       store.createDeadline({
         course: "DAT560",
         task: `Assignment ${index + 1} with very long context details that are useful but should be bounded`,
@@ -832,12 +832,12 @@ describe("chat service", () => {
 
     expect(lastMessage.role).toBe("function");
     expect(fnResponse?.name).toBe("getDeadlines");
-    expect(fnResponse?.response?.total).toBe(12);
+    expect(fnResponse?.response?.total).toBe(30);
     expect(fnResponse?.response?.truncated).toBe(true);
 
     const deadlines = fnResponse?.response?.deadlines as unknown[];
     expect(Array.isArray(deadlines)).toBe(true);
-    expect(deadlines.length).toBe(10);
+    expect(deadlines.length).toBe(24);
   });
 
   it("returns a local fallback reply when second function-calling pass is rate limited", async () => {
