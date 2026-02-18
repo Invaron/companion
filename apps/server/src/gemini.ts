@@ -261,9 +261,9 @@ export class GeminiClient {
           function_call: {
             ...(typeof call.id === "string" && call.id.trim().length > 0 ? { id: call.id } : {}),
             name: call.name,
-            args: call.args && typeof call.args === "object" && !Array.isArray(call.args) ? call.args : {},
-            ...(thoughtSignature ? { thoughtSignature } : {})
-          }
+            args: call.args && typeof call.args === "object" && !Array.isArray(call.args) ? call.args : {}
+          },
+          ...(thoughtSignature ? { thought_signature: thoughtSignature } : {})
         };
       }
     }
@@ -318,6 +318,8 @@ export class GeminiClient {
         return;
       }
       const record = part as {
+        thoughtSignature?: unknown;
+        thought_signature?: unknown;
         functionCall?: {
           id?: unknown;
           name?: unknown;
@@ -342,11 +344,15 @@ export class GeminiClient {
           ? (functionCall.args as Record<string, unknown>)
           : {};
       const thoughtSignature =
-        typeof functionCall.thought_signature === "string"
-          ? functionCall.thought_signature
-          : typeof functionCall.thoughtSignature === "string"
-            ? functionCall.thoughtSignature
-            : undefined;
+        typeof record.thought_signature === "string"
+          ? record.thought_signature
+          : typeof record.thoughtSignature === "string"
+            ? record.thoughtSignature
+            : typeof functionCall.thought_signature === "string"
+              ? functionCall.thought_signature
+              : typeof functionCall.thoughtSignature === "string"
+                ? functionCall.thoughtSignature
+                : undefined;
       calls.push({
         ...(typeof functionCall.id === "string" && functionCall.id.trim().length > 0
           ? { id: functionCall.id }
