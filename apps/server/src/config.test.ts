@@ -23,7 +23,7 @@ describe("config", () => {
       delete process.env.TIMEZONE;
       delete process.env.AXIS_TIMEZONE;
       const { config } = await import("./config.js");
-      expect(config.TIMEZONE).toBe("America/New_York");
+      expect(config.TIMEZONE).toBe("Europe/Oslo");
     });
 
     it("should use default USER_NAME when not provided", async () => {
@@ -195,7 +195,6 @@ describe("config", () => {
 
   describe("legacy AXIS_ compatibility", () => {
     it("should parse legacy AXIS_* variables when canonical names are missing", async () => {
-      process.env.AXIS_TIMEZONE = "Europe/Oslo";
       process.env.AXIS_USER_NAME = "Legacy User";
       process.env.AXIS_VAPID_PUBLIC_KEY = "legacy-public";
       process.env.AXIS_VAPID_PRIVATE_KEY = "legacy-private";
@@ -222,12 +221,12 @@ describe("config", () => {
       expect(config.VIDEO_PROVIDER).toBe("manual");
     });
 
-    it("should prefer canonical names over legacy AXIS_* aliases", async () => {
-      process.env.TIMEZONE = "America/Los_Angeles";
-      process.env.AXIS_TIMEZONE = "Europe/Berlin";
+    it("should ignore legacy AXIS_TIMEZONE and use canonical/default timezone", async () => {
+      delete process.env.TIMEZONE;
+      process.env.AXIS_TIMEZONE = "America/Los_Angeles";
 
       const { config } = await import("./config.js");
-      expect(config.TIMEZONE).toBe("America/Los_Angeles");
+      expect(config.TIMEZONE).toBe("Europe/Oslo");
     });
   });
 

@@ -367,6 +367,13 @@ function toGeminiMessages(
     userParts.push({ text: "[User sent image attachment(s)]" });
   }
 
+  if (attachments.length > 0) {
+    userParts.push({
+      text:
+        "Attachment instruction: if this request involves food logging from the image(s), use createNutritionMeal with an `items` array that lists each visible food component separately, and include realistic grams (`quantity`) for each item. Do not log only a generic meal name or 1g placeholder items."
+    });
+  }
+
   attachments.forEach((attachment) => {
     const parsed = parseImageDataUrl(attachment.dataUrl);
     if (!parsed) {
@@ -848,7 +855,9 @@ Core behavior:
 - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
 - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
 - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
-- For image-based meal logging, estimate a realistic food weight in grams and pass quantity/estimatedWeightGrams so items are not logged as 1g placeholders.
+- For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
+- For each item in image-based meal logs, include realistic grams (quantity) and per-item macro values so totals are traceable item-by-item.
+- Do not log image-based meals as a single generic meal item unless the image clearly contains only one food item.
 - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
 - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
 - For email follow-ups like "what did it contain?" after inbox discussion, call getEmails again and answer from sender/subject/snippet.

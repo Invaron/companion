@@ -5,7 +5,7 @@ dotenv.config();
 
 const env = {
   ...process.env,
-  TIMEZONE: process.env.TIMEZONE ?? process.env.AXIS_TIMEZONE,
+  TIMEZONE: process.env.TIMEZONE,
   USER_NAME: process.env.USER_NAME ?? process.env.AXIS_USER_NAME,
   VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY ?? process.env.AXIS_VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY ?? process.env.AXIS_VAPID_PRIVATE_KEY,
@@ -43,7 +43,7 @@ const schema = z.object({
   PORT: z.coerce.number().default(8787),
   DATABASE_URL: z.string().url().optional(),
   SQLITE_DB_PATH: z.string().default("companion.db"),
-  TIMEZONE: z.string().default("America/New_York"),
+  TIMEZONE: z.string().default("Europe/Oslo"),
   USER_NAME: z.string().default("friend"),
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),

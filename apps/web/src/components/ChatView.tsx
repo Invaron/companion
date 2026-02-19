@@ -313,7 +313,7 @@ export function ChatView(): JSX.Element {
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
@@ -539,8 +539,8 @@ export function ChatView(): JSX.Element {
     void dispatchMessage(`${type} ${action.id}`);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleComposerKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       void handleSend();
     }
@@ -836,15 +836,15 @@ export function ChatView(): JSX.Element {
           >
             🎤
           </button>
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             className="chat-input"
             placeholder="Ask me anything..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleComposerKeyDown}
             disabled={isSending}
+            rows={1}
           />
           <button
             type="button"

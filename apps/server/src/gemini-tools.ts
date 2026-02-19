@@ -529,7 +529,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: "logMeal",
     description:
-      "Log a meal with calories and macros (protein/carbs/fat). You can either provide explicit macros or reference a saved custom food.",
+      "Log a simple/single-item meal with calories and macros (protein/carbs/fat). For image-based or mixed meals with multiple foods, prefer createNutritionMeal with a detailed items array.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -594,7 +594,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: "createNutritionMeal",
     description:
-      "Create a meal entry with optional item list and macros.",
+      "Create a meal entry with optional item list and macros. Preferred for image-based and mixed meals; include one item per recognizable food component with realistic grams.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -633,7 +633,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
         items: {
           type: SchemaType.ARRAY,
           description:
-            "Optional meal items. Each item can reference a custom food via customFoodId/customFoodName and must include quantity. For image-estimated meals, provide realistic grams (for example 220, 350).",
+            "Optional meal items. Each item can reference a custom food via customFoodId/customFoodName and must include quantity. For image-estimated meals, split the dish into distinct food components and provide realistic grams per item (for example 220, 350).",
           items: {
             type: SchemaType.OBJECT,
             properties: {
