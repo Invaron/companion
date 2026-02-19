@@ -101,7 +101,7 @@ async function initializeRuntimeStore(): Promise<RuntimePersistenceContext> {
   const store = new RuntimeStore(sqlitePath);
 
   await postgresSnapshotStore.persistSnapshot(store.serializeDatabase());
-  postgresSnapshotStore.startAutoSync(() => store.serializeDatabase(), 5_000);
+  postgresSnapshotStore.startAutoSync(() => store.serializeDatabase(), config.POSTGRES_SNAPSHOT_SYNC_MS);
 
   return {
     store,
@@ -782,6 +782,17 @@ app.post("/api/chat/context/compress", async (req, res) => {
       maxMessages: parsed.data.maxMessages,
       preserveRecentMessages: parsed.data.preserveRecentMessages,
       targetSummaryChars: parsed.data.targetSummaryChars
+    });
+
+    store.upsertChatLongTermMemory({
+      summary: result.summary,
+      sourceMessageCount: result.sourceMessageCount,
+      totalMessagesAtCompression: result.totalMessagesAtCompression,
+      compressedMessageCount: result.compressedMessageCount,
+      preservedMessageCount: result.preservedMessageCount,
+      fromTimestamp: result.fromTimestamp,
+      toTimestamp: result.toTimestamp,
+      usedModelMode: result.usedModelMode
     });
 
     return res.json(result);

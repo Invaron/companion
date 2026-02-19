@@ -42,6 +42,7 @@ function parseBooleanEnv(value: unknown): boolean | undefined {
 const schema = z.object({
   PORT: z.coerce.number().default(8787),
   DATABASE_URL: z.string().url().optional(),
+  POSTGRES_SNAPSHOT_SYNC_MS: z.coerce.number().int().min(5_000).max(10 * 60 * 1000).default(30_000),
   SQLITE_DB_PATH: z.string().default("companion.db"),
   TIMEZONE: z.string().default("Europe/Oslo"),
   USER_NAME: z.string().default("friend"),

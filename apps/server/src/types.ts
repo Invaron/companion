@@ -123,6 +123,18 @@ export interface ChatHistoryPage {
   hasMore: boolean;
 }
 
+export interface ChatLongTermMemory {
+  summary: string;
+  sourceMessageCount: number;
+  totalMessagesAtCompression: number;
+  compressedMessageCount: number;
+  preservedMessageCount: number;
+  fromTimestamp?: string;
+  toTimestamp?: string;
+  usedModelMode: "live" | "standard" | "fallback";
+  updatedAt: string;
+}
+
 export type AuthRole = "admin" | "user";
 
 export interface AuthUser {

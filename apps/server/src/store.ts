@@ -62,6 +62,7 @@ import {
   ChatMessage,
   ChatMessageMetadata,
   ChatHistoryPage,
+  ChatLongTermMemory,
   ChatActionType,
   ChatPendingAction,
   GmailMessage,
@@ -170,6 +171,19 @@ export class RuntimeStore {
 
       CREATE INDEX IF NOT EXISTS idx_chat_pending_actions_expiresAt
         ON chat_pending_actions(expiresAt);
+
+      CREATE TABLE IF NOT EXISTS chat_long_term_memory (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        summary TEXT NOT NULL,
+        sourceMessageCount INTEGER NOT NULL DEFAULT 0,
+        totalMessagesAtCompression INTEGER NOT NULL DEFAULT 0,
+        compressedMessageCount INTEGER NOT NULL DEFAULT 0,
+        preservedMessageCount INTEGER NOT NULL DEFAULT 0,
+        fromTimestamp TEXT,
+        toTimestamp TEXT,
+        usedModelMode TEXT NOT NULL DEFAULT 'fallback',
+        updatedAt TEXT NOT NULL
+      );
 
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -984,6 +998,99 @@ export class RuntimeStore {
       pageSize,
       total,
       hasMore
+    };
+  }
+
+  getChatMessageCount(): number {
+    return (this.db.prepare("SELECT COUNT(*) as count FROM chat_messages").get() as { count: number }).count;
+  }
+
+  getChatLongTermMemory(): ChatLongTermMemory | null {
+    const row = this.db
+      .prepare(
+        `SELECT summary, sourceMessageCount, totalMessagesAtCompression, compressedMessageCount, preservedMessageCount,
+                fromTimestamp, toTimestamp, usedModelMode, updatedAt
+           FROM chat_long_term_memory
+          WHERE id = 1`
+      )
+      .get() as
+      | {
+          summary: string;
+          sourceMessageCount: number;
+          totalMessagesAtCompression: number;
+          compressedMessageCount: number;
+          preservedMessageCount: number;
+          fromTimestamp: string | null;
+          toTimestamp: string | null;
+          usedModelMode: string;
+          updatedAt: string;
+        }
+      | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    const usedModelMode: ChatLongTermMemory["usedModelMode"] =
+      row.usedModelMode === "live" || row.usedModelMode === "standard" || row.usedModelMode === "fallback"
+        ? row.usedModelMode
+        : "fallback";
+
+    return {
+      summary: row.summary,
+      sourceMessageCount: Math.max(0, Number(row.sourceMessageCount) || 0),
+      totalMessagesAtCompression: Math.max(0, Number(row.totalMessagesAtCompression) || 0),
+      compressedMessageCount: Math.max(0, Number(row.compressedMessageCount) || 0),
+      preservedMessageCount: Math.max(0, Number(row.preservedMessageCount) || 0),
+      fromTimestamp: row.fromTimestamp ?? undefined,
+      toTimestamp: row.toTimestamp ?? undefined,
+      usedModelMode,
+      updatedAt: row.updatedAt
+    };
+  }
+
+  upsertChatLongTermMemory(memory: Omit<ChatLongTermMemory, "updatedAt"> & { updatedAt?: string }): ChatLongTermMemory {
+    const updatedAt = memory.updatedAt ?? nowIso();
+    this.db
+      .prepare(
+        `INSERT INTO chat_long_term_memory
+           (id, summary, sourceMessageCount, totalMessagesAtCompression, compressedMessageCount, preservedMessageCount,
+            fromTimestamp, toTimestamp, usedModelMode, updatedAt)
+         VALUES
+           (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           summary = EXCLUDED.summary,
+           sourceMessageCount = EXCLUDED.sourceMessageCount,
+           totalMessagesAtCompression = EXCLUDED.totalMessagesAtCompression,
+           compressedMessageCount = EXCLUDED.compressedMessageCount,
+           preservedMessageCount = EXCLUDED.preservedMessageCount,
+           fromTimestamp = EXCLUDED.fromTimestamp,
+           toTimestamp = EXCLUDED.toTimestamp,
+           usedModelMode = EXCLUDED.usedModelMode,
+           updatedAt = EXCLUDED.updatedAt`
+      )
+      .run(
+        memory.summary,
+        memory.sourceMessageCount,
+        memory.totalMessagesAtCompression,
+        memory.compressedMessageCount,
+        memory.preservedMessageCount,
+        memory.fromTimestamp ?? null,
+        memory.toTimestamp ?? null,
+        memory.usedModelMode,
+        updatedAt
+      );
+
+    return {
+      summary: memory.summary,
+      sourceMessageCount: memory.sourceMessageCount,
+      totalMessagesAtCompression: memory.totalMessagesAtCompression,
+      compressedMessageCount: memory.compressedMessageCount,
+      preservedMessageCount: memory.preservedMessageCount,
+      fromTimestamp: memory.fromTimestamp,
+      toTimestamp: memory.toTimestamp,
+      usedModelMode: memory.usedModelMode,
+      updatedAt
     };
   }
 

@@ -15,6 +15,7 @@ import {
   ChatCitation,
   ChatHistoryPage,
   ChatImageAttachment,
+  ChatLongTermMemory,
   ChatMessage,
   ChatMessageMetadata,
   ChatPendingAction,
@@ -845,7 +846,8 @@ function buildRuntimeContextNudge(store: RuntimeStore, now: Date): string {
 function buildFunctionCallingSystemInstruction(
   userName: string,
   habitGoalNudge: string,
-  runtimeContextNudge: string
+  runtimeContextNudge: string,
+  longTermMemoryNudge: string
 ): string {
   return `You are Companion, a personal AI assistant for ${userName}, a university student at UiS (University of Stavanger).
 
@@ -892,6 +894,9 @@ Core behavior:
 
 Runtime context for this turn:
 ${runtimeContextNudge}
+
+Long-term conversation memory (compressed):
+${longTermMemoryNudge}
 
 Habit/goal context for this conversation:
 ${habitGoalNudge}`;
@@ -1569,11 +1574,14 @@ function buildToolDataFallbackReply(
 }
 
 const MAX_CHAT_CITATIONS = 16;
-const FUNCTION_CALL_HISTORY_LIMIT = 12;
+const FUNCTION_CALL_HISTORY_LIMIT = 24;
 const TOOL_RESULT_ITEM_LIMIT = 12;
 const DEADLINE_TOOL_RESULT_LIMIT = 24;
 const TOOL_RESULT_TEXT_MAX_CHARS = 480;
 const TOOL_RESULT_MAX_DEPTH = 5;
+const CHAT_MEMORY_MIN_MESSAGES = 24;
+const CHAT_MEMORY_REFRESH_MESSAGE_DELTA = 10;
+const CHAT_MEMORY_REFRESH_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
@@ -2899,7 +2907,9 @@ function buildCompressionTranscript(messages: ChatMessage[]): string {
   return messages
     .map((message) => {
       const roleLabel = message.role === "assistant" ? "assistant" : "user";
-      return `[${message.timestamp}] ${roleLabel}: ${normalizeChatSnippet(message.content, 420)}`;
+      const attachmentCount = message.metadata?.attachments?.length ?? 0;
+      const attachmentHint = attachmentCount > 0 ? ` [attachments: ${attachmentCount} image(s)]` : "";
+      return `[${message.timestamp}] ${roleLabel}${attachmentHint}: ${normalizeChatSnippet(message.content, 520)}`;
     })
     .join("\n");
 }
@@ -2950,6 +2960,7 @@ export interface CompressChatContextOptions {
 export interface CompressChatContextResult {
   summary: string;
   sourceMessageCount: number;
+  totalMessagesAtCompression: number;
   compressedMessageCount: number;
   preservedMessageCount: number;
   fromTimestamp?: string;
@@ -2965,12 +2976,14 @@ export async function compressChatContext(
   const maxMessages = clampNumber(options.maxMessages ?? 180, 10, 500);
   const preserveRecentMessages = clampNumber(options.preserveRecentMessages ?? 16, 0, 100);
   const targetSummaryChars = clampNumber(options.targetSummaryChars ?? 2800, 300, 12000);
+  const totalMessagesAtCompression = store.getChatMessageCount();
   const allMessages = store.getRecentChatMessages(maxMessages);
 
   if (allMessages.length === 0) {
     return {
       summary: "No chat history available yet.",
       sourceMessageCount: 0,
+      totalMessagesAtCompression,
       compressedMessageCount: 0,
       preservedMessageCount: 0,
       usedModelMode: "fallback"
@@ -2986,6 +2999,7 @@ export async function compressChatContext(
     return {
       summary: "No older context to compress yet.",
       sourceMessageCount: allMessages.length,
+      totalMessagesAtCompression,
       compressedMessageCount: 0,
       preservedMessageCount: preservedMessages.length,
       usedModelMode: "fallback"
@@ -3097,12 +3111,54 @@ export async function compressChatContext(
   return {
     summary,
     sourceMessageCount: allMessages.length,
+    totalMessagesAtCompression,
     compressedMessageCount: summarySource.length,
     preservedMessageCount: preservedMessages.length,
     fromTimestamp: summarySource[0]?.timestamp,
     toTimestamp: summarySource[summarySource.length - 1]?.timestamp,
     usedModelMode
   };
+}
+
+function buildLongTermMemoryNudge(memory: ChatLongTermMemory | null): string {
+  if (!memory || memory.summary.trim().length === 0) {
+    return "No compressed long-term memory yet.";
+  }
+
+  return [
+    `Updated: ${memory.updatedAt}`,
+    `Coverage: ${memory.compressedMessageCount} compressed messages (total at compression: ${memory.totalMessagesAtCompression}).`,
+    "Use this as durable context across turns; prefer recent messages when there is conflict.",
+    "",
+    memory.summary
+  ].join("\n");
+}
+
+function shouldRefreshLongTermMemory(
+  totalChatMessages: number,
+  memory: ChatLongTermMemory | null,
+  now: Date
+): boolean {
+  if (totalChatMessages < CHAT_MEMORY_MIN_MESSAGES) {
+    return false;
+  }
+
+  if (!memory) {
+    return true;
+  }
+
+  const messageDelta = totalChatMessages - memory.totalMessagesAtCompression;
+  if (messageDelta >= CHAT_MEMORY_REFRESH_MESSAGE_DELTA) {
+    return true;
+  }
+
+  const updatedAtMs = new Date(memory.updatedAt).getTime();
+  if (!Number.isFinite(updatedAtMs)) {
+    return true;
+  }
+
+  const ageMs = now.getTime() - updatedAtMs;
+  return ageMs >= CHAT_MEMORY_REFRESH_MAX_AGE_MS;
 }
 
 export interface SendChatResult {
@@ -3349,10 +3405,37 @@ export async function sendChatMessage(
   let streamedTokenChars = 0;
   const contextWindow = "";
   const history = recentHistoryForIntent;
+  let longTermMemory = store.getChatLongTermMemory();
+  const totalChatMessages = store.getChatMessageCount();
+  if (shouldRefreshLongTermMemory(totalChatMessages, longTermMemory, now)) {
+    try {
+      const compressedMemory = await compressChatContext(store, {
+        now,
+        geminiClient: gemini,
+        maxMessages: 500,
+        preserveRecentMessages: 24,
+        targetSummaryChars: 6000
+      });
+      longTermMemory = store.upsertChatLongTermMemory({
+        summary: compressedMemory.summary,
+        sourceMessageCount: compressedMemory.sourceMessageCount,
+        totalMessagesAtCompression: compressedMemory.totalMessagesAtCompression,
+        compressedMessageCount: compressedMemory.compressedMessageCount,
+        preservedMessageCount: compressedMemory.preservedMessageCount,
+        fromTimestamp: compressedMemory.fromTimestamp,
+        toTimestamp: compressedMemory.toTimestamp,
+        usedModelMode: compressedMemory.usedModelMode
+      });
+    } catch {
+      // Continue without blocking chat if memory compression fails.
+    }
+  }
+  const longTermMemoryNudge = buildLongTermMemoryNudge(longTermMemory);
   const systemInstruction = buildFunctionCallingSystemInstruction(
     config.USER_NAME,
     buildHabitGoalNudgeContext(store),
-    buildRuntimeContextNudge(store, now)
+    buildRuntimeContextNudge(store, now),
+    longTermMemoryNudge
   );
 
   const messages = toGeminiMessages(history, userInput, attachments);

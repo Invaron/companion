@@ -1340,4 +1340,35 @@ describe("chat service", () => {
     expect(result.summary).toContain("daily study sprint");
     expect(result.summary).toContain("gym at 07:00");
   });
+
+  it("persists long-term memory and injects it into later chat turns", async () => {
+    for (let index = 0; index < 12; index += 1) {
+      store.recordChatMessage("user", `Long-term preference ${index}: I prefer focused morning study.`);
+      store.recordChatMessage("assistant", `Acknowledged preference ${index}.`);
+    }
+
+    generateChatResponse = vi.fn(async () => ({
+      text: "Stable user preference: focused morning study with gym before classes.",
+      finishReason: "stop"
+    }));
+    fakeGemini = {
+      generateChatResponse,
+      generateLiveChatResponse
+    } as unknown as GeminiClient;
+
+    await sendChatMessage(store, "Can you plan tomorrow for me?", {
+      geminiClient: fakeGemini
+    });
+
+    const memory = store.getChatLongTermMemory();
+    expect(memory).not.toBeNull();
+    expect(memory?.summary).toContain("focused morning study");
+
+    expect(generateChatResponse).toHaveBeenCalledTimes(2);
+    const finalCall = generateChatResponse.mock.calls[1][0] as {
+      systemInstruction: string;
+    };
+    expect(finalCall.systemInstruction).toContain("Long-term conversation memory (compressed):");
+    expect(finalCall.systemInstruction).toContain("focused morning study");
+  });
 });
