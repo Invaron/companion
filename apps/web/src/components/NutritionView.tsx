@@ -715,20 +715,6 @@ export function NutritionView(): JSX.Element {
     setMessage("Deleted selected day snapshot.");
   };
 
-  const handleOpenLoadSnapshotPanel = (): void => {
-    if (daySnapshots.length === 0) {
-      setMessage("No saved meal-plan snapshots yet.");
-      return;
-    }
-    setShowDayControlPanel(true);
-    if (!selectedDaySnapshotId) {
-      setSelectedDaySnapshotId(daySnapshots[0]?.id ?? "");
-    }
-    if (!message) {
-      setMessage("Choose a saved meal-plan snapshot, then tap Load selected.");
-    }
-  };
-
   const updateTargetDraftField = (field: keyof NutritionTargetDraft, value: string): void => {
     setTargetDraft((previous) => ({
       ...previous,
@@ -1340,15 +1326,7 @@ export function NutritionView(): JSX.Element {
                 onClick={() => setShowDayControlPanel((current) => !current)}
                 disabled={dayControlBusy}
               >
-                {showDayControlPanel ? "Hide Options" : "Save Options"}
-              </button>
-              <button
-                type="button"
-                className="nutrition-secondary-button"
-                onClick={handleOpenLoadSnapshotPanel}
-                disabled={dayControlBusy}
-              >
-                Load ({daySnapshots.length})
+                {showDayControlPanel ? "Hide Options" : `Options (${daySnapshots.length})`}
               </button>
             </div>
           </article>
