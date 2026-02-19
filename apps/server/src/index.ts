@@ -1234,8 +1234,17 @@ const nutritionPlanSnapshotCreateSchema = z.object({
 
 const nutritionPlanSnapshotApplySchema = z.object({
   date: nutritionDateSchema.optional(),
-  replaceMeals: z.boolean().default(true)
+  replaceMeals: z.boolean().default(true),
+  setAsDefault: z.boolean().default(true)
 });
+
+const nutritionPlanSettingsUpdateSchema = z
+  .object({
+    defaultSnapshotId: z.string().trim().min(1).max(160).nullable().optional()
+  })
+  .refine((value) => Object.prototype.hasOwnProperty.call(value, "defaultSnapshotId"), {
+    message: "defaultSnapshotId is required"
+  });
 
 const pushSubscriptionSchema = z.object({
   endpoint: z.string().url(),
@@ -2069,6 +2078,11 @@ app.get("/api/nutrition/summary", (req, res) => {
     return res.status(400).json({ error: "Invalid nutrition summary query", issues: parsed.error.issues });
   }
 
+  if (parsed.data.date) {
+    store.ensureNutritionBaselineForDate(parsed.data.date);
+  } else {
+    store.ensureNutritionBaselineForDate(new Date());
+  }
   const summary = store.getNutritionDailySummary(parsed.data.date ?? new Date());
   return res.json({ summary });
 });
@@ -2143,6 +2157,9 @@ app.get("/api/nutrition/meals", (req, res) => {
     return res.status(400).json({ error: "Invalid nutrition meals query", issues: parsed.error.issues });
   }
 
+  if (parsed.data.date) {
+    store.ensureNutritionBaselineForDate(parsed.data.date);
+  }
   const meals = store.getNutritionMeals(parsed.data);
   return res.json({ meals });
 });
@@ -2181,6 +2198,24 @@ app.delete("/api/nutrition/meals/:id", (req, res) => {
     return res.status(404).json({ error: "Meal not found" });
   }
   return res.status(204).send();
+});
+
+app.get("/api/nutrition/plan-settings", (_req, res) => {
+  const settings = store.getNutritionPlanSettings();
+  return res.json({ settings });
+});
+
+app.put("/api/nutrition/plan-settings", (req, res) => {
+  const parsed = nutritionPlanSettingsUpdateSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid nutrition plan settings payload", issues: parsed.error.issues });
+  }
+
+  const settings = store.setNutritionDefaultPlanSnapshot(parsed.data.defaultSnapshotId ?? null);
+  if (!settings) {
+    return res.status(404).json({ error: "Nutrition plan snapshot not found" });
+  }
+  return res.json({ settings });
 });
 
 app.get("/api/nutrition/plan-snapshots", (req, res) => {
@@ -2225,11 +2260,14 @@ app.post("/api/nutrition/plan-snapshots/:id/apply", (req, res) => {
     return res.status(404).json({ error: "Nutrition plan snapshot not found" });
   }
 
+  const settings = store.getNutritionPlanSettings();
+
   return res.json({
     snapshot: applied.snapshot,
     appliedDate: applied.appliedDate,
     mealsCreated: applied.mealsCreated,
-    targetProfile: applied.targetProfile
+    targetProfile: applied.targetProfile,
+    settings
   });
 });
 

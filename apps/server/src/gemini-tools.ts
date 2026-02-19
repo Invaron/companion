@@ -436,7 +436,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: "applyNutritionPlanSnapshot",
     description:
-      "Load/apply a saved nutrition meal-plan snapshot to a date. By default, replace that day's existing meals.",
+      "Load/apply a saved nutrition meal-plan snapshot to a date. By default, replace that day's existing meals and set it as the default baseline for upcoming days.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -455,6 +455,10 @@ export const functionDeclarations: FunctionDeclaration[] = [
         replaceMeals: {
           type: SchemaType.BOOLEAN,
           description: "Set true to replace existing meals on that day (default: true)."
+        },
+        setAsDefault: {
+          type: SchemaType.BOOLEAN,
+          description: "Set true to make this snapshot the default daily baseline (default: true)."
         }
       },
       required: []
@@ -2537,9 +2541,11 @@ export function handleApplyNutritionPlanSnapshot(
   }
 
   const replaceMeals = typeof args.replaceMeals === "boolean" ? args.replaceMeals : true;
+  const setAsDefault = typeof args.setAsDefault === "boolean" ? args.setAsDefault : true;
   const applied = store.applyNutritionPlanSnapshot(resolvedSnapshot.id, {
     date: date ?? toDateKey(new Date()),
-    replaceMeals
+    replaceMeals,
+    setAsDefault
   });
   if (!applied) {
     return { error: "Unable to apply nutrition plan snapshot." };
@@ -3056,6 +3062,9 @@ export function handleUpdateNutritionMeal(
     }
     const baseNotes = typeof patch.notes === "string" ? patch.notes : resolved.notes;
     patch.notes = mealNotesWithDoneToken(baseNotes, args.completed) ?? "";
+    if (args.completed && !consumedAtRaw) {
+      patch.consumedAt = new Date().toISOString();
+    }
   }
 
   if (typeof args.calories === "number") {

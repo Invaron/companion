@@ -622,6 +622,12 @@ export interface NutritionPlanSnapshot {
   updatedAt: string;
 }
 
+export interface NutritionPlanSettings {
+  defaultSnapshotId: string | null;
+  defaultSnapshotName: string | null;
+  updatedAt: string | null;
+}
+
 export interface NutritionDailySummary {
   date: string;
   totals: NutritionMacros;

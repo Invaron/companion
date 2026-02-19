@@ -43,6 +43,7 @@ import {
   NutritionMeal,
   NutritionMealItem,
   NutritionPlanSnapshot,
+  NutritionPlanSettings,
   NutritionPlanSnapshotMeal,
   NutritionPlanSnapshotTarget,
   NutritionTargetProfile,
@@ -112,6 +113,7 @@ const journalMemoryEntryTypes: JournalMemoryEntryType[] = [
   "email",
   "habit-goal"
 ];
+const NUTRITION_MEAL_DONE_TOKEN = "[done]";
 
 export class RuntimeStore {
   private readonly maxEvents = 100;
@@ -442,6 +444,13 @@ export class RuntimeStore {
 
       CREATE INDEX IF NOT EXISTS idx_nutrition_plan_snapshots_updatedAt
         ON nutrition_plan_snapshots(updatedAt DESC);
+
+      CREATE TABLE IF NOT EXISTS nutrition_plan_settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        defaultSnapshotId TEXT,
+        updatedAt TEXT,
+        FOREIGN KEY (defaultSnapshotId) REFERENCES nutrition_plan_snapshots(id) ON DELETE SET NULL
+      );
 
       CREATE TABLE IF NOT EXISTS study_plan_sessions (
         sessionId TEXT PRIMARY KEY,
@@ -840,6 +849,11 @@ export class RuntimeStore {
           ) VALUES (1, 0, 22, 7, 'low', 1, 1, 1, 1, 1)`
         )
         .run();
+    }
+
+    const nutritionPlanSettingsExists = this.db.prepare("SELECT id FROM nutrition_plan_settings WHERE id = 1").get();
+    if (!nutritionPlanSettingsExists) {
+      this.db.prepare("INSERT INTO nutrition_plan_settings (id, defaultSnapshotId, updatedAt) VALUES (1, NULL, NULL)").run();
     }
 
     // Initialize push delivery metrics
@@ -3657,6 +3671,14 @@ export class RuntimeStore {
     return `${hours}:${minutes}`;
   }
 
+  private stripNutritionMealDoneToken(notes: string | null | undefined): string | undefined {
+    if (typeof notes !== "string") {
+      return undefined;
+    }
+    const cleaned = notes.replaceAll(NUTRITION_MEAL_DONE_TOKEN, "").trim();
+    return cleaned.length > 0 ? cleaned : undefined;
+  }
+
   private isValidNutritionConsumedTime(value: string): boolean {
     if (!/^\d{2}:\d{2}$/.test(value)) {
       return false;
@@ -3773,8 +3795,8 @@ export class RuntimeStore {
         ...(typeof record.fatGrams === "number"
           ? { fatGrams: this.clampNutritionMetric(record.fatGrams, 0, 600) }
           : {}),
-        ...(typeof record.notes === "string" && record.notes.trim().length > 0
-          ? { notes: record.notes.trim() }
+        ...(this.stripNutritionMealDoneToken(typeof record.notes === "string" ? record.notes : undefined)
+          ? { notes: this.stripNutritionMealDoneToken(typeof record.notes === "string" ? record.notes : undefined) }
           : {})
       };
 
@@ -3942,12 +3964,17 @@ export class RuntimeStore {
     from?: string;
     to?: string;
     limit?: number;
+    skipBaselineHydration?: boolean;
   } = {}): NutritionMeal[] {
     const clauses: string[] = [];
     const params: unknown[] = [];
 
     if (typeof options.date === "string" && options.date.trim().length > 0) {
-      const start = new Date(`${options.date.trim()}T00:00:00.000Z`);
+      const requestedDate = options.date.trim();
+      if (!options.skipBaselineHydration) {
+        this.ensureNutritionBaselineForDate(requestedDate);
+      }
+      const start = new Date(`${requestedDate}T00:00:00.000Z`);
       if (!Number.isNaN(start.getTime())) {
         const end = new Date(start);
         end.setUTCDate(end.getUTCDate() + 1);
@@ -4456,9 +4483,93 @@ export class RuntimeStore {
     };
   }
 
+  getNutritionPlanSettings(): NutritionPlanSettings {
+    const row = this.db.prepare("SELECT defaultSnapshotId, updatedAt FROM nutrition_plan_settings WHERE id = 1").get() as
+      | {
+          defaultSnapshotId: string | null;
+          updatedAt: string | null;
+        }
+      | undefined;
+
+    if (!row || !row.defaultSnapshotId) {
+      return {
+        defaultSnapshotId: null,
+        defaultSnapshotName: null,
+        updatedAt: row?.updatedAt ?? null
+      };
+    }
+
+    const snapshot = this.getNutritionPlanSnapshotById(row.defaultSnapshotId);
+    if (!snapshot) {
+      this.db.prepare("UPDATE nutrition_plan_settings SET defaultSnapshotId = NULL, updatedAt = ? WHERE id = 1").run(nowIso());
+      return {
+        defaultSnapshotId: null,
+        defaultSnapshotName: null,
+        updatedAt: null
+      };
+    }
+
+    return {
+      defaultSnapshotId: snapshot.id,
+      defaultSnapshotName: snapshot.name,
+      updatedAt: row.updatedAt ?? null
+    };
+  }
+
+  setNutritionDefaultPlanSnapshot(snapshotId: string | null): NutritionPlanSettings | null {
+    const nextId = typeof snapshotId === "string" && snapshotId.trim().length > 0 ? snapshotId.trim() : null;
+    if (nextId) {
+      const snapshot = this.getNutritionPlanSnapshotById(nextId);
+      if (!snapshot) {
+        return null;
+      }
+    }
+
+    const updatedAt = nowIso();
+    this.db
+      .prepare("UPDATE nutrition_plan_settings SET defaultSnapshotId = ?, updatedAt = ? WHERE id = 1")
+      .run(nextId, updatedAt);
+
+    return this.getNutritionPlanSettings();
+  }
+
+  ensureNutritionBaselineForDate(date: string | Date = new Date()): {
+    applied: boolean;
+    date: string;
+    snapshotId: string | null;
+  } {
+    const dateKey = this.toDateKey(date);
+    const todayKey = this.toDateKey(new Date());
+    if (dateKey < todayKey) {
+      return { applied: false, date: dateKey, snapshotId: null };
+    }
+
+    const settings = this.getNutritionPlanSettings();
+    if (!settings.defaultSnapshotId) {
+      return { applied: false, date: dateKey, snapshotId: null };
+    }
+
+    const existingMeals = this.getNutritionMeals({ date: dateKey, limit: 1, skipBaselineHydration: true });
+    if (existingMeals.length > 0) {
+      return { applied: false, date: dateKey, snapshotId: settings.defaultSnapshotId };
+    }
+
+    const applied = this.applyNutritionPlanSnapshot(settings.defaultSnapshotId, {
+      date: dateKey,
+      replaceMeals: false,
+      setAsDefault: false
+    });
+    return {
+      applied: Boolean(applied),
+      date: dateKey,
+      snapshotId: settings.defaultSnapshotId
+    };
+  }
+
   getNutritionDailySummary(date: string | Date = new Date()): NutritionDailySummary {
     const dateKey = this.toDateKey(date);
-    const meals = this.getNutritionMeals({ date: dateKey, limit: 1000 });
+    this.ensureNutritionBaselineForDate(dateKey);
+    const meals = this.getNutritionMeals({ date: dateKey, limit: 1000, skipBaselineHydration: true });
     const targetProfile = this.getNutritionTargetProfile(dateKey);
 
     const totals = meals.reduce(
@@ -4619,7 +4730,7 @@ export class RuntimeStore {
                   fatGrams: meal.fatGrams
                 }
               : {}),
-                ...(meal.notes ? { notes: meal.notes } : {})
+            ...(this.stripNutritionMealDoneToken(meal.notes) ? { notes: this.stripNutritionMealDoneToken(meal.notes) } : {})
               }));
     const allowEmptyMeals = entry.allowEmptyMeals === true;
     if (!allowEmptyMeals && meals.length === 0) {
@@ -4684,6 +4795,7 @@ export class RuntimeStore {
     options: {
       date?: string | Date;
       replaceMeals?: boolean;
+      setAsDefault?: boolean;
     } = {}
   ): {
     snapshot: NutritionPlanSnapshot;
@@ -4707,6 +4819,7 @@ export class RuntimeStore {
 
     const mealsCreated: NutritionMeal[] = [];
     snapshot.meals.forEach((meal, index) => {
+      const sanitizedNotes = this.stripNutritionMealDoneToken(meal.notes);
       const created = this.createNutritionMeal({
         name: meal.name,
         mealType: meal.mealType,
@@ -4720,7 +4833,7 @@ export class RuntimeStore {
               fatGrams: typeof meal.fatGrams === "number" ? meal.fatGrams : 0
             }
           : {}),
-        ...(meal.notes ? { notes: meal.notes } : {})
+        ...(sanitizedNotes ? { notes: sanitizedNotes } : {})
       });
       mealsCreated.push(created);
     });
@@ -4732,6 +4845,10 @@ export class RuntimeStore {
         })
       : this.getNutritionTargetProfile(appliedDate);
 
+    if (options.setAsDefault !== false) {
+      this.setNutritionDefaultPlanSnapshot(snapshot.id);
+    }
+
     return {
       snapshot,
       appliedDate,
@@ -4741,7 +4858,11 @@ export class RuntimeStore {
   }
 
   deleteNutritionPlanSnapshot(id: string): boolean {
+    const settings = this.getNutritionPlanSettings();
     const result = this.db.prepare("DELETE FROM nutrition_plan_snapshots WHERE id = ?").run(id);
+    if (result.changes > 0 && settings.defaultSnapshotId === id) {
+      this.setNutritionDefaultPlanSnapshot(null);
+    }
     return result.changes > 0;
   }
 
