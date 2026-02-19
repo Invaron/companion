@@ -505,7 +505,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: "createNutritionCustomFood",
     description:
-      "Create a reusable custom food with per-unit calories and macros.",
+      "Create a reusable custom food with per-unit macros. Use 'g' for foods measured by weight, 'ml' for liquids, 'ea' for items counted by quantity (e.g. eggs). All macro values should be per single unit.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -515,7 +515,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
         },
         unitLabel: {
           type: SchemaType.STRING,
-          description: "Unit label such as serving, scoop, piece, or 100g."
+          description: "Measurement unit: 'g' (grams), 'ml' (millilitres), or 'ea' (each/quantity). Defaults to 'g'."
         },
         caloriesPerUnit: {
           type: SchemaType.NUMBER,
@@ -558,7 +558,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
         },
         unitLabel: {
           type: SchemaType.STRING,
-          description: "Updated unit label."
+          description: "Updated measurement unit: 'g' (grams), 'ml' (millilitres), or 'ea' (each/quantity)."
         },
         caloriesPerUnit: {
           type: SchemaType.NUMBER,
