@@ -7,7 +7,7 @@ import {
   buildContextWindow,
   getGeminiClient
 } from "./gemini.js";
-import { Part } from "@google/generative-ai";
+import { FunctionDeclaration, Part, SchemaType } from "@google/generative-ai";
 import { functionDeclarations, executeFunctionCall, executePendingChatAction } from "./gemini-tools.js";
 import { generateContentRecommendations } from "./content-recommendations.js";
 import { RuntimeStore } from "./store.js";
@@ -840,70 +840,6 @@ function buildRuntimeContextNudge(store: RuntimeStore, now: Date): string {
   return lines.join("\n");
 }
 
-function inferReflectionEvent(input: string): string {
-  const normalized = input.toLowerCase();
-  if (/\b(deadline|due|assignment|exam|lab)\b/.test(normalized)) {
-    return "Deadline planning";
-  }
-  if (/\b(schedule|calendar|lecture|lab|timeline|routine|gym)\b/.test(normalized)) {
-    return "Schedule adjustment";
-  }
-  if (/\b(meal|food|calorie|protein|carb|fat|nutrition)\b/.test(normalized)) {
-    return "Nutrition update";
-  }
-  if (/\b(email|mail|inbox|message)\b/.test(normalized)) {
-    return "Inbox check";
-  }
-  if (/\b(habit|goal|streak|progress|check in|check-in)\b/.test(normalized)) {
-    return "Habit or goal tracking";
-  }
-  if (input.trim().endsWith("?")) {
-    return "Question";
-  }
-  if (COMMITMENT_CUE_REGEX.test(normalized)) {
-    return "Commitment statement";
-  }
-  return "General reflection";
-}
-
-function inferReflectionFeelingStress(input: string, fallbackStress: UserContext["stressLevel"]): string {
-  const normalized = input.toLowerCase();
-  const positive = /\b(relief|relieved|great|good|happy|excited|proud|better|calm)\b/.test(normalized);
-  const negative = /\b(stress|stressed|anxious|overwhelmed|frustrated|tired|sad|bad|panic|burned)\b/.test(normalized);
-
-  let feeling = "neutral";
-  if (positive && !negative) {
-    feeling = "positive";
-  } else if (negative && !positive) {
-    feeling = "negative";
-  } else if (positive && negative) {
-    feeling = "mixed";
-  }
-
-  const stressHint = negative ? "high" : positive ? "low" : fallbackStress;
-  return `${feeling} (stress: ${stressHint})`;
-}
-
-function inferReflectionIntent(input: string): string {
-  const normalized = input.toLowerCase();
-  if (/\b(when|what|how|can you|could you|please)\b/.test(normalized)) {
-    return "Get guidance or action help";
-  }
-  if (/\b(i will|i'll|i want|i need|i plan|i should)\b/.test(normalized)) {
-    return "Set an intention";
-  }
-  if (/\b(done|finished|completed|checked)\b/.test(normalized)) {
-    return "Report progress";
-  }
-  return "Share context";
-}
-
-function inferReflectionCommitment(input: string): string {
-  const phrase = extractCommitmentPhrase(input);
-  const normalized = phrase ? normalizeCommitmentLabel(phrase) : null;
-  return normalized ?? "none";
-}
-
 function inferReflectionOutcome(assistantMessage: ChatMessage): string {
   const actionMessage = assistantMessage.metadata?.actionExecution?.message;
   if (actionMessage && actionMessage.trim().length > 0) {
@@ -915,6 +851,109 @@ function inferReflectionOutcome(assistantMessage: ChatMessage): string {
   }
   const firstLine = reply.split("\n").find((line) => line.trim().length > 0) ?? reply;
   return textSnippet(firstLine.trim(), 180);
+}
+
+const reflectionCaptureDeclaration: FunctionDeclaration = {
+  name: "recordReflectionEntry",
+  description:
+    "Capture a structured reflection entry for internal growth analytics. This is internal bookkeeping, not user-facing output.",
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      event: { type: SchemaType.STRING, description: "Primary event/topic from the turn." },
+      feelingStress: {
+        type: SchemaType.STRING,
+        description: "Emotional tone and stress interpretation (for example calm-low stress, mixed-medium stress)."
+      },
+      intent: { type: SchemaType.STRING, description: "What the user wanted to achieve in this turn." },
+      commitment: {
+        type: SchemaType.STRING,
+        description: "Any commitment or follow-through statement, or 'none' if absent."
+      },
+      outcome: { type: SchemaType.STRING, description: "Result after the assistant response." },
+      evidenceSnippet: { type: SchemaType.STRING, description: "Short direct snippet from the user's message as evidence." }
+    },
+    required: ["event", "feelingStress", "intent", "commitment", "outcome", "evidenceSnippet"]
+  }
+};
+
+function asNonEmptyReflectionField(value: unknown, fallback: string, maxLength = 220): string {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return fallback;
+  }
+  return trimmed.length > maxLength ? `${trimmed.slice(0, maxLength - 3)}...` : trimmed;
+}
+
+async function extractStructuredReflectionWithGemini(
+  geminiClient: GeminiClient,
+  store: RuntimeStore,
+  userMessage: ChatMessage,
+  assistantMessage: ChatMessage
+): Promise<{
+  event: string;
+  feelingStress: string;
+  intent: string;
+  commitment: string;
+  outcome: string;
+  evidenceSnippet: string;
+} | null> {
+  if (!geminiClient.isConfigured()) {
+    return null;
+  }
+
+  const userState = store.getUserContext();
+  const systemInstruction = [
+    "You extract internal structured reflection entries for analytics.",
+    "Never produce conversational text.",
+    "Call recordReflectionEntry exactly once with best-effort fields.",
+    "Do not mention journals or logging to the user.",
+    "Prefer concise concrete values."
+  ].join("\n");
+
+  const userPrompt = [
+    "Extract one structured reflection entry from this completed chat turn.",
+    `Timestamp: ${userMessage.timestamp}`,
+    `User state context: stress=${userState.stressLevel}, energy=${userState.energyLevel}, mode=${userState.mode}`,
+    "",
+    "User message:",
+    userMessage.content,
+    "",
+    "Assistant response:",
+    assistantMessage.content
+  ].join("\n");
+
+  const extractionResponse = await geminiClient.generateChatResponse({
+    messages: [
+      {
+        role: "user",
+        parts: [{ text: userPrompt }]
+      }
+    ],
+    systemInstruction,
+    tools: [reflectionCaptureDeclaration]
+  });
+
+  const functionCall = extractionResponse.functionCalls?.find((call) => call.name === "recordReflectionEntry");
+  if (!functionCall || !functionCall.args || typeof functionCall.args !== "object" || Array.isArray(functionCall.args)) {
+    return null;
+  }
+
+  const args = functionCall.args as Record<string, unknown>;
+  return {
+    event: asNonEmptyReflectionField(args.event, "General reflection"),
+    feelingStress: asNonEmptyReflectionField(args.feelingStress, `unknown (stress: ${userState.stressLevel})`),
+    intent: asNonEmptyReflectionField(args.intent, "Share context"),
+    commitment: asNonEmptyReflectionField(args.commitment, "none"),
+    outcome: asNonEmptyReflectionField(args.outcome, inferReflectionOutcome(assistantMessage)),
+    evidenceSnippet: asNonEmptyReflectionField(
+      args.evidenceSnippet,
+      textSnippet(userMessage.content.replace(/\s+/g, " "), 220)
+    )
+  };
 }
 
 function shouldSkipStructuredReflection(input: string): boolean {
@@ -931,11 +970,26 @@ function shouldSkipStructuredReflection(input: string): boolean {
   return false;
 }
 
-function autoWriteStructuredReflectionEntry(
+const REFLECTION_HIGH_SIGNAL_REGEX =
+  /\b(deadline|assignment|exam|lab|schedule|lecture|habit|goal|streak|progress|plan|stress|anxious|overwhelmed|tired|sleep|food|meal|calorie|protein|carb|fat|inbox|email|gym|routine|study|reflect)\b/i;
+
+function shouldCaptureStructuredReflection(input: string): boolean {
+  const trimmed = input.trim();
+  if (trimmed.length >= 36) {
+    return true;
+  }
+  if (COMMITMENT_CUE_REGEX.test(trimmed)) {
+    return true;
+  }
+  return REFLECTION_HIGH_SIGNAL_REGEX.test(trimmed);
+}
+
+async function autoWriteStructuredReflectionEntry(
   store: RuntimeStore,
   userMessage: ChatMessage,
-  assistantMessage: ChatMessage
-): void {
+  assistantMessage: ChatMessage,
+  geminiClient?: GeminiClient
+): Promise<void> {
   if (userMessage.role !== "user") {
     return;
   }
@@ -943,16 +997,43 @@ function autoWriteStructuredReflectionEntry(
   if (shouldSkipStructuredReflection(input)) {
     return;
   }
+  if (!shouldCaptureStructuredReflection(input)) {
+    return;
+  }
 
   const userState = store.getUserContext();
+  const resolvedGeminiClient = geminiClient ?? getGeminiClient();
+  let extracted: Awaited<ReturnType<typeof extractStructuredReflectionWithGemini>> = null;
+  try {
+    extracted = await extractStructuredReflectionWithGemini(
+      resolvedGeminiClient,
+      store,
+      userMessage,
+      assistantMessage
+    );
+  } catch {
+    extracted = null;
+  }
+
+  if (!extracted) {
+    extracted = {
+      event: "General reflection",
+      feelingStress: `unknown (stress: ${userState.stressLevel})`,
+      intent: "Share context",
+      commitment: "none",
+      outcome: inferReflectionOutcome(assistantMessage),
+      evidenceSnippet: textSnippet(input.replace(/\s+/g, " "), 260)
+    };
+  }
+
   store.upsertReflectionEntry({
-    event: inferReflectionEvent(input),
-    feelingStress: inferReflectionFeelingStress(input, userState.stressLevel),
-    intent: inferReflectionIntent(input),
-    commitment: inferReflectionCommitment(input),
-    outcome: inferReflectionOutcome(assistantMessage),
+    event: extracted.event,
+    feelingStress: extracted.feelingStress,
+    intent: extracted.intent,
+    commitment: extracted.commitment,
+    outcome: extracted.outcome,
     timestamp: userMessage.timestamp,
-    evidenceSnippet: textSnippet(input.replace(/\s+/g, " "), 260),
+    evidenceSnippet: extracted.evidenceSnippet,
     sourceMessageId: userMessage.id
   });
 }
@@ -3229,7 +3310,7 @@ export async function sendChatMessage(
       contextWindow: "",
       pendingActions: pendingActionsAtStart
     });
-    autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
+    void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
     const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
 
     return {
@@ -3286,7 +3367,7 @@ export async function sendChatMessage(
     }
 
     const assistantMessage = store.recordChatMessage("assistant", assistantReply, assistantMetadata);
-    autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
+    void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
     const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
     const citations = assistantMessage.metadata?.citations ?? [];
 
@@ -3358,7 +3439,7 @@ export async function sendChatMessage(
       },
       ...(autoCitations.length > 0 ? { citations: autoCitations } : {})
     });
-    autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
+    void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
     const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
     const citations = assistantMessage.metadata?.citations ?? [];
 
@@ -3587,7 +3668,7 @@ export async function sendChatMessage(
           : {})
       };
       const assistantMessage = store.recordChatMessage("assistant", fallbackReply, assistantMetadata);
-      autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
+      void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage, gemini);
       const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
 
       return {
@@ -3626,7 +3707,7 @@ export async function sendChatMessage(
   };
 
   const assistantMessage = store.recordChatMessage("assistant", finalReply, assistantMetadata);
-  autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
+  void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage, gemini);
 
   const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
 
