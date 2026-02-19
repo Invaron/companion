@@ -649,8 +649,8 @@ app.get("/api/growth/daily-summary", (req, res) => {
 
   const summary =
     reflections.length === 0
-      ? "No structured reflection entries yet today. Share one quick update so I can tune your plan."
-      : `You logged ${reflections.length} structured reflection entr${reflections.length === 1 ? "y" : "ies"} today, with ${habitsDone} habit and ${goalsDone} goal check-ins completed.`;
+      ? "No structured journal entries yet today. Share one quick update so I can tune your plan."
+      : `You logged ${reflections.length} structured journal entr${reflections.length === 1 ? "y" : "ies"} today, with ${habitsDone} habit and ${goalsDone} goal check-ins completed.`;
 
   const highlights = reflections
     .slice(0, 5)
@@ -664,6 +664,7 @@ app.get("/api/growth/daily-summary", (req, res) => {
       generatedAt: nowIso(),
       summary,
       highlights,
+      journalEntryCount: reflections.length,
       reflectionEntryCount: reflections.length,
       chatMessageCount: chats.length
     }

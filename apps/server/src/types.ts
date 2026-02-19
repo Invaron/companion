@@ -133,8 +133,22 @@ export interface ChatLongTermMemory {
   updatedAt: string;
 }
 
+export type JournalMemoryEntryType =
+  | "reflection"
+  | "event"
+  | "decision"
+  | "commitment"
+  | "outcome"
+  | "health"
+  | "food"
+  | "schedule-change"
+  | "deadline"
+  | "email"
+  | "habit-goal";
+
 export interface ReflectionEntry {
   id: string;
+  entryType: JournalMemoryEntryType;
   event: string;
   feelingStress: string;
   intent: string;
@@ -683,6 +697,7 @@ export interface DailyGrowthSummary {
   generatedAt: string;
   summary: string;
   highlights: string[];
+  journalEntryCount: number;
   reflectionEntryCount: number;
   chatMessageCount: number;
   visual?: GrowthNarrativeVisual;

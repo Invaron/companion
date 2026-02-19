@@ -66,6 +66,7 @@ import {
   ChatMessageMetadata,
   ChatHistoryPage,
   ChatLongTermMemory,
+  JournalMemoryEntryType,
   ReflectionEntry,
   ChatActionType,
   ChatPendingAction,
@@ -97,6 +98,19 @@ const integrationRootCauses: IntegrationSyncRootCause[] = [
   "validation",
   "provider",
   "unknown"
+];
+const journalMemoryEntryTypes: JournalMemoryEntryType[] = [
+  "reflection",
+  "event",
+  "decision",
+  "commitment",
+  "outcome",
+  "health",
+  "food",
+  "schedule-change",
+  "deadline",
+  "email",
+  "habit-goal"
 ];
 
 export class RuntimeStore {
@@ -193,6 +207,7 @@ export class RuntimeStore {
 
       CREATE TABLE IF NOT EXISTS reflection_entries (
         id TEXT PRIMARY KEY,
+        entryType TEXT NOT NULL DEFAULT 'reflection',
         event TEXT NOT NULL,
         feelingStress TEXT NOT NULL,
         intent TEXT NOT NULL,
@@ -785,6 +800,10 @@ export class RuntimeStore {
     if (!hasCaptureReasonColumn) {
       this.db.prepare("ALTER TABLE reflection_entries ADD COLUMN captureReason TEXT NOT NULL DEFAULT ''").run();
     }
+    const hasEntryTypeColumn = reflectionColumns.some((col) => col.name === "entryType");
+    if (!hasEntryTypeColumn) {
+      this.db.prepare("ALTER TABLE reflection_entries ADD COLUMN entryType TEXT NOT NULL DEFAULT 'reflection'").run();
+    }
   }
 
   private loadOrInitializeDefaults(): void {
@@ -1054,8 +1073,16 @@ export class RuntimeStore {
     return (this.db.prepare("SELECT COUNT(*) as count FROM chat_messages").get() as { count: number }).count;
   }
 
+  private normalizeJournalMemoryEntryType(value: unknown): JournalMemoryEntryType {
+    if (typeof value === "string" && journalMemoryEntryTypes.includes(value as JournalMemoryEntryType)) {
+      return value as JournalMemoryEntryType;
+    }
+    return "reflection";
+  }
+
   private mapReflectionRow(row: {
     id: string;
+    entryType?: string;
     event: string;
     feelingStress: string;
     intent: string;
@@ -1070,6 +1097,7 @@ export class RuntimeStore {
   }): ReflectionEntry {
     return {
       id: row.id,
+      entryType: this.normalizeJournalMemoryEntryType(row.entryType),
       event: row.event,
       feelingStress: row.feelingStress,
       intent: row.intent,
@@ -1085,6 +1113,7 @@ export class RuntimeStore {
   }
 
   upsertReflectionEntry(input: {
+    entryType?: JournalMemoryEntryType;
     event: string;
     feelingStress: string;
     intent: string;
@@ -1099,11 +1128,12 @@ export class RuntimeStore {
     const updatedAt = nowIso();
     const existing = this.db
       .prepare(
-        "SELECT id, event, feelingStress, intent, commitment, outcome, salience, captureReason, timestamp, evidenceSnippet, sourceMessageId, updatedAt FROM reflection_entries WHERE sourceMessageId = ?"
+        "SELECT id, entryType, event, feelingStress, intent, commitment, outcome, salience, captureReason, timestamp, evidenceSnippet, sourceMessageId, updatedAt FROM reflection_entries WHERE sourceMessageId = ?"
       )
       .get(input.sourceMessageId) as
       | {
           id: string;
+          entryType: string;
           event: string;
           feelingStress: string;
           intent: string;
@@ -1125,15 +1155,17 @@ export class RuntimeStore {
       : 0.5;
     const normalizedCaptureReason =
       typeof input.captureReason === "string" ? input.captureReason.slice(0, 220) : "";
+    const normalizedEntryType = this.normalizeJournalMemoryEntryType(input.entryType);
 
     this.db
       .prepare(
         `INSERT INTO reflection_entries (
-           id, event, feelingStress, intent, commitment, outcome, salience, captureReason, timestamp, evidenceSnippet, sourceMessageId, updatedAt, insertOrder
+           id, entryType, event, feelingStress, intent, commitment, outcome, salience, captureReason, timestamp, evidenceSnippet, sourceMessageId, updatedAt, insertOrder
          ) VALUES (
-           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(insertOrder), 0) + 1 FROM reflection_entries)
+           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(insertOrder), 0) + 1 FROM reflection_entries)
          )
          ON CONFLICT(sourceMessageId) DO UPDATE SET
+           entryType = EXCLUDED.entryType,
            event = EXCLUDED.event,
            feelingStress = EXCLUDED.feelingStress,
            intent = EXCLUDED.intent,
@@ -1147,6 +1179,7 @@ export class RuntimeStore {
       )
       .run(
         id,
+        normalizedEntryType,
         input.event,
         input.feelingStress,
         input.intent,
@@ -1173,11 +1206,12 @@ export class RuntimeStore {
 
     const row = this.db
       .prepare(
-        "SELECT id, event, feelingStress, intent, commitment, outcome, salience, captureReason, timestamp, evidenceSnippet, sourceMessageId, updatedAt FROM reflection_entries WHERE sourceMessageId = ?"
+        "SELECT id, entryType, event, feelingStress, intent, commitment, outcome, salience, captureReason, timestamp, evidenceSnippet, sourceMessageId, updatedAt FROM reflection_entries WHERE sourceMessageId = ?"
       )
       .get(input.sourceMessageId) as
       | {
           id: string;
+          entryType: string;
           event: string;
           feelingStress: string;
           intent: string;
@@ -1195,6 +1229,7 @@ export class RuntimeStore {
     if (!row) {
       return {
         id,
+        entryType: normalizedEntryType,
         event: input.event,
         feelingStress: input.feelingStress,
         intent: input.intent,
@@ -1219,10 +1254,11 @@ export class RuntimeStore {
 
     const rows = this.db
       .prepare(
-        "SELECT id, event, feelingStress, intent, commitment, outcome, salience, captureReason, timestamp, evidenceSnippet, sourceMessageId, updatedAt FROM reflection_entries ORDER BY insertOrder DESC LIMIT ?"
+        "SELECT id, entryType, event, feelingStress, intent, commitment, outcome, salience, captureReason, timestamp, evidenceSnippet, sourceMessageId, updatedAt FROM reflection_entries ORDER BY insertOrder DESC LIMIT ?"
       )
       .all(limit) as Array<{
       id: string;
+      entryType: string;
       event: string;
       feelingStress: string;
       intent: string;
@@ -1244,7 +1280,7 @@ export class RuntimeStore {
     const rows = this.db
       .prepare(
         `SELECT id, event, feelingStress, intent, commitment, outcome, timestamp, evidenceSnippet, sourceMessageId, updatedAt
-           , salience, captureReason
+           , salience, captureReason, entryType
            FROM reflection_entries
           WHERE timestamp >= ? AND timestamp <= ?
           ORDER BY timestamp DESC
@@ -1252,6 +1288,7 @@ export class RuntimeStore {
       )
       .all(windowStart, windowEnd, normalizedLimit) as Array<{
       id: string;
+      entryType: string;
       event: string;
       feelingStress: string;
       intent: string;

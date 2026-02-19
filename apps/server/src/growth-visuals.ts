@@ -19,7 +19,7 @@ Tone: hopeful, focused, grounded.
 Style: modern editorial art, expressive lighting, rich colors, clean composition.
 Scene cues:
 - Reflection summary: ${compact(summary.summary)}
-- Signals: ${summary.chatMessageCount} chat notes, ${summary.reflectionEntryCount} reflection entries
+- Signals: ${summary.chatMessageCount} chat notes, ${summary.journalEntryCount} journal entries
 ${highlights ? `- Key highlights:\n${highlights}` : "- Key highlights: none"}
 
 Output requirements:
@@ -84,7 +84,7 @@ export async function maybeGenerateDailySummaryVisual(
   gemini: GeminiClient,
   summary: DailyGrowthSummary
 ): Promise<GrowthNarrativeVisual | undefined> {
-  if (summary.chatMessageCount + summary.reflectionEntryCount === 0) {
+  if (summary.chatMessageCount + summary.journalEntryCount === 0) {
     return undefined;
   }
   return generateVisual(gemini, buildDailyVisualPrompt(summary), "Daily growth reflection illustration");

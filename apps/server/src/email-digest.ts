@@ -72,10 +72,10 @@ export function buildWeeklyDigest(store: RuntimeStore, referenceDate: Date = new
     `Window: ${summary.windowStart} to ${summary.windowEnd}`,
     "",
     `Deadlines completed: ${summary.deadlinesCompleted}/${summary.deadlinesDue} (${summary.completionRate}%)`,
-    "Reflection highlights:",
+    "Journal highlights:",
     ...(reflections.length > 0
       ? reflections.map((message) => `- ${truncate(message.content, 140)}`)
-      : ["- No reflection messages captured"]),
+      : ["- No journal highlights captured"]),
     "Focus suggestions:",
     "- Carry over any overdue deadlines into this week",
     "- Plan two focused blocks for your toughest tasks"

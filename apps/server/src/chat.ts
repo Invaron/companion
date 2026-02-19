@@ -19,6 +19,7 @@ import {
   ChatMessage,
   ChatMessageMetadata,
   ChatPendingAction,
+  JournalMemoryEntryType,
   UserContext
 } from "./types.js";
 
@@ -853,13 +854,32 @@ function inferReflectionOutcome(assistantMessage: ChatMessage): string {
   return textSnippet(firstLine.trim(), 180);
 }
 
+const journalMemoryEntryTypes: JournalMemoryEntryType[] = [
+  "reflection",
+  "event",
+  "decision",
+  "commitment",
+  "outcome",
+  "health",
+  "food",
+  "schedule-change",
+  "deadline",
+  "email",
+  "habit-goal"
+];
+
 const reflectionCaptureDeclaration: FunctionDeclaration = {
-  name: "recordReflectionEntry",
+  name: "recordJournalMemoryEntry",
   description:
-    "Capture a structured reflection entry for internal growth analytics. This is internal bookkeeping, not user-facing output.",
+    "Capture a structured journal memory entry for internal growth analytics. This is internal bookkeeping, not user-facing output.",
   parameters: {
     type: SchemaType.OBJECT,
     properties: {
+      entryType: {
+        type: SchemaType.STRING,
+        description:
+          "Journal memory category: reflection, event, decision, commitment, outcome, health, food, schedule-change, deadline, email, habit-goal."
+      },
       event: { type: SchemaType.STRING, description: "Primary event/topic from the turn." },
       feelingStress: {
         type: SchemaType.STRING,
@@ -873,14 +893,14 @@ const reflectionCaptureDeclaration: FunctionDeclaration = {
       outcome: { type: SchemaType.STRING, description: "Result after the assistant response." },
       evidenceSnippet: { type: SchemaType.STRING, description: "Short direct snippet from the user's message as evidence." }
     },
-    required: ["event", "feelingStress", "intent", "commitment", "outcome", "evidenceSnippet"]
+    required: ["entryType", "event", "feelingStress", "intent", "commitment", "outcome", "evidenceSnippet"]
   }
 };
 
 const reflectionCaptureGateDeclaration: FunctionDeclaration = {
-  name: "gateReflectionCapture",
+  name: "gateJournalMemoryCapture",
   description:
-    "Decide if this turn should be saved as a structured reflection entry for growth analytics.",
+    "Decide if this turn should be saved as a structured journal memory entry for growth analytics.",
   parameters: {
     type: SchemaType.OBJECT,
     properties: {
@@ -923,6 +943,16 @@ function normalizeSalience(value: unknown, fallback = 0.5): number {
   return Math.max(0, Math.min(1, value));
 }
 
+function normalizeJournalMemoryEntryType(
+  value: unknown,
+  fallback: JournalMemoryEntryType = "reflection"
+): JournalMemoryEntryType {
+  if (typeof value === "string" && journalMemoryEntryTypes.includes(value as JournalMemoryEntryType)) {
+    return value as JournalMemoryEntryType;
+  }
+  return fallback;
+}
+
 async function evaluateReflectionCaptureGateWithGemini(
   geminiClient: GeminiClient,
   store: RuntimeStore,
@@ -940,15 +970,15 @@ async function evaluateReflectionCaptureGateWithGemini(
 
   const userState = store.getUserContext();
   const systemInstruction = [
-    "You decide whether a completed chat turn should be captured as structured reflection memory.",
+    "You decide whether a completed chat turn should be captured as structured journal memory.",
     "Never produce conversational text.",
-    "Call gateReflectionCapture exactly once.",
+    "Call gateJournalMemoryCapture exactly once.",
     "Set capture=true only when the turn has durable planning/emotional/progress signal.",
     "Set capture=false for trivial chatter, confirmations, or low-value noise."
   ].join("\n");
 
   const userPrompt = [
-    "Evaluate this turn for structured reflection capture.",
+    "Evaluate this turn for structured journal memory capture.",
     `Timestamp: ${userMessage.timestamp}`,
     `User state: stress=${userState.stressLevel}, energy=${userState.energyLevel}, mode=${userState.mode}`,
     "",
@@ -970,7 +1000,7 @@ async function evaluateReflectionCaptureGateWithGemini(
     tools: [reflectionCaptureGateDeclaration]
   });
 
-  const gateCall = gateResponse.functionCalls?.find((call) => call.name === "gateReflectionCapture");
+  const gateCall = gateResponse.functionCalls?.find((call) => call.name === "gateJournalMemoryCapture");
   if (!gateCall || !gateCall.args || typeof gateCall.args !== "object" || Array.isArray(gateCall.args)) {
     return null;
   }
@@ -1000,6 +1030,7 @@ async function extractStructuredReflectionWithGemini(
     snippet: string;
   }
 ): Promise<{
+  entryType: JournalMemoryEntryType;
   event: string;
   feelingStress: string;
   intent: string;
@@ -1013,15 +1044,15 @@ async function extractStructuredReflectionWithGemini(
 
   const userState = store.getUserContext();
   const systemInstruction = [
-    "You extract internal structured reflection entries for analytics.",
+    "You extract internal structured journal memory entries for analytics.",
     "Never produce conversational text.",
-    "Call recordReflectionEntry exactly once with best-effort fields.",
-    "Do not mention journals or logging to the user.",
+    "Call recordJournalMemoryEntry exactly once with best-effort fields.",
+    "Do not mention journal capture or logging to the user.",
     "Prefer concise concrete values."
   ].join("\n");
 
   const userPrompt = [
-    "Extract one structured reflection entry from this completed chat turn.",
+    "Extract one structured journal memory entry from this completed chat turn.",
     `Timestamp: ${userMessage.timestamp}`,
     `User state context: stress=${userState.stressLevel}, energy=${userState.energyLevel}, mode=${userState.mode}`,
     `Gate decision: capture=${gateDecision.capture}, salience=${gateDecision.salience}, reason=${gateDecision.reason}`,
@@ -1045,14 +1076,15 @@ async function extractStructuredReflectionWithGemini(
     tools: [reflectionCaptureDeclaration]
   });
 
-  const functionCall = extractionResponse.functionCalls?.find((call) => call.name === "recordReflectionEntry");
+  const functionCall = extractionResponse.functionCalls?.find((call) => call.name === "recordJournalMemoryEntry");
   if (!functionCall || !functionCall.args || typeof functionCall.args !== "object" || Array.isArray(functionCall.args)) {
     return null;
   }
 
   const args = functionCall.args as Record<string, unknown>;
   return {
-    event: asNonEmptyReflectionField(args.event, "General reflection"),
+    entryType: normalizeJournalMemoryEntryType(args.entryType, "reflection"),
+    event: asNonEmptyReflectionField(args.event, "General journal note"),
     feelingStress: asNonEmptyReflectionField(args.feelingStress, `unknown (stress: ${userState.stressLevel})`),
     intent: asNonEmptyReflectionField(args.intent, "Share context"),
     commitment: asNonEmptyReflectionField(args.commitment, "none"),
@@ -1143,7 +1175,8 @@ async function autoWriteStructuredReflectionEntry(
 
   if (!extracted) {
     extracted = {
-      event: "General reflection",
+      entryType: "reflection",
+      event: "General journal note",
       feelingStress: `unknown (stress: ${userState.stressLevel})`,
       intent: "Share context",
       commitment: "none",
@@ -1153,6 +1186,7 @@ async function autoWriteStructuredReflectionEntry(
   }
 
   store.upsertReflectionEntry({
+    entryType: extracted.entryType,
     event: extracted.event,
     feelingStress: extracted.feelingStress,
     intent: extracted.intent,

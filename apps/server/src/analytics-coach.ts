@@ -234,8 +234,8 @@ function buildFallbackInsight(dataset: AnalyticsDataset): AnalyticsCoachInsight 
   }
 
   if (metrics.reflectionEntries + metrics.userReflections < 3) {
-    risks.push("Reflection volume is low, which weakens pattern detection and coaching quality.");
-    recommendations.push("Add a two-line end-of-day reflection to make tomorrow's coaching more precise.");
+    risks.push("Journal-memory volume is low, which weakens pattern detection and coaching quality.");
+    recommendations.push("Add a two-line end-of-day journal recap to make tomorrow's coaching more precise.");
   }
 
   if (metrics.goalsTracked > 0 && metrics.goalsCompletedToday === 0) {
@@ -352,7 +352,7 @@ ${habitLines || "- none"}
 Goals:
 ${goalLines || "- none"}
 
-Structured reflection entries:
+Structured journal memory entries:
 ${reflectionLines || "- none"}`;
 }
 
