@@ -339,11 +339,11 @@ function formatMetric(value: number): string {
 }
 
 function formatPerUnitMetric(value: number): string {
-  const rounded = roundToPrecision(value, 3);
+  const rounded = roundToPrecision(value, 4);
   if (Number.isInteger(rounded)) {
     return String(rounded);
   }
-  return rounded.toFixed(3).replace(/\.?0+$/, "");
+  return rounded.toFixed(4).replace(/\.?0+$/, "");
 }
 
 function formatSignedDelta(value: number, unit: string): string {
@@ -1222,7 +1222,7 @@ export function NutritionView(): JSX.Element {
     const proteinGramsPerUnit = Math.max(0, Number.parseFloat(customFoodDraft.proteinGramsPerUnit) || 0);
     const carbsGramsPerUnit = Math.max(0, Number.parseFloat(customFoodDraft.carbsGramsPerUnit) || 0);
     const fatGramsPerUnit = Math.max(0, Number.parseFloat(customFoodDraft.fatGramsPerUnit) || 0);
-    const caloriesPerUnit = roundToPrecision(proteinGramsPerUnit * 4 + carbsGramsPerUnit * 4 + fatGramsPerUnit * 9, 3);
+    const caloriesPerUnit = roundToPrecision(proteinGramsPerUnit * 4 + carbsGramsPerUnit * 4 + fatGramsPerUnit * 9, 4);
 
     const payload = {
       name,
@@ -1644,7 +1644,7 @@ export function NutritionView(): JSX.Element {
                         <input
                           type="number"
                           min={0}
-                          step="0.001"
+                          step="0.0001"
                           value={customFoodDraft.proteinGramsPerUnit}
                           onChange={(event) =>
                             setCustomFoodDraft({ ...customFoodDraft, proteinGramsPerUnit: event.target.value })
@@ -1656,7 +1656,7 @@ export function NutritionView(): JSX.Element {
                         <input
                           type="number"
                           min={0}
-                          step="0.001"
+                          step="0.0001"
                           value={customFoodDraft.carbsGramsPerUnit}
                           onChange={(event) => setCustomFoodDraft({ ...customFoodDraft, carbsGramsPerUnit: event.target.value })}
                         />
@@ -1666,7 +1666,7 @@ export function NutritionView(): JSX.Element {
                         <input
                           type="number"
                           min={0}
-                          step="0.001"
+                          step="0.0001"
                           value={customFoodDraft.fatGramsPerUnit}
                           onChange={(event) => setCustomFoodDraft({ ...customFoodDraft, fatGramsPerUnit: event.target.value })}
                         />
