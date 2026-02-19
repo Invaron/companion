@@ -945,7 +945,7 @@ function normalizeSalience(value: unknown, fallback = 0.5): number {
 
 function normalizeJournalMemoryEntryType(
   value: unknown,
-  fallback: JournalMemoryEntryType = "reflection"
+  fallback: JournalMemoryEntryType = "event"
 ): JournalMemoryEntryType {
   if (typeof value === "string" && journalMemoryEntryTypes.includes(value as JournalMemoryEntryType)) {
     return value as JournalMemoryEntryType;
@@ -1083,7 +1083,7 @@ async function extractStructuredReflectionWithGemini(
 
   const args = functionCall.args as Record<string, unknown>;
   return {
-    entryType: normalizeJournalMemoryEntryType(args.entryType, "reflection"),
+    entryType: normalizeJournalMemoryEntryType(args.entryType, "event"),
     event: asNonEmptyReflectionField(args.event, "General journal note"),
     feelingStress: asNonEmptyReflectionField(args.feelingStress, `unknown (stress: ${userState.stressLevel})`),
     intent: asNonEmptyReflectionField(args.intent, "Share context"),
@@ -1175,7 +1175,7 @@ async function autoWriteStructuredReflectionEntry(
 
   if (!extracted) {
     extracted = {
-      entryType: "reflection",
+      entryType: "event",
       event: "General journal note",
       feelingStress: `unknown (stress: ${userState.stressLevel})`,
       intent: "Share context",

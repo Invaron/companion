@@ -1077,7 +1077,7 @@ export class RuntimeStore {
     if (typeof value === "string" && journalMemoryEntryTypes.includes(value as JournalMemoryEntryType)) {
       return value as JournalMemoryEntryType;
     }
-    return "reflection";
+    return "event";
   }
 
   private mapReflectionRow(row: {
