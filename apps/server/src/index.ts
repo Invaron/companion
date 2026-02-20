@@ -18,7 +18,7 @@ import {
 import { OrchestratorRuntime } from "./orchestrator.js";
 import { EmailDigestService } from "./email-digest.js";
 import { getVapidPublicKey, hasStaticVapidKeys, sendPushNotification } from "./push.js";
-import { sendChatMessage, compressChatContext, GeminiError, RateLimitError } from "./chat.js";
+import { sendChatMessage, compressChatContext, GeminiError, RateLimitError, flushJournalSessionBuffer } from "./chat.js";
 import { getGeminiClient } from "./gemini.js";
 import { RuntimeStore } from "./store.js";
 import { fetchTPSchedule, diffScheduleEvents } from "./tp-sync.js";
@@ -582,6 +582,9 @@ app.get("/api/trends", (_req, res) => {
 });
 
 app.get("/api/analytics/coach", async (req, res) => {
+  // Flush any buffered journal entries before analytics generation
+  await flushJournalSessionBuffer(store);
+
   const parsed = analyticsCoachQuerySchema.safeParse(req.query ?? {});
 
   if (!parsed.success) {
@@ -643,6 +646,10 @@ app.get("/api/growth/daily-summary", async (req, res) => {
 
   const dayStartIso = `${dateKey}T00:00:00.000Z`;
   const dayEndIso = `${dateKey}T23:59:59.999Z`;
+
+  // Flush any buffered journal entries before reading reflections
+  await flushJournalSessionBuffer(store);
+
   const reflections = store.getReflectionEntriesInRange(dayStartIso, dayEndIso, 280);
   const chats = store
     .getRecentChatMessages(280)
@@ -734,8 +741,8 @@ Address the user directly (you/your). Be warm, concise, and honest.
 
 STYLE RULES (critical):
 - Be CONCISE. The summary should be 2-3 sentences. Each highlight should be 1 sentence.
-- NEVER parrot raw numbers from the data. She can see the data herself. Interpret what the data MEANS.
-- BAD: "You logged 45 chat messages and 43 journal entries" — she knows that.
+- NEVER parrot raw numbers from the data. The user can see the data themselves. Interpret what the data MEANS.
+- BAD: "You logged 45 chat messages and 43 journal entries" — they know that.
 - GOOD: "Your planning energy today was intense — now channel it into execution." — this interprets.
 - Use natural counts: "4/6 days" not "67%".
 - Write like a trusted coach, not a dashboard.

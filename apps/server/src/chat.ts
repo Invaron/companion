@@ -917,7 +917,7 @@ const reflectionCaptureGateDeclaration: FunctionDeclaration = {
   }
 };
 
-function asNonEmptyReflectionField(value: unknown, fallback: string, maxLength = 220): string {
+function asNonEmptyReflectionField(value: unknown, fallback: string, maxLength = 2000): string {
   if (typeof value !== "string") {
     return fallback;
   }
@@ -1001,26 +1001,201 @@ async function evaluateReflectionCaptureGateWithGemini(
   return {
     capture: args.capture === true,
     salience: normalizeSalience(args.salience, 0.5),
-    reason: asNonEmptyReflectionField(args.reason, "No reason provided.", 180),
+    reason: asNonEmptyReflectionField(args.reason, "No reason provided."),
     snippet: asNonEmptyReflectionField(
       args.snippet,
-      textSnippet(userMessage.content.replace(/\s+/g, " "), 180),
-      180
+      textSnippet(userMessage.content.replace(/\s+/g, " "), 500),
+      2000
     )
   };
 }
 
-async function extractStructuredReflectionWithGemini(
-  geminiClient: GeminiClient,
-  store: RuntimeStore,
-  userMessage: ChatMessage,
-  assistantMessage: ChatMessage,
+function shouldSkipStructuredReflection(input: string, assistantContent?: string): boolean {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) {
+    return true;
+  }
+  if (/^(confirm|cancel)\b/i.test(trimmed)) {
+    return true;
+  }
+  if (/^(hi|hello|hey|yo+|sup|what'?s up)\b/i.test(trimmed) && trimmed.split(/\s+/).length <= 2) {
+    return true;
+  }
+  // Skip pure tool-query turns: schedule lookups, grade checks, food photo logging, data fetches
+  const toolQueryPatterns = [
+    /^(what('?s| is| are)|when('?s| is| are)|show( me)?|check|list|get)\b.*(schedule|class|lecture|exam|assignment|grade|deadline|email|calendar|event)/i,
+    /^(log|track|add)\b.*(meal|food|breakfast|lunch|dinner|snack)/i,
+    /^(what('?s| is| are)|how('?s| is)|show)\b.*(my grade|my score|my mark|my gpa)/i,
+    /^(what|when|where)\b.*(next|today|tomorrow|this week)/i
+  ];
+  if (toolQueryPatterns.some((pattern) => pattern.test(trimmed))) {
+    return true;
+  }
+  // Skip if assistant response is purely tool data (no conversational/emotional content)
+  if (assistantContent) {
+    const assistantTrimmed = assistantContent.trim();
+    // If the response is very short and looks like tool output, skip
+    if (assistantTrimmed.startsWith("Here's") && trimmed.split(/\s+/).length <= 6) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// --- Session-based journal batching ---
+// Instead of writing one journal entry per message, buffer captured turns in memory
+// and flush them as a single combined entry when a session gap is detected (>15 min).
+
+const JOURNAL_SESSION_GAP_MS = 15 * 60 * 1000; // 15 minutes
+const MIN_SALIENCE_THRESHOLD = 0.3;
+
+interface JournalBufferEntry {
+  userMessage: ChatMessage;
+  assistantMessage: ChatMessage;
   gateDecision: {
     capture: boolean;
     salience: number;
     reason: string;
     snippet: string;
+  };
+  timestamp: number; // epoch ms for easy comparison
+}
+
+const journalSessionBuffer: JournalBufferEntry[] = [];
+
+export function getJournalSessionBufferSize(): number {
+  return journalSessionBuffer.length;
+}
+
+async function bufferForJournalBatch(
+  store: RuntimeStore,
+  userMessage: ChatMessage,
+  assistantMessage: ChatMessage,
+  geminiClient?: GeminiClient
+): Promise<void> {
+  if (userMessage.role !== "user") {
+    return;
   }
+  const input = userMessage.content.trim();
+  if (shouldSkipStructuredReflection(input, assistantMessage.content)) {
+    return;
+  }
+
+  const resolvedGeminiClient = geminiClient ?? getGeminiClient();
+  let gateDecision:
+    | {
+        capture: boolean;
+        salience: number;
+        reason: string;
+        snippet: string;
+      }
+    | null = null;
+
+  try {
+    gateDecision = await evaluateReflectionCaptureGateWithGemini(
+      resolvedGeminiClient,
+      store,
+      userMessage,
+      assistantMessage
+    );
+  } catch {
+    gateDecision = null;
+  }
+
+  // If gate is unavailable (Gemini down), skip entirely — don't save noise fallback entries
+  if (!gateDecision) {
+    return;
+  }
+
+  // Skip if gate says don't capture
+  if (!gateDecision.capture) {
+    return;
+  }
+
+  // Skip low-salience entries
+  if (gateDecision.salience < MIN_SALIENCE_THRESHOLD) {
+    return;
+  }
+
+  const nowMs = new Date(userMessage.timestamp).getTime();
+
+  // Check if we need to flush the existing buffer first (session gap detected)
+  if (journalSessionBuffer.length > 0) {
+    const lastBuffered = journalSessionBuffer[journalSessionBuffer.length - 1];
+    if (nowMs - lastBuffered.timestamp > JOURNAL_SESSION_GAP_MS) {
+      await flushJournalSessionBuffer(store, resolvedGeminiClient);
+    }
+  }
+
+  // Add to buffer
+  journalSessionBuffer.push({
+    userMessage,
+    assistantMessage,
+    gateDecision,
+    timestamp: nowMs
+  });
+}
+
+export async function flushJournalSessionBuffer(
+  store: RuntimeStore,
+  geminiClient?: GeminiClient
+): Promise<void> {
+  if (journalSessionBuffer.length === 0) {
+    return;
+  }
+
+  // Drain the buffer
+  const entries = journalSessionBuffer.splice(0, journalSessionBuffer.length);
+  const resolvedGeminiClient = geminiClient ?? getGeminiClient();
+
+  // Pick the highest-salience gate decision for the combined entry
+  const bestGate = entries.reduce((best, entry) =>
+    entry.gateDecision.salience > best.gateDecision.salience ? entry : best
+  );
+  const avgSalience =
+    entries.reduce((sum, entry) => sum + entry.gateDecision.salience, 0) / entries.length;
+
+  // Use the first message's timestamp as the entry timestamp
+  const entryTimestamp = entries[0].userMessage.timestamp;
+  // Use the first message's ID as sourceMessageId for upsert keying
+  const sourceMessageId = entries[0].userMessage.id;
+
+  // Try batch extraction via Gemini
+  let extracted: Awaited<ReturnType<typeof extractBatchedReflectionWithGemini>> = null;
+  try {
+    extracted = await extractBatchedReflectionWithGemini(
+      resolvedGeminiClient,
+      store,
+      entries
+    );
+  } catch {
+    extracted = null;
+  }
+
+  // If extraction fails, skip entirely — don't save noise fallback entries
+  if (!extracted) {
+    return;
+  }
+
+  store.upsertReflectionEntry({
+    entryType: extracted.entryType,
+    event: extracted.event,
+    feelingStress: extracted.feelingStress,
+    intent: extracted.intent,
+    commitment: extracted.commitment,
+    outcome: extracted.outcome,
+    salience: avgSalience,
+    captureReason: `Batched ${entries.length} turns. Top reason: ${bestGate.gateDecision.reason}`,
+    timestamp: entryTimestamp,
+    evidenceSnippet: extracted.evidenceSnippet,
+    sourceMessageId
+  });
+}
+
+async function extractBatchedReflectionWithGemini(
+  geminiClient: GeminiClient,
+  store: RuntimeStore,
+  entries: JournalBufferEntry[]
 ): Promise<{
   entryType: JournalMemoryEntryType;
   event: string;
@@ -1036,25 +1211,26 @@ async function extractStructuredReflectionWithGemini(
 
   const userState = store.getUserContext();
   const systemInstruction = [
-    "You extract internal structured journal memory entries for analytics.",
+    "You extract ONE internal structured journal memory entry from a batch of conversation turns.",
+    "The batch represents a single conversation session. Synthesize it into one rich entry.",
     "Never produce conversational text.",
     "Call recordJournalMemoryEntry exactly once with best-effort fields.",
     "Do not mention journal capture or logging to the user.",
-    "Prefer concise concrete values."
+    "Prefer concise concrete values. Capture the overall theme and emotional arc, not individual turn details."
   ].join("\n");
 
+  const turnLines = entries.map((entry, i) => [
+    `--- Turn ${i + 1} (salience=${entry.gateDecision.salience.toFixed(2)}) ---`,
+    `User: ${entry.userMessage.content}`,
+    `Assistant: ${entry.assistantMessage.content}`
+  ].join("\n")).join("\n\n");
+
   const userPrompt = [
-    "Extract one structured journal memory entry from this completed chat turn.",
-    `Timestamp: ${userMessage.timestamp}`,
+    `Synthesize ${entries.length} conversation turn(s) into ONE structured journal memory entry.`,
+    `Session timespan: ${entries[0].userMessage.timestamp} — ${entries[entries.length - 1].userMessage.timestamp}`,
     `User state context: stress=${userState.stressLevel}, energy=${userState.energyLevel}, mode=${userState.mode}`,
-    `Gate decision: capture=${gateDecision.capture}, salience=${gateDecision.salience}, reason=${gateDecision.reason}`,
-    `Gate snippet: ${gateDecision.snippet}`,
     "",
-    "User message:",
-    userMessage.content,
-    "",
-    "Assistant response:",
-    assistantMessage.content
+    turnLines
   ].join("\n");
 
   const extractionResponse = await geminiClient.generateChatResponse({
@@ -1080,116 +1256,12 @@ async function extractStructuredReflectionWithGemini(
     feelingStress: asNonEmptyReflectionField(args.feelingStress, `unknown (stress: ${userState.stressLevel})`),
     intent: asNonEmptyReflectionField(args.intent, "Share context"),
     commitment: asNonEmptyReflectionField(args.commitment, "none"),
-    outcome: asNonEmptyReflectionField(args.outcome, inferReflectionOutcome(assistantMessage)),
+    outcome: asNonEmptyReflectionField(args.outcome, inferReflectionOutcome(entries[entries.length - 1].assistantMessage)),
     evidenceSnippet: asNonEmptyReflectionField(
       args.evidenceSnippet,
-      textSnippet(userMessage.content.replace(/\s+/g, " "), 220)
+      entries.map((e) => e.userMessage.content).join(" | ")
     )
   };
-}
-
-function shouldSkipStructuredReflection(input: string): boolean {
-  const trimmed = input.trim();
-  if (trimmed.length === 0) {
-    return true;
-  }
-  if (/^(confirm|cancel)\b/i.test(trimmed)) {
-    return true;
-  }
-  if (/^(hi|hello|hey|yo+|sup|what'?s up)\b/i.test(trimmed) && trimmed.split(/\s+/).length <= 2) {
-    return true;
-  }
-  return false;
-}
-
-async function autoWriteStructuredReflectionEntry(
-  store: RuntimeStore,
-  userMessage: ChatMessage,
-  assistantMessage: ChatMessage,
-  geminiClient?: GeminiClient
-): Promise<void> {
-  if (userMessage.role !== "user") {
-    return;
-  }
-  const input = userMessage.content.trim();
-  if (shouldSkipStructuredReflection(input)) {
-    return;
-  }
-
-  const userState = store.getUserContext();
-  const resolvedGeminiClient = geminiClient ?? getGeminiClient();
-  const fallbackSnippet = textSnippet(input.replace(/\s+/g, " "), 180);
-  let gateDecision:
-    | {
-        capture: boolean;
-        salience: number;
-        reason: string;
-        snippet: string;
-      }
-    | null = null;
-
-  try {
-    gateDecision = await evaluateReflectionCaptureGateWithGemini(
-      resolvedGeminiClient,
-      store,
-      userMessage,
-      assistantMessage
-    );
-  } catch {
-    gateDecision = null;
-  }
-
-  if (!gateDecision) {
-    gateDecision = {
-      capture: true,
-      salience: 0.5,
-      reason: "Capture gate unavailable; stored with default salience.",
-      snippet: fallbackSnippet
-    };
-  }
-
-  if (!gateDecision.capture) {
-    return;
-  }
-
-  let extracted: Awaited<ReturnType<typeof extractStructuredReflectionWithGemini>> = null;
-  try {
-    extracted = await extractStructuredReflectionWithGemini(
-      resolvedGeminiClient,
-      store,
-      userMessage,
-      assistantMessage,
-      gateDecision
-    );
-  } catch {
-    extracted = null;
-  }
-
-  if (!extracted) {
-    extracted = {
-      entryType: "event",
-      event: "General journal note",
-      feelingStress: `unknown (stress: ${userState.stressLevel})`,
-      intent: "Share context",
-      commitment: "none",
-      outcome: inferReflectionOutcome(assistantMessage),
-      evidenceSnippet: gateDecision.snippet
-    };
-  }
-
-  store.upsertReflectionEntry({
-    entryType: extracted.entryType,
-    event: extracted.event,
-    feelingStress: extracted.feelingStress,
-    intent: extracted.intent,
-    commitment: extracted.commitment,
-    outcome: extracted.outcome,
-    salience: gateDecision.salience,
-    captureReason: gateDecision.reason,
-    timestamp: userMessage.timestamp,
-    evidenceSnippet: extracted.evidenceSnippet,
-    sourceMessageId: userMessage.id
-  });
 }
 
 function buildFunctionCallingSystemInstruction(
@@ -3307,7 +3379,7 @@ export async function sendChatMessage(
       contextWindow: "",
       pendingActions: pendingActionsAtStart
     });
-    void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
+    void bufferForJournalBatch(store, userMessage, assistantMessage);
     const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
 
     return {
@@ -3364,7 +3436,7 @@ export async function sendChatMessage(
     }
 
     const assistantMessage = store.recordChatMessage("assistant", assistantReply, assistantMetadata);
-    void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
+    void bufferForJournalBatch(store, userMessage, assistantMessage);
     const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
     const citations = assistantMessage.metadata?.citations ?? [];
 
@@ -3436,7 +3508,7 @@ export async function sendChatMessage(
       },
       ...(autoCitations.length > 0 ? { citations: autoCitations } : {})
     });
-    void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage);
+    void bufferForJournalBatch(store, userMessage, assistantMessage);
     const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
     const citations = assistantMessage.metadata?.citations ?? [];
 
@@ -3671,7 +3743,7 @@ export async function sendChatMessage(
           : {})
       };
       const assistantMessage = store.recordChatMessage("assistant", fallbackReply, assistantMetadata);
-      void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage, gemini);
+      void bufferForJournalBatch(store, userMessage, assistantMessage, gemini);
       const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
 
       return {
@@ -3716,7 +3788,7 @@ export async function sendChatMessage(
   };
 
   const assistantMessage = store.recordChatMessage("assistant", finalReply, assistantMetadata);
-  void autoWriteStructuredReflectionEntry(store, userMessage, assistantMessage, gemini);
+  void bufferForJournalBatch(store, userMessage, assistantMessage, gemini);
 
   const historyPage = store.getChatHistory({ page: 1, pageSize: 20 });
 
