@@ -729,8 +729,8 @@ app.get("/api/growth/daily-summary", async (req, res) => {
     const gemini = getGeminiClient();
     if (gemini.isConfigured()) {
       try {
-        const prompt = `Write a daily coaching reflection for Lucy for ${dateKey}.
-Address Lucy directly (you/your). Be warm, concise, and honest.
+        const prompt = `Write a daily coaching reflection for ${dateKey}.
+Address the user directly (you/your). Be warm, concise, and honest.
 
 STYLE RULES (critical):
 - Be CONCISE. The summary should be 2-3 sentences. Each highlight should be 1 sentence.
@@ -745,7 +745,7 @@ Return strict JSON only:
   "summary": "2-3 sentence coaching take on the day. Connect domains naturally. Interpret, don't describe.",
   "highlights": ["2-3 short coaching insights — one sentence each, actionable."],
   "challenges": [
-    {"type": "connect|predict|reflect|commit", "question": "Short interactive prompt that makes Lucy think", "hint": "Optional"}
+    {"type": "connect|predict|reflect|commit", "question": "Short interactive prompt that makes the user think", "hint": "Optional"}
   ]
 }
 
@@ -758,7 +758,7 @@ Challenge types:
 Include 1-2 challenges. They should feel like a coach prompting active thinking.
 
 CONTEXT:
-- "weightKg" in nutrition targets is Lucy's BASELINE weight for macros, NOT a goal weight.
+- "weightKg" in nutrition targets is the user's BASELINE weight for macros, NOT a goal weight.
 - Nutrition reflects ONLY eaten meals, not pre-planned templates.
 
 Today's data:
@@ -771,7 +771,7 @@ Schedule: ${scheduleLines || "no events"}
 Journal (${reflections.length}): ${reflectionLines || "none"}`;
 
         const response = await gemini.generateChatResponse({
-          systemInstruction: "You are Lucy's personal performance coach — warm, direct, concise. Interpret data into coaching. NEVER parrot raw statistics. Return strict JSON only. Never truncate.",
+          systemInstruction: "You are a personal performance coach — warm, direct, concise. Interpret data into coaching. NEVER parrot raw statistics. Return strict JSON only. Never truncate.",
           messages: [{ role: "user", parts: [{ text: prompt }] }]
         });
 

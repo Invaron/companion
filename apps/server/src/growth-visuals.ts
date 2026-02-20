@@ -14,7 +14,7 @@ function compact(value: string, maxLength = MAX_PROMPT_TEXT_LENGTH): string {
 
 function buildDailyVisualPrompt(summary: DailyGrowthSummary): string {
   const highlights = summary.highlights.slice(0, 3).map((item) => `- ${compact(item, 140)}`).join("\n");
-  return `Create a vibrant digital illustration of Lucy's day as a growth journey.
+  return `Create a vibrant digital illustration of a person's day as a growth journey.
 Tone: hopeful, focused, grounded.
 Style: modern editorial art, expressive lighting, rich colors, clean composition.
 Scene cues:
@@ -33,7 +33,7 @@ function buildAnalyticsVisualPrompt(insight: AnalyticsCoachInsight): string {
   const strength = insight.strengths[0] ? compact(insight.strengths[0], 140) : "steady momentum";
   const risk = insight.risks[0] ? compact(insight.risks[0], 140) : "friction points";
   const recommendation = insight.recommendations[0] ? compact(insight.recommendations[0], 140) : "clear next action";
-  return `Create a cinematic strategic-growth illustration for Lucy's ${insight.periodDays}-day review.
+  return `Create a cinematic strategic-growth illustration for a ${insight.periodDays}-day review.
 Tone: confident, practical, motivating.
 Style: premium concept art, colorful gradients, structured composition.
 Narrative cues:

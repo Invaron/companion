@@ -1,4 +1,5 @@
 import { GeminiClient, getGeminiClient } from "./gemini.js";
+import { config } from "./config.js";
 import { maybeGenerateAnalyticsVisual } from "./growth-visuals.js";
 import { RuntimeStore } from "./store.js";
 import {
@@ -403,18 +404,19 @@ function buildPrompt(dataset: AnalyticsDataset): string {
     .map((e) => `- ${e.startTime.slice(0, 10)} ${e.title} (${e.durationMinutes}min, ${e.workload})`)
     .join("\n");
 
-  return `You are Lucy's personal performance coach. Analyze her last ${dataset.periodDays} days. Address her directly (you/your).
+  const userName = config.USER_NAME;
+  return `You are ${userName}'s personal performance coach. Analyze their last ${dataset.periodDays} days. Address them directly (you/your).
 
 STYLE RULES (critical):
 - Be CONCISE. Each bullet should be 1-2 sentences max. No filler.
-- NEVER parrot raw numbers from the data back at Lucy. She can see the data herself. Instead, interpret what the numbers MEAN and what to DO about them.
-- BAD: "Your habit completion is 14% over 7 days" or "You sent 45 chat messages" — these are data points she already knows.
+- NEVER parrot raw numbers from the data back. The user can see the data themselves. Instead, interpret what the numbers MEAN and what to DO about them.
+- BAD: "Your habit completion is 14% over 7 days" or "You sent 45 chat messages" — these are data points they already know.
 - GOOD: "You hit the gym once this week — to build the momentum your lean bulk needs, showing up 4 days would be the minimum." — this interprets and advises.
 - Use natural counts: "4/6 days" not "67%". "2 of 3 deadlines" not "67% completion rate".
-- Write like a trusted coach who knows her, not a dashboard. Be warm but direct.
+- Write like a trusted coach who knows them, not a dashboard. Be warm but direct.
 
 IMPORTANT CONTEXT:
-- "weightKg" in nutrition targets is Lucy's BASELINE weight for macro calculation, NOT a goal weight.
+- "weightKg" in nutrition targets is the user's BASELINE weight for macro calculation, NOT a goal weight.
 - Nutrition data reflects EATEN meals only (consumed, not planned templates).
 
 Return strict JSON only:
@@ -425,13 +427,13 @@ Return strict JSON only:
   "risks": ["2-3 patterns to watch. Warm warnings, not alarms."],
   "recommendations": ["3-4 specific, immediately actionable steps. Each one sentence."],
   "challenges": [
-    {"type": "connect|predict|reflect|commit", "question": "A short interactive prompt that makes Lucy think actively", "hint": "Optional hint to guide thinking"}
+    {"type": "connect|predict|reflect|commit", "question": "A short interactive prompt that makes the user think actively", "hint": "Optional hint to guide thinking"}
   ]
 }
 
 Challenge types:
-- "connect": Ask Lucy to draw a connection between two data points (e.g., "What happened on the days you skipped the gym? Look at your sleep.")
-- "predict": Ask Lucy to predict an outcome (e.g., "If you hit 4 gym sessions next week, what do you think happens to your energy levels?")
+- "connect": Ask the user to draw a connection between two data points (e.g., "What happened on the days you skipped the gym? Look at your sleep.")
+- "predict": Ask the user to predict an outcome (e.g., "If you hit 4 gym sessions next week, what do you think happens to your energy levels?")
 - "reflect": A reflection question (e.g., "What's the one thing that would make tomorrow's meal prep easier?")
 - "commit": A micro-commitment (e.g., "Name one meal you'll prep tonight for tomorrow.")
 
@@ -563,7 +565,7 @@ export async function generateAnalyticsCoachInsight(
   try {
     const response = await gemini.generateChatResponse({
       systemInstruction:
-        "You are Lucy's personal performance coach — warm, direct, concise. Interpret data into coaching insights. NEVER parrot raw statistics back. Return strict JSON only. Address Lucy in second person. Never truncate.",
+        "You are a personal performance coach — warm, direct, concise. Interpret data into coaching insights. NEVER parrot raw statistics back. Return strict JSON only. Address the user in second person. Never truncate.",
       messages: [
         {
           role: "user",
