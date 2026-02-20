@@ -911,9 +911,13 @@ const reflectionCaptureGateDeclaration: FunctionDeclaration = {
       snippet: {
         type: SchemaType.STRING,
         description: "Short snippet from the user message that should be retained."
+      },
+      topicShift: {
+        type: SchemaType.BOOLEAN,
+        description: "True when this turn introduces a distinctly new topic compared to the current session context. False if it continues or naturally evolves the same discussion."
       }
     },
-    required: ["capture", "salience", "reason", "snippet"]
+    required: ["capture", "salience", "reason", "snippet", "topicShift"]
   }
 };
 
@@ -949,12 +953,14 @@ async function evaluateReflectionCaptureGateWithGemini(
   geminiClient: GeminiClient,
   store: RuntimeStore,
   userMessage: ChatMessage,
-  assistantMessage: ChatMessage
+  assistantMessage: ChatMessage,
+  bufferContext?: string
 ): Promise<{
   capture: boolean;
   salience: number;
   reason: string;
   snippet: string;
+  topicShift: boolean;
 } | null> {
   if (!geminiClient.isConfigured()) {
     return null;
@@ -966,20 +972,32 @@ async function evaluateReflectionCaptureGateWithGemini(
     "Never produce conversational text.",
     "Call gateJournalMemoryCapture exactly once.",
     "Set capture=true only when the turn has durable planning/emotional/progress signal.",
-    "Set capture=false for trivial chatter, confirmations, or low-value noise."
+    "Set capture=false for trivial chatter, confirmations, or low-value noise.",
+    "Set topicShift=true when this turn introduces a clearly different topic from the current session context (if any). A gradual evolution of the same theme is NOT a shift. Only flag a shift when the user moves to something unrelated.",
+    "If there is no current session context, set topicShift=false."
   ].join("\n");
 
-  const userPrompt = [
+  const promptParts = [
     "Evaluate this turn for structured journal memory capture.",
     `Timestamp: ${userMessage.timestamp}`,
-    `User state: stress=${userState.stressLevel}, energy=${userState.energyLevel}, mode=${userState.mode}`,
+    `User state: stress=${userState.stressLevel}, energy=${userState.energyLevel}, mode=${userState.mode}`
+  ];
+
+  if (bufferContext) {
+    promptParts.push("", "Current session context (buffered turns so far):", bufferContext);
+  }
+
+  promptParts.push(
     "",
+    "New turn to evaluate:",
     "User message:",
     userMessage.content,
     "",
     "Assistant response:",
     assistantMessage.content
-  ].join("\n");
+  );
+
+  const userPrompt = promptParts.join("\n");
 
   const gateResponse = await geminiClient.generateChatResponse({
     messages: [
@@ -1006,8 +1024,18 @@ async function evaluateReflectionCaptureGateWithGemini(
       args.snippet,
       textSnippet(userMessage.content.replace(/\s+/g, " "), 500),
       2000
-    )
+    ),
+    topicShift: args.topicShift === true
   };
+}
+
+function buildBufferContextSummary(buffer: JournalBufferEntry[]): string | undefined {
+  if (buffer.length === 0) return undefined;
+  // Provide a concise summary of buffered turns so Gemini can judge topic continuity
+  const lines = buffer.map((entry, i) =>
+    `[${i + 1}] User: ${textSnippet(entry.userMessage.content.replace(/\s+/g, " "), 150)}`
+  );
+  return lines.join("\n");
 }
 
 function shouldSkipStructuredReflection(input: string, assistantContent?: string): boolean {
@@ -1061,6 +1089,7 @@ interface JournalBufferEntry {
     salience: number;
     reason: string;
     snippet: string;
+    topicShift: boolean;
   };
   timestamp: number; // epoch ms for easy comparison
 }
@@ -1121,15 +1150,19 @@ async function bufferForJournalBatch(
         salience: number;
         reason: string;
         snippet: string;
+        topicShift: boolean;
       }
     | null = null;
+
+  const bufferContext = buildBufferContextSummary(journalSessionBuffer);
 
   try {
     gateDecision = await evaluateReflectionCaptureGateWithGemini(
       resolvedGeminiClient,
       store,
       userMessage,
-      assistantMessage
+      assistantMessage,
+      bufferContext
     );
   } catch {
     gateDecision = null;
@@ -1152,6 +1185,11 @@ async function bufferForJournalBatch(
 
   const nowMs = new Date(userMessage.timestamp).getTime();
 
+  // If Gemini detected a topic shift, flush the existing session before starting a new one
+  if (gateDecision.topicShift && journalSessionBuffer.length > 0) {
+    await flushJournalSessionBuffer(store, resolvedGeminiClient);
+  }
+
   // Add to buffer
   journalSessionBuffer.push({
     userMessage,
@@ -1160,7 +1198,7 @@ async function bufferForJournalBatch(
     timestamp: nowMs
   });
 
-  // Flush if buffer hits size cap (prevents unbounded memory for very long sessions)
+  // Safety cap — flush if buffer gets very large (prevents unbounded memory)
   if (journalSessionBuffer.length >= JOURNAL_BUFFER_SIZE_CAP) {
     await flushJournalSessionBuffer(store, resolvedGeminiClient);
   }
