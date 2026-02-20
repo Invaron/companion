@@ -2720,6 +2720,18 @@ export function handleCreateNutritionCustomFood(
     return { error: "name is required." };
   }
 
+  // Check for existing custom food with the same name (case-insensitive)
+  const existingFoods = store.getNutritionCustomFoods({ limit: 500 });
+  const needle = normalizeSearchText(name);
+  const duplicate = existingFoods.find((f) => normalizeSearchText(f.name) === needle);
+  if (duplicate) {
+    return {
+      success: true,
+      food: duplicate,
+      message: `Custom food "${duplicate.name}" already exists (id: ${duplicate.id}). Use updateNutritionCustomFood to modify it.`
+    };
+  }
+
   if (typeof args.caloriesPerUnit !== "number") {
     return { error: "caloriesPerUnit is required." };
   }
@@ -5135,9 +5147,14 @@ export function executeFunctionCall(
     case "queueUpdateRoutinePreset":
       response = handleQueueUpdateRoutinePreset(store, args);
       break;
-    case "setResponseMood":
-      response = { mood: typeof args.mood === "string" ? args.mood : "neutral" };
+    case "setResponseMood": {
+      const validMoodSet = new Set(["neutral", "encouraging", "focused", "celebratory", "empathetic", "urgent"]);
+      const rawMood = typeof args.mood === "string" ? args.mood.toLowerCase().trim() : "neutral";
+      const mood = validMoodSet.has(rawMood) ? rawMood : "neutral";
+      console.log(`[mood] setResponseMood called: raw="${String(args.mood)}" → resolved="${mood}"`);
+      response = { mood };
       break;
+    }
     default:
       throw new Error(`Unknown function: ${name}`);
   }

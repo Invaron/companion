@@ -39,11 +39,16 @@ function extractMoodFromToolResponses(responses: ExecutedFunctionResponse[]): Ch
   for (const r of responses) {
     if (r.name === "setResponseMood") {
       const raw = r.rawResponse as { mood?: string };
+      console.log(`[mood] extractMoodFromToolResponses: found setResponseMood, rawResponse=${JSON.stringify(raw)}`);
       if (raw?.mood && VALID_MOODS.has(raw.mood)) {
         return raw.mood as ChatMood;
       }
+      // Fallback: if mood was set but not in valid set, default to neutral
+      console.log(`[mood] mood value "${raw?.mood}" not in VALID_MOODS, falling back to neutral`);
+      return "neutral";
     }
   }
+  console.log(`[mood] no setResponseMood found in ${responses.length} tool responses`);
   return undefined;
 }
 
@@ -3753,9 +3758,12 @@ export async function sendChatMessage(
             ? (call.args as Record<string, unknown>)
             : {};
         const args = hydrateFunctionArgsForRequest(call.name, callArgs, userInput);
+        console.log(`[tool] Round ${round + 1}/${callIndex + 1}: ${call.name}(${JSON.stringify(args).slice(0, 200)})`);
         let result: { name: string; response: unknown };
         try {
           result = executeFunctionCall(call.name, args, store);
+          const resultSummary = JSON.stringify(result.response);
+          console.log(`[tool] ${call.name} → ${resultSummary.length > 300 ? resultSummary.slice(0, 300) + "..." : resultSummary}`);
         } catch (error) {
           const message = error instanceof Error ? error.message : "Tool call failed";
           return {
@@ -3848,10 +3856,12 @@ export async function sendChatMessage(
   } catch (error) {
     if (error instanceof RateLimitError) {
       const fallbackReply = buildToolRateLimitFallbackReply(executedFunctionResponses, pendingActionsFromTooling);
+      const rateLimitMood = extractMoodFromToolResponses(executedFunctionResponses);
       const assistantMetadata: ChatMessageMetadata = {
         contextWindow,
         finishReason: "rate_limit_fallback",
         usage: totalUsage,
+        mood: rateLimitMood,
         ...(pendingActionsFromTooling.length > 0 ? { pendingActions: store.getPendingChatActions(now) } : {}),
         ...(citations.size > 0
           ? { citations: Array.from(citations.values()).slice(0, MAX_CHAT_CITATIONS) }
@@ -3868,6 +3878,7 @@ export async function sendChatMessage(
         finishReason: assistantMetadata.finishReason,
         usage: assistantMetadata.usage,
         citations: assistantMetadata.citations ?? [],
+        mood: rateLimitMood,
         history: historyPage
       };
     }
@@ -3886,6 +3897,7 @@ export async function sendChatMessage(
 
   const finalReply = rawReply;
   const resolvedMood = extractMoodFromToolResponses(executedFunctionResponses);
+  console.log(`[mood] Final resolved mood: ${resolvedMood ?? "undefined (no tool call)"}`);
 
   if (!useNativeStreaming || streamedTokenChars === 0) {
     emitTextChunks(finalReply, options.onTextChunk);
