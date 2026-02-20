@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getAnalyticsCoachInsight } from "../lib/api";
-import { AnalyticsCoachInsight } from "../types";
+import { AnalyticsCoachInsight, ChallengePrompt } from "../types";
 
 type PeriodDays = 7 | 14 | 30;
 
@@ -18,6 +18,38 @@ function formatGeneratedAt(value: string): string {
     minute: "2-digit",
     hour12: false
   });
+}
+
+const CHALLENGE_ICONS: Record<ChallengePrompt["type"], string> = {
+  connect: "🔗",
+  predict: "🔮",
+  reflect: "💭",
+  commit: "✊"
+};
+
+const CHALLENGE_LABELS: Record<ChallengePrompt["type"], string> = {
+  connect: "Connect the dots",
+  predict: "Predict",
+  reflect: "Reflect",
+  commit: "Commit"
+};
+
+function CollapsibleSection({ title, className, children, defaultOpen = false }: {
+  title: string;
+  className?: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}): JSX.Element {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className={`analytics-card ${className ?? ""} ${open ? "analytics-card-open" : "analytics-card-collapsed"}`}>
+      <h3 className="analytics-card-toggle" onClick={() => setOpen(!open)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setOpen(!open); }}>
+        <span>{title}</span>
+        <span className="analytics-card-chevron">{open ? "▾" : "▸"}</span>
+      </h3>
+      {open && children}
+    </section>
+  );
 }
 
 export function AnalyticsDashboard(): JSX.Element {
@@ -102,41 +134,56 @@ export function AnalyticsDashboard(): JSX.Element {
           </section>
 
           <div className="analytics-grid">
-            <section className="analytics-card analytics-card-correlation">
-              <h3>Coaching Observations</h3>
-              <ul className="analytics-list">
-                {insight.correlations.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="analytics-card">
-              <h3>Strengths</h3>
-              <ul className="analytics-list">
-                {insight.strengths.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="analytics-card analytics-card-risk">
-              <h3>Risks</h3>
-              <ul className="analytics-list">
-                {insight.risks.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
+            {insight.challenges && insight.challenges.length > 0 && (
+              <section className="analytics-card analytics-card-challenge">
+                <h3>🎯 Your Challenges</h3>
+                <div className="analytics-challenges">
+                  {insight.challenges.map((c, i) => (
+                    <div key={i} className="challenge-card">
+                      <div className="challenge-header">
+                        <span className="challenge-icon">{CHALLENGE_ICONS[c.type]}</span>
+                        <span className="challenge-type">{CHALLENGE_LABELS[c.type]}</span>
+                      </div>
+                      <p className="challenge-question">{c.question}</p>
+                      {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section className="analytics-card analytics-card-recommendation">
-              <h3>Steering Recommendations</h3>
+              <h3>Next Steps</h3>
               <ol className="analytics-list analytics-list-numbered">
                 {insight.recommendations.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ol>
             </section>
+
+            <CollapsibleSection title="Coaching Observations" className="analytics-card-correlation" defaultOpen={false}>
+              <ul className="analytics-list">
+                {insight.correlations.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Strengths" defaultOpen={false}>
+              <ul className="analytics-list">
+                {insight.strengths.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Risks" className="analytics-card-risk" defaultOpen={false}>
+              <ul className="analytics-list">
+                {insight.risks.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </CollapsibleSection>
           </div>
         </>
       )}

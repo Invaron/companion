@@ -675,10 +675,17 @@ export interface DailyGrowthSummary {
   generatedAt: string;
   summary: string;
   highlights: string[];
+  challenges?: ChallengePrompt[];
   journalEntryCount: number;
   reflectionEntryCount: number;
   chatMessageCount: number;
   visual?: GrowthNarrativeVisual;
+}
+
+export interface ChallengePrompt {
+  type: "connect" | "predict" | "reflect" | "commit";
+  question: string;
+  hint?: string;
 }
 
 export interface GrowthNarrativeVisual {
@@ -718,6 +725,7 @@ export interface AnalyticsCoachInsight {
   strengths: string[];
   risks: string[];
   recommendations: string[];
+  challenges?: ChallengePrompt[];
   metrics: AnalyticsCoachMetrics;
   visual?: GrowthNarrativeVisual;
 }

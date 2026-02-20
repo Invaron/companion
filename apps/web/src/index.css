@@ -4888,6 +4888,91 @@ label small.muted {
   color: var(--text);
 }
 
+/* Collapsible card toggle */
+.analytics-card-toggle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.analytics-card-chevron {
+  font-size: 0.85rem;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.analytics-card-collapsed {
+  padding-bottom: 14px;
+}
+
+/* Challenge cards */
+.analytics-card-challenge {
+  border-color: color-mix(in srgb, #f59e0b 50%, var(--border-soft));
+  background: color-mix(in srgb, #f59e0b 4%, var(--background));
+  grid-column: 1 / -1;
+}
+
+.analytics-card-challenge h3 {
+  color: #f59e0b;
+}
+
+.analytics-challenges,
+.daily-summary-challenges {
+  display: grid;
+  gap: 10px;
+}
+
+.challenge-card {
+  background: var(--surface);
+  border: 1px dashed color-mix(in srgb, #f59e0b 40%, var(--border));
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.challenge-card-compact {
+  padding: 10px 12px;
+}
+
+.challenge-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.challenge-icon {
+  font-size: 1.1rem;
+}
+
+.challenge-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #f59e0b;
+}
+
+.challenge-question {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.challenge-hint {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .analytics-list {
   margin: 0;
   padding-left: 18px;

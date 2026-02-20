@@ -4,6 +4,7 @@ import { RuntimeStore } from "./store.js";
 import {
   AnalyticsCoachInsight,
   AnalyticsCoachMetrics,
+  ChallengePrompt,
   Deadline,
   GoalWithStatus,
   HabitWithStatus,
@@ -27,6 +28,7 @@ interface ParsedCoachInsight {
   strengths: string[];
   risks: string[];
   recommendations: string[];
+  challenges: ChallengePrompt[];
 }
 
 interface AnalyticsDataset {
@@ -217,66 +219,62 @@ function buildFallbackInsight(dataset: AnalyticsDataset): AnalyticsCoachInsight 
 
   if (metrics.deadlinesDue > 0) {
     strengths.push(
-      `You completed ${metrics.deadlinesCompleted}/${metrics.deadlinesDue} deadlines in the last ${dataset.periodDays} days.`
+      `You knocked out ${metrics.deadlinesCompleted} of ${metrics.deadlinesDue} deadlines in the last ${dataset.periodDays} days.`
     );
   }
 
-  if (metrics.averageHabitCompletion7d >= 60 && metrics.habitsTracked > 0) {
-    strengths.push(`Habit consistency is solid at ${metrics.averageHabitCompletion7d}% average 7-day completion.`);
+  const habitDaysHit = Math.round((metrics.averageHabitCompletion7d / 100) * 7);
+  if (habitDaysHit >= 4 && metrics.habitsTracked > 0) {
+    strengths.push(`Solid habit rhythm — hitting ${habitDaysHit}/7 days this week.`);
   }
 
   if (metrics.studySessionsPlanned > 0 && metrics.studyCompletionRate >= 60) {
     strengths.push(
-      `Study execution is stable with ${metrics.studySessionsDone}/${metrics.studySessionsPlanned} planned sessions completed.`
+      `Study execution is holding — ${metrics.studySessionsDone} of ${metrics.studySessionsPlanned} planned sessions done.`
     );
   }
 
   if (metrics.goalsTracked > 0 && metrics.goalsCompletedToday > 0) {
-    strengths.push(`You checked in on ${metrics.goalsCompletedToday} goal(s) today, showing active follow-through.`);
+    strengths.push("You checked in on your goals today — that follow-through matters.");
   }
 
   if (strengths.length === 0) {
-    strengths.push("You have active data across coursework and habits, giving a good base for incremental improvement.");
+    strengths.push("You have active data across coursework and habits — that's the foundation for progress.");
   }
 
   if (metrics.openHighPriorityDeadlines > 0) {
-    risks.push(`${metrics.openHighPriorityDeadlines} high-priority deadline(s) are due within the next week.`);
-    recommendations.push("Reserve one deep-work block in the next 24 hours for the nearest high-priority deadline.");
+    risks.push(`${metrics.openHighPriorityDeadlines} high-priority deadline${metrics.openHighPriorityDeadlines > 1 ? "s" : ""} coming up this week.`);
+    recommendations.push("Block one deep-work session in the next 24 hours for the nearest deadline.");
   }
 
-  if (metrics.habitsTracked > 0 && metrics.averageHabitCompletion7d < 50) {
-    risks.push(`Habit consistency is low (${metrics.averageHabitCompletion7d}% over the last 7 days).`);
-    recommendations.push("Attach your key habit check-in to a fixed anchor, like right after your first lecture.");
+  if (metrics.habitsTracked > 0 && habitDaysHit < 4) {
+    risks.push(`Habits only hit ${habitDaysHit}/7 days this week — the streak needs protecting.`);
+    recommendations.push("Anchor your key habit to something fixed, like right after your first lecture.");
   }
 
   if (metrics.studySessionsPlanned > 0 && metrics.studyCompletionRate < 50) {
     risks.push(
-      `Study-plan follow-through is low (${metrics.studySessionsDone}/${metrics.studySessionsPlanned} sessions completed).`
+      `Only ${metrics.studySessionsDone} of ${metrics.studySessionsPlanned} study sessions actually happened.`
     );
-    recommendations.push("Mark each study session as done/skipped immediately after it ends to keep plans realistic.");
-  }
-
-  if (metrics.reflectionEntries + metrics.userReflections < 3) {
-    risks.push("Journal-memory volume is low, which weakens pattern detection and coaching quality.");
-    recommendations.push("Add a two-line end-of-day journal recap to make tomorrow's coaching more precise.");
+    recommendations.push("Mark each study session done/skipped right away to keep plans honest.");
   }
 
   if (metrics.goalsTracked > 0 && metrics.goalsCompletedToday === 0) {
-    risks.push("Goals are active but not being checked in today.");
-    recommendations.push("Pick one goal and complete a small measurable step before your next break.");
+    risks.push("Goals are set but no check-in today.");
+    recommendations.push("Pick one goal and do one small step before your next break.");
   }
 
   if (risks.length === 0) {
-    risks.push("No severe risk pattern is currently dominant; main opportunity is tighter consistency.");
-    recommendations.push("Keep momentum by planning tomorrow's top task tonight.");
+    risks.push("No major risk patterns right now — focus on building consistency.");
+    recommendations.push("Plan tomorrow's top task tonight to keep momentum.");
   }
 
   const summary =
     metrics.deadlinesDue === 0 && metrics.habitsTracked === 0 && metrics.goalsTracked === 0
-      ? `Not enough tracked activity in the last ${dataset.periodDays} days to infer strong patterns yet.`
-      : `Over the last ${dataset.periodDays} days, you completed ${metrics.deadlinesCompleted}/${metrics.deadlinesDue} deadlines, maintained ${metrics.averageHabitCompletion7d}% average habit consistency, and finished ${metrics.studySessionsDone}/${metrics.studySessionsPlanned} planned study sessions.`;
+      ? `Not enough tracked activity in the last ${dataset.periodDays} days to surface patterns yet.`
+      : `Over the last ${dataset.periodDays} days you completed ${metrics.deadlinesCompleted} of ${metrics.deadlinesDue} deadlines and hit your habits ${habitDaysHit}/7 days this week.`;
 
-  // Build fallback correlations from available cross-domain signals
+  // Build fallback correlations from cross-domain signals
   const correlations: string[] = [];
   const gymDays = dataset.nutritionHistory.filter((d) => d.gymCheckedIn);
   const nonGymDays = dataset.nutritionHistory.filter((d) => !d.gymCheckedIn);
@@ -285,14 +283,18 @@ function buildFallbackInsight(dataset: AnalyticsDataset): AnalyticsCoachInsight 
     const avgRestCal = Math.round(nonGymDays.reduce((s, d) => s + d.totals.calories, 0) / nonGymDays.length);
     if (avgGymCal !== avgRestCal) {
       correlations.push(
-        `Gym days average ${avgGymCal}kcal vs rest days at ${avgRestCal}kcal — ${avgGymCal > avgRestCal ? "higher intake aligns with training" : "lower intake on gym days may limit recovery"}.`
+        avgGymCal > avgRestCal
+          ? "You eat more on gym days — good, your training needs the fuel."
+          : "You're eating less on gym days — that might be limiting your recovery."
       );
     }
   }
   if (dataset.sleepHistory.length >= 2 && metrics.studySessionsPlanned > 0) {
     const avgSleep = dataset.sleepHistory.reduce((s, d) => s + d.totalSleepSeconds, 0) / dataset.sleepHistory.length / 3600;
     correlations.push(
-      `Average sleep of ${avgSleep.toFixed(1)}h alongside ${metrics.studyCompletionRate}% study completion — ${avgSleep >= 7 ? "adequate rest supports study follow-through" : "short sleep may be dragging study execution"}.`
+      avgSleep >= 7
+        ? "Sleep is decent — that's fueling your study output."
+        : "Short sleep may be dragging your study follow-through."
     );
   }
   if (dataset.bodyComp.length >= 2) {
@@ -300,11 +302,11 @@ function buildFallbackInsight(dataset: AnalyticsDataset): AnalyticsCoachInsight 
     const last = dataset.bodyComp[dataset.bodyComp.length - 1];
     const delta = last.weightKg - first.weightKg;
     correlations.push(
-      `Body weight moved ${delta > 0 ? "+" : ""}${delta.toFixed(1)}kg over the window while habit completion averaged ${metrics.averageHabitCompletion7d}%.`
+      `Weight moved ${delta > 0 ? "+" : ""}${delta.toFixed(1)}kg over the window — ${Math.abs(delta) < 0.3 ? "holding steady" : delta > 0 ? "trending up, check if that aligns with your bulk target" : "trending down, make sure you're eating enough to support training"}.`
     );
   }
   if (correlations.length === 0) {
-    correlations.push("Not enough cross-domain data to surface strong correlations yet — track nutrition, sleep, and workouts to unlock deeper insights.");
+    correlations.push("Track nutrition, sleep, and workouts to unlock cross-domain coaching insights.");
   }
 
   return {
@@ -314,14 +316,14 @@ function buildFallbackInsight(dataset: AnalyticsDataset): AnalyticsCoachInsight 
     generatedAt: nowIso(),
     source: "fallback",
     summary,
-    correlations: uniqueTrimmed(correlations, 5),
-    strengths: uniqueTrimmed(strengths, 5),
-    risks: uniqueTrimmed(risks, 5),
+    correlations: uniqueTrimmed(correlations, 3),
+    strengths: uniqueTrimmed(strengths, 3),
+    risks: uniqueTrimmed(risks, 3),
     recommendations: mergeListWithFallback(recommendations, [
-      "Define one non-negotiable study block for tomorrow before ending today.",
-      "Do a quick habit and goal check-in before bed to preserve streak awareness.",
-      "Prioritize tasks that are both urgent and high-impact before optional work."
-    ], 3, 5),
+      "Plan tomorrow's top task tonight.",
+      "Do a quick habit check-in before bed.",
+      "Prioritize what's both urgent and high-impact."
+    ], 3, 4),
     metrics
   };
 }
@@ -343,8 +345,10 @@ function buildPrompt(dataset: AnalyticsDataset): string {
   const habitLines = dataset.habits
     .slice(0, MAX_HABIT_SNIPPETS)
     .map(
-      (habit) =>
-        `- ${habit.name}: completion7d=${habit.completionRate7d}% streak=${habit.streak} today=${habit.todayCompleted ? "done" : "not-done"}`
+      (habit) => {
+        const daysHit = Math.round((habit.completionRate7d / 100) * 7);
+        return `- ${habit.name}: ${daysHit}/7 days this week, streak=${habit.streak}, today=${habit.todayCompleted ? "done" : "not-done"}`;
+      }
     )
     .join("\n");
 
@@ -399,44 +403,51 @@ function buildPrompt(dataset: AnalyticsDataset): string {
     .map((e) => `- ${e.startTime.slice(0, 10)} ${e.title} (${e.durationMinutes}min, ${e.workload})`)
     .join("\n");
 
-  return `You are Lucy's personal performance coach. You have deep expertise in habit psychology, academic productivity, nutrition, and fitness.
+  return `You are Lucy's personal performance coach. Analyze her last ${dataset.periodDays} days. Address her directly (you/your).
 
-Analyze Lucy's data from the last ${dataset.periodDays} days. Address her directly (you/your). Never say "the user" or "the student".
-
-Your coaching approach:
-- Look at the data holistically — notice how sleep, nutrition, gym habits, stress, and academic work affect each other
-- When you see patterns (e.g., poor sleep → skipped gym → lower study output), translate them into actionable coaching insights
-- Be warm, direct, and solution-oriented — like a trusted coach who genuinely cares
-- Lead with what's working, be honest about what isn't, and always offer a concrete next step
-- Don't just describe data — interpret it and suggest what to DO differently
+STYLE RULES (critical):
+- Be CONCISE. Each bullet should be 1-2 sentences max. No filler.
+- NEVER parrot raw numbers from the data back at Lucy. She can see the data herself. Instead, interpret what the numbers MEAN and what to DO about them.
+- BAD: "Your habit completion is 14% over 7 days" or "You sent 45 chat messages" — these are data points she already knows.
+- GOOD: "You hit the gym once this week — to build the momentum your lean bulk needs, showing up 4 days would be the minimum." — this interprets and advises.
+- Use natural counts: "4/6 days" not "67%". "2 of 3 deadlines" not "67% completion rate".
+- Write like a trusted coach who knows her, not a dashboard. Be warm but direct.
 
 IMPORTANT CONTEXT:
-- The "weightKg" in the nutrition target profile is Lucy's BASELINE/STARTING weight used to calculate macros (protein per lb, fat per lb). It is NOT a goal weight. Do not treat it as a weight target.
-- Nutrition data reflects EATEN meals only (meals marked as consumed). Planned/templated meals that haven't been eaten yet are excluded.
+- "weightKg" in nutrition targets is Lucy's BASELINE weight for macro calculation, NOT a goal weight.
+- Nutrition data reflects EATEN meals only (consumed, not planned templates).
 
 Return strict JSON only:
 {
-  "summary": "3-5 sentence coaching narrative. Weave in cross-domain observations naturally (e.g., how gym consistency affects energy for studying). Don't just list facts — connect them and coach.",
-  "correlations": ["3-5 coaching observations that connect different areas of Lucy's life. Frame as insights, not raw data points. E.g., 'Your gym sessions seem to energize your study focus the next day — protecting that routine matters.' NOT 'Gym days correlate with 20% higher study completion.'"],
-  "strengths": ["2-4 things Lucy is doing well, framed encouragingly"],
-  "risks": ["2-4 patterns to watch out for, framed as coaching warnings not alarms"],
-  "recommendations": ["3-5 specific, immediately actionable steps Lucy can take this week"]
+  "summary": "2-3 sentence coaching take on the period. Connect domains (sleep, gym, study, nutrition). Interpret, don't describe.",
+  "correlations": ["2-3 short insights connecting different life areas. Frame as coaching observations."],
+  "strengths": ["2-3 things going well. Be specific and encouraging."],
+  "risks": ["2-3 patterns to watch. Warm warnings, not alarms."],
+  "recommendations": ["3-4 specific, immediately actionable steps. Each one sentence."],
+  "challenges": [
+    {"type": "connect|predict|reflect|commit", "question": "A short interactive prompt that makes Lucy think actively", "hint": "Optional hint to guide thinking"}
+  ]
 }
+
+Challenge types:
+- "connect": Ask Lucy to draw a connection between two data points (e.g., "What happened on the days you skipped the gym? Look at your sleep.")
+- "predict": Ask Lucy to predict an outcome (e.g., "If you hit 4 gym sessions next week, what do you think happens to your energy levels?")
+- "reflect": A reflection question (e.g., "What's the one thing that would make tomorrow's meal prep easier?")
+- "commit": A micro-commitment (e.g., "Name one meal you'll prep tonight for tomorrow.")
+
+Include 2-3 challenges. They should feel like a coach prompting active thinking, not a quiz.
 
 Rules:
 - No markdown. No extra keys.
-- Write like a personal coach, not a data analyst. Observations should feel like insights from someone who knows Lucy, not a spreadsheet.
-- If a pattern connects two domains (sleep+study, nutrition+gym, stress+deadlines), mention the connection naturally in your coaching.
-- Never truncate or cut off sentences — complete every thought fully.
+- Never truncate or cut off sentences.
+- Keep total output SHORT. Quality over quantity.
 
-Aggregate metrics:
-- deadlinesDue=${dataset.metrics.deadlinesDue} completed=${dataset.metrics.deadlinesCompleted}
-- openHighPriority=${dataset.metrics.openHighPriorityDeadlines}
-- habits=${dataset.metrics.habitsTracked} avgCompletion7d=${dataset.metrics.averageHabitCompletion7d}%
-- goals=${dataset.metrics.goalsTracked}
-- studySessions=${dataset.metrics.studySessionsDone}/${dataset.metrics.studySessionsPlanned} (${dataset.metrics.studyCompletionRate}%)
-- energy=${dataset.metrics.dominantEnergy ?? "unknown"} stress=${dataset.metrics.dominantStress ?? "unknown"}
-- reflections=${dataset.metrics.reflectionEntries}
+Data:
+- Deadlines: ${dataset.metrics.deadlinesDue} due, ${dataset.metrics.deadlinesCompleted} completed, ${dataset.metrics.openHighPriorityDeadlines} high-priority upcoming
+- Habits: ${dataset.metrics.habitsTracked} tracked
+- Goals: ${dataset.metrics.goalsTracked} tracked
+- Study: ${dataset.metrics.studySessionsDone}/${dataset.metrics.studySessionsPlanned} sessions
+- Energy: ${dataset.metrics.dominantEnergy ?? "unknown"}, Stress: ${dataset.metrics.dominantStress ?? "unknown"}
 
 Deadlines:
 ${deadlineLines || "- none"}
@@ -450,7 +461,7 @@ ${habitLines || "- none"}
 Goals:
 ${goalLines || "- none"}
 
-Nutrition (daily):
+Nutrition (daily, eaten only):
 ${nutritionLines || "- no nutrition data"}
 
 Body composition:
@@ -507,16 +518,30 @@ function parseInsightJson(raw: string): ParsedCoachInsight | null {
     ? record.recommendations.filter((value): value is string => typeof value === "string")
     : [];
 
+  const VALID_CHALLENGE_TYPES = new Set(["connect", "predict", "reflect", "commit"]);
+  const challenges: ChallengePrompt[] = Array.isArray(record.challenges)
+    ? (record.challenges as unknown[])
+        .filter((c): c is Record<string, unknown> => typeof c === "object" && c !== null)
+        .filter((c) => typeof c.type === "string" && VALID_CHALLENGE_TYPES.has(c.type) && typeof c.question === "string")
+        .map((c) => ({
+          type: c.type as ChallengePrompt["type"],
+          question: enforceSecondPersonVoice(String(c.question)),
+          ...(typeof c.hint === "string" ? { hint: c.hint } : {})
+        }))
+        .slice(0, 3)
+    : [];
+
   if (!summary) {
     return null;
   }
 
   return {
     summary: enforceSecondPersonVoice(summary),
-    correlations: uniqueTrimmed(correlations.map((item) => enforceSecondPersonVoice(item)), 5),
-    strengths: uniqueTrimmed(strengths.map((item) => enforceSecondPersonVoice(item)), 5),
-    risks: uniqueTrimmed(risks.map((item) => enforceSecondPersonVoice(item)), 5),
-    recommendations: uniqueTrimmed(recommendations.map((item) => enforceSecondPersonVoice(item)), 5)
+    correlations: uniqueTrimmed(correlations.map((item) => enforceSecondPersonVoice(item)), 3),
+    strengths: uniqueTrimmed(strengths.map((item) => enforceSecondPersonVoice(item)), 3),
+    risks: uniqueTrimmed(risks.map((item) => enforceSecondPersonVoice(item)), 3),
+    recommendations: uniqueTrimmed(recommendations.map((item) => enforceSecondPersonVoice(item)), 4),
+    challenges
   };
 }
 
@@ -538,7 +563,7 @@ export async function generateAnalyticsCoachInsight(
   try {
     const response = await gemini.generateChatResponse({
       systemInstruction:
-        "You are Lucy's personal performance coach — warm, direct, and insight-driven. You notice patterns across all domains of her life and translate them into actionable coaching. Return strict JSON only, grounded exclusively in provided data, and address Lucy directly in second person. Never truncate your output.",
+        "You are Lucy's personal performance coach — warm, direct, concise. Interpret data into coaching insights. NEVER parrot raw statistics back. Return strict JSON only. Address Lucy in second person. Never truncate.",
       messages: [
         {
           role: "user",
@@ -556,10 +581,11 @@ export async function generateAnalyticsCoachInsight(
         generatedAt: nowIso(),
         source: "gemini",
         summary: enforceSecondPersonVoice(parsed.summary),
-        correlations: mergeListWithFallback(parsed.correlations, fallback.correlations, 2, 5),
-        strengths: mergeListWithFallback(parsed.strengths, fallback.strengths, 2, 5),
-        risks: mergeListWithFallback(parsed.risks, fallback.risks, 2, 5),
-        recommendations: mergeListWithFallback(parsed.recommendations, fallback.recommendations, 3, 5)
+        correlations: mergeListWithFallback(parsed.correlations, fallback.correlations, 2, 3),
+        strengths: mergeListWithFallback(parsed.strengths, fallback.strengths, 2, 3),
+        risks: mergeListWithFallback(parsed.risks, fallback.risks, 2, 3),
+        recommendations: mergeListWithFallback(parsed.recommendations, fallback.recommendations, 3, 4),
+        challenges: parsed.challenges.length > 0 ? parsed.challenges : undefined
       };
     }
   } catch {

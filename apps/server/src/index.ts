@@ -679,7 +679,10 @@ app.get("/api/growth/daily-summary", async (req, res) => {
 
   // Build Gemini prompt for cross-domain reasoning
   const habitLines = habits
-    .map((h) => `- ${h.name}: ${h.todayCompleted ? "done" : "not done"}, streak=${h.streak}${h.streakGraceUsed ? " (grace)" : ""}, 7d rate=${h.completionRate7d}%`)
+    .map((h) => {
+      const daysHit = Math.round((h.completionRate7d / 100) * 7);
+      return `- ${h.name}: ${h.todayCompleted ? "done" : "not done"}, ${daysHit}/7 days this week, streak=${h.streak}${h.streakGraceUsed ? " (grace)" : ""}`;
+    })
     .join("\n");
 
   const goalLines = goals
@@ -717,6 +720,7 @@ app.get("/api/growth/daily-summary", async (req, res) => {
 
   let summary: string;
   let highlights: string[];
+  let challenges: import("./types.js").ChallengePrompt[] | undefined;
 
   if (!dataAvailable) {
     summary = "No data yet today. Share an update, log a meal, or check in on a habit so I can start connecting the dots.";
@@ -725,63 +729,72 @@ app.get("/api/growth/daily-summary", async (req, res) => {
     const gemini = getGeminiClient();
     if (gemini.isConfigured()) {
       try {
-        const prompt = `Write a daily reflection for Lucy for ${dateKey}.
-Address Lucy directly (you/your). Be warm, encouraging, and honest — like a personal coach who genuinely cares.
+        const prompt = `Write a daily coaching reflection for Lucy for ${dateKey}.
+Address Lucy directly (you/your). Be warm, concise, and honest.
+
+STYLE RULES (critical):
+- Be CONCISE. The summary should be 2-3 sentences. Each highlight should be 1 sentence.
+- NEVER parrot raw numbers from the data. She can see the data herself. Interpret what the data MEANS.
+- BAD: "You logged 45 chat messages and 43 journal entries" — she knows that.
+- GOOD: "Your planning energy today was intense — now channel it into execution." — this interprets.
+- Use natural counts: "4/6 days" not "67%".
+- Write like a trusted coach, not a dashboard.
 
 Return strict JSON only:
 {
-  "summary": "3-5 sentence coaching narrative about the day. Weave in how different areas connect (nutrition, gym, habits, energy, study). Don't just list facts — coach.",
-  "highlights": ["3-5 coaching insights that help Lucy understand what's working and what to adjust. Complete sentences, no truncation."]
+  "summary": "2-3 sentence coaching take on the day. Connect domains naturally. Interpret, don't describe.",
+  "highlights": ["2-3 short coaching insights — one sentence each, actionable."],
+  "challenges": [
+    {"type": "connect|predict|reflect|commit", "question": "Short interactive prompt that makes Lucy think", "hint": "Optional"}
+  ]
 }
 
-IMPORTANT CONTEXT:
-- The "weightKg" in the nutrition target profile is Lucy's BASELINE/STARTING weight for macro calculation, NOT a goal weight.
-- Nutrition numbers reflect ONLY meals marked as eaten. Pre-planned template meals that haven't been eaten yet are excluded.
-- "meals eaten of X planned" means some meals are still templates waiting to be consumed.
+Challenge types:
+- "connect": Draw a connection ("What happened differently on days you hit the gym vs days you didn't?")
+- "predict": Predict an outcome ("If you eat all 5 meals tomorrow, how do you think your energy will be at the gym?")
+- "reflect": Reflection prompt ("What's the one thing that would make tomorrow easier?")
+- "commit": Micro-commitment ("Name one meal you'll prep tonight.")
 
-Rules:
-- Write like a personal coach, not a data analyst
-- When you see connections across domains, express them as coaching advice
-- Note patterns (streak health, consistency trends)
-- Flag risks warmly — as things to watch, not alarms
-- Never truncate or cut off sentences — complete every thought fully
-- No markdown, no extra keys
+Include 1-2 challenges. They should feel like a coach prompting active thinking.
+
+CONTEXT:
+- "weightKg" in nutrition targets is Lucy's BASELINE weight for macros, NOT a goal weight.
+- Nutrition reflects ONLY eaten meals, not pre-planned templates.
 
 Today's data:
 
-Nutrition:
-${nutritionLine}
-
-Body composition:
-${bodyCompLine}
-
-Habits (${habits.length}):
-${habitLines || "- none"}
-
-Goals (${goals.length}):
-${goalLines || "- none"}
-
-Schedule:
-${scheduleLines || "- no events"}
-
-Journal entries (${reflections.length}):
-${reflectionLines || "- none"}
-
-Chat messages today: ${chats.length}`;
+Nutrition: ${nutritionLine}
+Body: ${bodyCompLine}
+Habits: ${habitLines || "none"}
+Goals: ${goalLines || "none"}
+Schedule: ${scheduleLines || "no events"}
+Journal (${reflections.length}): ${reflectionLines || "none"}`;
 
         const response = await gemini.generateChatResponse({
-          systemInstruction: "You are Lucy's personal performance coach — warm, direct, and insight-driven. Return strict JSON only. Never truncate your output. Complete every sentence fully.",
+          systemInstruction: "You are Lucy's personal performance coach — warm, direct, concise. Interpret data into coaching. NEVER parrot raw statistics. Return strict JSON only. Never truncate.",
           messages: [{ role: "user", parts: [{ text: prompt }] }]
         });
 
         const raw = response.text.trim();
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          const parsed2 = JSON.parse(jsonMatch[0]) as { summary?: string; highlights?: string[] };
+          const parsed2 = JSON.parse(jsonMatch[0]) as { summary?: string; highlights?: string[]; challenges?: unknown[] };
           summary = typeof parsed2.summary === "string" ? parsed2.summary : "";
           highlights = Array.isArray(parsed2.highlights)
-            ? parsed2.highlights.filter((h): h is string => typeof h === "string").slice(0, 5)
+            ? parsed2.highlights.filter((h): h is string => typeof h === "string").slice(0, 3)
             : [];
+          const VALID_TYPES = new Set(["connect", "predict", "reflect", "commit"]);
+          challenges = Array.isArray(parsed2.challenges)
+            ? (parsed2.challenges as Array<Record<string, unknown>>)
+                .filter((c) => typeof c === "object" && c !== null && typeof c.type === "string" && VALID_TYPES.has(c.type as string) && typeof c.question === "string")
+                .map((c) => ({
+                  type: c.type as import("./types.js").ChallengePrompt["type"],
+                  question: String(c.question),
+                  ...(typeof c.hint === "string" ? { hint: c.hint } : {})
+                }))
+                .slice(0, 2)
+            : undefined;
+          if (challenges && challenges.length === 0) challenges = undefined;
         } else {
           summary = buildFallbackSummary(reflections.length, habits, goals);
           highlights = buildFallbackHighlights(reflections);
@@ -801,6 +814,7 @@ Chat messages today: ${chats.length}`;
     generatedAt: nowIso(),
     summary,
     highlights,
+    ...(challenges ? { challenges } : {}),
     journalEntryCount: reflections.length,
     reflectionEntryCount: reflections.length,
     chatMessageCount: chats.length

@@ -6,7 +6,7 @@ import {
   toggleHabitCheckIn,
   toggleGoalCheckIn
 } from "../lib/api";
-import { Goal, Habit, DailyGrowthSummary } from "../types";
+import { Goal, Habit, DailyGrowthSummary, ChallengePrompt } from "../types";
 import { hapticSuccess } from "../lib/haptics";
 
 interface BusyState {
@@ -194,9 +194,6 @@ export function HabitsGoalsView(): JSX.Element {
                 </figcaption>
               </figure>
             )}
-            <p className="daily-summary-meta">
-              {dailySummary.chatMessageCount} chat notes
-            </p>
             <p className="daily-summary-text">{dailySummary.summary}</p>
             {dailySummary.highlights.length > 0 && (
               <ul className="daily-summary-list">
@@ -204,6 +201,20 @@ export function HabitsGoalsView(): JSX.Element {
                   <li key={`${item}-${index}`}>{item}</li>
                 ))}
               </ul>
+            )}
+            {dailySummary.challenges && dailySummary.challenges.length > 0 && (
+              <div className="daily-summary-challenges">
+                {dailySummary.challenges.map((c: ChallengePrompt, i: number) => (
+                  <div key={i} className="challenge-card challenge-card-compact">
+                    <div className="challenge-header">
+                      <span className="challenge-icon">{c.type === "connect" ? "🔗" : c.type === "predict" ? "🔮" : c.type === "reflect" ? "💭" : "✊"}</span>
+                      <span className="challenge-type">{c.type === "connect" ? "Connect" : c.type === "predict" ? "Predict" : c.type === "reflect" ? "Reflect" : "Commit"}</span>
+                    </div>
+                    <p className="challenge-question">{c.question}</p>
+                    {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
+                  </div>
+                ))}
+              </div>
             )}
           </>
         )}
