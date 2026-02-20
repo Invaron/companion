@@ -2,6 +2,67 @@ import { Fragment, ReactNode, useEffect, useRef, useState } from "react";
 import { sendChatMessageStream, getChatHistory } from "../lib/api";
 import { ChatCitation, ChatImageAttachment, ChatMessage, ChatMood, ChatPendingAction } from "../types";
 
+const MOOD_PARTICLES: Record<Exclude<ChatMood, "neutral">, { emojis: string[]; count: number }> = {
+  encouraging: { emojis: ["💪", "⭐", "🔥", "✨", "🚀"], count: 14 },
+  focused: { emojis: ["🎯", "🧠", "💡", "⚡", "🔵"], count: 12 },
+  celebratory: { emojis: ["🎉", "🥳", "🎊", "✨", "⭐", "🌟", "💫"], count: 20 },
+  empathetic: { emojis: ["💜", "💛", "🤗", "🫂", "💗"], count: 12 },
+  urgent: { emojis: ["⏰", "⚡", "🔴", "❗", "🏃"], count: 10 }
+};
+
+interface Particle {
+  id: number;
+  emoji: string;
+  x: number;
+  delay: number;
+  duration: number;
+  size: number;
+  drift: number;
+}
+
+function MoodBurst({ mood }: { mood: ChatMood }): ReactNode {
+  const [particles, setParticles] = useState<Particle[]>([]);
+
+  useEffect(() => {
+    if (mood === "neutral") return;
+    const config = MOOD_PARTICLES[mood];
+    const spawned: Particle[] = Array.from({ length: config.count }, (_, i) => ({
+      id: i,
+      emoji: config.emojis[Math.floor(Math.random() * config.emojis.length)],
+      x: Math.random() * 100,
+      delay: Math.random() * 0.4,
+      duration: 1.2 + Math.random() * 0.8,
+      size: 16 + Math.random() * 14,
+      drift: (Math.random() - 0.5) * 60
+    }));
+    setParticles(spawned);
+    const timer = setTimeout(() => setParticles([]), 2400);
+    return () => clearTimeout(timer);
+  }, [mood]);
+
+  if (particles.length === 0) return null;
+
+  return (
+    <div className="mood-burst-overlay" aria-hidden="true">
+      {particles.map((p) => (
+        <span
+          key={p.id}
+          className="mood-burst-particle"
+          style={{
+            left: `${p.x}%`,
+            fontSize: `${p.size}px`,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+            "--drift": `${p.drift}px`
+          } as React.CSSProperties}
+        >
+          {p.emoji}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function getSpeechRecognitionCtor(): (new () => SpeechRecognition) | null {
   if (typeof window === "undefined") return null;
   const speechWindow = window as Window & { webkitSpeechRecognition?: typeof SpeechRecognition };
@@ -664,25 +725,20 @@ export function ChatView(): JSX.Element {
     { label: "Study tips", prompt: "Any tips for staying on top of my studies?" }
   ];
 
-  const moodIndicator: Record<ChatMood, { emoji: string; label: string } | null> = {
-    neutral: null,
-    encouraging: { emoji: "💪", label: "Encouraging" },
-    focused: { emoji: "🎯", label: "Focused" },
-    celebratory: { emoji: "🎉", label: "Celebratory" },
-    empathetic: { emoji: "💜", label: "Empathetic" },
-    urgent: { emoji: "⏰", label: "Urgent" }
-  };
+  // Track mood changes to trigger burst only on transitions
+  const prevMoodRef = useRef<ChatMood>(chatMood);
+  const [burstMood, setBurstMood] = useState<ChatMood>("neutral");
 
-  const activeMoodInfo = moodIndicator[chatMood];
+  useEffect(() => {
+    if (chatMood !== prevMoodRef.current && chatMood !== "neutral") {
+      setBurstMood(chatMood);
+    }
+    prevMoodRef.current = chatMood;
+  }, [chatMood]);
 
   return (
     <div className={`chat-view chat-mood-${chatMood}`}>
-      {activeMoodInfo && (
-        <div className="chat-mood-indicator" key={chatMood}>
-          <span className="chat-mood-indicator-emoji">{activeMoodInfo.emoji}</span>
-          <span className="chat-mood-indicator-label">{activeMoodInfo.label}</span>
-        </div>
-      )}
+      <MoodBurst mood={burstMood} />
       <div className="chat-messages" ref={messagesContainerRef}>
         {messages.length === 0 && (
           <div className="chat-welcome">
