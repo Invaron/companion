@@ -31,9 +31,6 @@ function toCitationTarget(citation: ChatCitation): CitationLinkTarget {
       return { tab: "habits" };
     case "email":
       return { tab: "settings", section: "integrations" };
-    case "social-youtube":
-    case "social-x":
-      return { tab: "settings", section: "integrations" };
     case "github-course-doc":
       return { tab: "settings", section: "integrations" };
     default:
@@ -667,8 +664,25 @@ export function ChatView(): JSX.Element {
     { label: "Study tips", prompt: "Any tips for staying on top of my studies?" }
   ];
 
+  const moodIndicator: Record<ChatMood, { emoji: string; label: string } | null> = {
+    neutral: null,
+    encouraging: { emoji: "💪", label: "Encouraging" },
+    focused: { emoji: "🎯", label: "Focused" },
+    celebratory: { emoji: "🎉", label: "Celebratory" },
+    empathetic: { emoji: "💜", label: "Empathetic" },
+    urgent: { emoji: "⏰", label: "Urgent" }
+  };
+
+  const activeMoodInfo = moodIndicator[chatMood];
+
   return (
     <div className={`chat-view chat-mood-${chatMood}`}>
+      {activeMoodInfo && (
+        <div className="chat-mood-indicator" key={chatMood}>
+          <span className="chat-mood-indicator-emoji">{activeMoodInfo.emoji}</span>
+          <span className="chat-mood-indicator-label">{activeMoodInfo.label}</span>
+        </div>
+      )}
       <div className="chat-messages" ref={messagesContainerRef}>
         {messages.length === 0 && (
           <div className="chat-welcome">

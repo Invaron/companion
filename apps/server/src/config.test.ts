@@ -104,7 +104,6 @@ describe("config", () => {
       process.env.NOTES_PROVIDER = "local";
       process.env.ASSIGNMENT_PROVIDER = "manual";
       process.env.FOOD_PROVIDER = "manual";
-      process.env.SOCIAL_PROVIDER = "manual";
       process.env.VIDEO_PROVIDER = "manual";
 
       const { config } = await import("./config.js");
@@ -112,7 +111,6 @@ describe("config", () => {
       expect(config.NOTES_PROVIDER).toBe("local");
       expect(config.ASSIGNMENT_PROVIDER).toBe("manual");
       expect(config.FOOD_PROVIDER).toBe("manual");
-      expect(config.SOCIAL_PROVIDER).toBe("manual");
       expect(config.VIDEO_PROVIDER).toBe("manual");
     });
 
@@ -203,7 +201,6 @@ describe("config", () => {
       process.env.AXIS_NOTES_PROVIDER = "local";
       process.env.AXIS_ASSIGNMENT_PROVIDER = "manual";
       process.env.AXIS_FOOD_PROVIDER = "manual";
-      process.env.AXIS_SOCIAL_PROVIDER = "manual";
       process.env.AXIS_VIDEO_PROVIDER = "manual";
 
       const { config } = await import("./config.js");
@@ -217,7 +214,6 @@ describe("config", () => {
       expect(config.NOTES_PROVIDER).toBe("local");
       expect(config.ASSIGNMENT_PROVIDER).toBe("manual");
       expect(config.FOOD_PROVIDER).toBe("manual");
-      expect(config.SOCIAL_PROVIDER).toBe("manual");
       expect(config.VIDEO_PROVIDER).toBe("manual");
     });
 

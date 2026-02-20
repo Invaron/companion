@@ -414,8 +414,6 @@ export type ChatCitationType =
   | "email"
   | "withings-weight"
   | "withings-sleep"
-  | "social-youtube"
-  | "social-x"
   | "github-course-doc";
 
 export interface ChatCitation {
@@ -697,99 +695,4 @@ export interface IntegrationHealthSummary {
     lastSuccessAt: string | null;
     failuresByRootCause: Record<IntegrationSyncRootCause, number>;
   }>;
-}
-
-export interface SocialVideo {
-  id: string;
-  channelId: string;
-  channelTitle: string;
-  title: string;
-  description: string;
-  publishedAt: string;
-  thumbnailUrl: string;
-  duration: string;
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-}
-
-export interface SocialTweet {
-  id: string;
-  text: string;
-  authorId: string;
-  authorUsername: string;
-  authorName: string;
-  createdAt: string;
-  likeCount: number;
-  retweetCount: number;
-  replyCount: number;
-  conversationId: string;
-}
-
-export interface SocialMediaFeed {
-  youtube: {
-    videos: SocialVideo[];
-    lastSyncedAt: string | null;
-  };
-  x: {
-    tweets: SocialTweet[];
-    lastSyncedAt: string | null;
-  };
-}
-
-export interface SocialMediaSyncStatus {
-  success: boolean;
-  channelsCount?: number;
-  videosCount?: number;
-  tweetsCount?: number;
-  error?: string;
-  errorCode?: string;
-  lastSyncedAt?: string | null;
-}
-
-export interface SocialMediaSyncResult {
-  youtube: SocialMediaSyncStatus;
-  x: SocialMediaSyncStatus;
-  syncedAt: string;
-}
-
-export interface ContentRecommendationTarget {
-  type: "deadline" | "lecture";
-  id: string;
-  course: string;
-  title: string;
-  dueDate?: string;
-  startTime?: string;
-  priority?: Priority;
-}
-
-export interface ContentRecommendationItem {
-  platform: "youtube" | "x";
-  id: string;
-  title: string;
-  description: string;
-  author: string;
-  url: string;
-  publishedAt: string;
-  engagement: number;
-}
-
-export interface ContentRecommendation {
-  id: string;
-  target: ContentRecommendationTarget;
-  content: ContentRecommendationItem;
-  score: number;
-  matchedKeywords: string[];
-  reason: string;
-}
-
-export interface ContentRecommendationsResponse {
-  generatedAt: string;
-  horizonDays: number;
-  summary: {
-    targetsConsidered: number;
-    candidatesConsidered: number;
-    recommendationsReturned: number;
-  };
-  recommendations: ContentRecommendation[];
 }

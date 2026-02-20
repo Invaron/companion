@@ -125,21 +125,6 @@ export const functionDeclarations: FunctionDeclaration[] = [
     }
   },
   {
-    name: "getSocialDigest",
-    description:
-      "Get recent social media content digest from YouTube subscriptions and X (Twitter) feed. Returns recent videos and tweets. Use this when user asks about social media updates, YouTube videos, or X posts from accounts they follow.",
-    parameters: {
-      type: SchemaType.OBJECT,
-      properties: {
-        daysBack: {
-          type: SchemaType.NUMBER,
-          description: "Number of days to look back for content (default: 3)"
-        }
-      },
-      required: []
-    }
-  },
-  {
     name: "getHabitsGoalsStatus",
     description:
       "Get current habits and goals progress. Returns streaks, completion rates, and whether today's check-ins are done.",
@@ -505,7 +490,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: "createNutritionCustomFood",
     description:
-      "Create a reusable custom food with per-unit macros. Use 'g' for foods measured by weight, 'ml' for liquids, 'ea' for items counted by quantity (e.g. eggs). All macro values should be per single unit.",
+      "Create a reusable custom food with per-unit macros. Use 'g' for foods measured by weight, 'ml' for liquids, 'ea' for items counted by quantity (e.g. eggs). All macro values should be per single unit. IMPORTANT: always set unitLabel to match the source data — do NOT default everything to 'g'.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -515,7 +500,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
         },
         unitLabel: {
           type: SchemaType.STRING,
-          description: "Measurement unit: 'g' (grams), 'ml' (millilitres), or 'ea' (each/quantity). Defaults to 'g'."
+          description: "REQUIRED. Measurement unit: 'g' (grams), 'ml' (millilitres), or 'ea' (each/quantity). Must match the unit from the source meal plan or recipe. For example, use 'ml' for milk/liquids, 'ea' for eggs/whole items, 'g' for foods measured by weight."
         },
         caloriesPerUnit: {
           type: SchemaType.NUMBER,
@@ -534,7 +519,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
           description: "Fat grams per unit."
         }
       },
-      required: ["name", "caloriesPerUnit"]
+      required: ["name", "caloriesPerUnit", "unitLabel"]
     }
   },
   {
@@ -1608,42 +1593,6 @@ export function handleGetWithingsHealthSummary(
     latestSleep: sleepSummary[0] ?? null,
     weight,
     sleepSummary
-  };
-}
-
-export function handleGetSocialDigest(
-  store: RuntimeStore,
-  args: Record<string, unknown> = {}
-): { youtube: unknown; x: unknown } {
-  const daysBack = (args.daysBack as number) ?? 3;
-  const now = new Date();
-  const cutoffTime = now.getTime() - daysBack * 24 * 60 * 60 * 1000;
-
-  // Get YouTube data
-  const youtubeData = store.getYouTubeData();
-  const recentVideos =
-    youtubeData?.videos.filter((video) => {
-      const publishedAt = new Date(video.publishedAt);
-      return !Number.isNaN(publishedAt.getTime()) && publishedAt.getTime() >= cutoffTime;
-    }) ?? [];
-
-  // Get X data
-  const xData = store.getXData();
-  const recentTweets =
-    xData?.tweets.filter((tweet) => {
-      const createdAt = new Date(tweet.createdAt);
-      return !Number.isNaN(createdAt.getTime()) && createdAt.getTime() >= cutoffTime;
-    }) ?? [];
-
-  return {
-    youtube: {
-      videos: recentVideos.slice(0, 10),
-      total: recentVideos.length
-    },
-    x: {
-      tweets: recentTweets.slice(0, 10),
-      total: recentTweets.length
-    }
   };
 }
 
@@ -2736,7 +2685,7 @@ export function handleCreateNutritionCustomFood(
     return { error: "caloriesPerUnit is required." };
   }
 
-  const unitLabel = asTrimmedString(args.unitLabel) ?? "serving";
+  const unitLabel = asTrimmedString(args.unitLabel) ?? "g";
   const caloriesPerUnit = clampFloat(args.caloriesPerUnit, 0, 0, 10000, 3);
   const proteinGramsPerUnit = clampFloat(args.proteinGramsPerUnit, 0, 0, 1000, 3);
   const carbsGramsPerUnit = clampFloat(args.carbsGramsPerUnit, 0, 0, 1500, 3);
@@ -5023,9 +4972,6 @@ export function executeFunctionCall(
       break;
     case "getWithingsHealthSummary":
       response = handleGetWithingsHealthSummary(store, args);
-      break;
-    case "getSocialDigest":
-      response = handleGetSocialDigest(store, args);
       break;
     case "getHabitsGoalsStatus":
       response = handleGetHabitsGoalsStatus(store);

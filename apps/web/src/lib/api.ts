@@ -40,9 +40,6 @@ import {
   IntegrationHealthSummary,
   IntegrationSyncAttemptStatus,
   IntegrationSyncName,
-  SocialMediaFeed,
-  SocialMediaSyncResult,
-  ContentRecommendationsResponse,
   DailyGrowthSummary,
   AnalyticsCoachInsight
 } from "../types";
@@ -1242,33 +1239,6 @@ export async function getIntegrationHealthLog(options?: {
   } catch {
     return [];
   }
-}
-
-export async function getSocialMediaFeed(): Promise<SocialMediaFeed> {
-  return await jsonOrThrow<SocialMediaFeed>("/api/social-media");
-}
-
-export async function syncSocialMediaFeed(): Promise<SocialMediaSyncResult> {
-  return await jsonOrThrow<SocialMediaSyncResult>("/api/social-media/sync", {
-    method: "POST"
-  });
-}
-
-export async function getContentRecommendations(options?: {
-  horizonDays?: number;
-  limit?: number;
-}): Promise<ContentRecommendationsResponse> {
-  const params = new URLSearchParams();
-  if (options?.horizonDays !== undefined) {
-    params.set("horizonDays", String(options.horizonDays));
-  }
-  if (options?.limit !== undefined) {
-    params.set("limit", String(options.limit));
-  }
-
-  const query = params.toString();
-  const endpoint = query ? `/api/recommendations/content?${query}` : "/api/recommendations/content";
-  return await jsonOrThrow<ContentRecommendationsResponse>(endpoint);
 }
 
 export async function sendChatMessage(

@@ -657,19 +657,6 @@ export class RuntimeStore {
         lastSyncedAt TEXT
       );
 
-      CREATE TABLE IF NOT EXISTS youtube_data (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        channels TEXT NOT NULL DEFAULT '[]',
-        videos TEXT NOT NULL DEFAULT '[]',
-        lastSyncedAt TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS x_data (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        tweets TEXT NOT NULL DEFAULT '[]',
-        lastSyncedAt TEXT
-      );
-
       CREATE TABLE IF NOT EXISTS github_course_data (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         repositories TEXT NOT NULL DEFAULT '[]',
@@ -7121,89 +7108,6 @@ export class RuntimeStore {
       repositories: JSON.parse(row.repositories),
       documents: JSON.parse(row.documents),
       deadlinesSynced: row.deadlinesSynced ?? 0,
-      lastSyncedAt: row.lastSyncedAt
-    };
-  }
-
-  /**
-   * Set YouTube data
-   */
-  setYouTubeData(data: import("./types.js").YouTubeData): void {
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO youtube_data (
-        id, channels, videos, lastSyncedAt
-      ) VALUES (1, ?, ?, ?)
-    `);
-
-    stmt.run(
-      JSON.stringify(data.channels),
-      JSON.stringify(data.videos),
-      data.lastSyncedAt
-    );
-  }
-
-  /**
-   * Get YouTube data
-   */
-  getYouTubeData(): import("./types.js").YouTubeData | null {
-    const stmt = this.db.prepare(`
-      SELECT channels, videos, lastSyncedAt
-      FROM youtube_data WHERE id = 1
-    `);
-
-    const row = stmt.get() as {
-      channels: string;
-      videos: string;
-      lastSyncedAt: string | null;
-    } | undefined;
-
-    if (!row) {
-      return null;
-    }
-
-    return {
-      channels: JSON.parse(row.channels),
-      videos: JSON.parse(row.videos),
-      lastSyncedAt: row.lastSyncedAt
-    };
-  }
-
-  /**
-   * Set X data
-   */
-  setXData(data: import("./types.js").XData): void {
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO x_data (
-        id, tweets, lastSyncedAt
-      ) VALUES (1, ?, ?)
-    `);
-
-    stmt.run(
-      JSON.stringify(data.tweets),
-      data.lastSyncedAt
-    );
-  }
-
-  /**
-   * Get X data
-   */
-  getXData(): import("./types.js").XData | null {
-    const stmt = this.db.prepare(`
-      SELECT tweets, lastSyncedAt
-      FROM x_data WHERE id = 1
-    `);
-
-    const row = stmt.get() as {
-      tweets: string;
-      lastSyncedAt: string | null;
-    } | undefined;
-
-    if (!row) {
-      return null;
-    }
-
-    return {
-      tweets: JSON.parse(row.tweets),
       lastSyncedAt: row.lastSyncedAt
     };
   }

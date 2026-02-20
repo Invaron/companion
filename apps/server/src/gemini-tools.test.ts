@@ -6,7 +6,6 @@ import {
   handleGetDeadlines,
   handleGetEmails,
   handleGetWithingsHealthSummary,
-  handleGetSocialDigest,
   handleGetHabitsGoalsStatus,
   handleUpdateHabitCheckIn,
   handleUpdateGoalCheckIn,
@@ -84,12 +83,6 @@ describe("gemini-tools", () => {
       const getWithings = functionDeclarations.find((f) => f.name === "getWithingsHealthSummary");
       expect(getWithings).toBeDefined();
       expect(getWithings?.description).toContain("Withings");
-    });
-
-    it("should include getSocialDigest function", () => {
-      const getSocialDigest = functionDeclarations.find((f) => f.name === "getSocialDigest");
-      expect(getSocialDigest).toBeDefined();
-      expect(getSocialDigest?.description).toContain("social media");
     });
 
     it("should include habits and goals functions", () => {
@@ -445,26 +438,6 @@ describe("gemini-tools", () => {
       expect(result.latestSleep?.date).toBe("2026-02-17");
       expect(result.weight).toHaveLength(1);
       expect(result.sleepSummary).toHaveLength(1);
-    });
-  });
-
-  describe("handleGetSocialDigest", () => {
-    it("should return social media digest structure", () => {
-      const result = handleGetSocialDigest(store);
-
-      expect(result).toHaveProperty("youtube");
-      expect(result).toHaveProperty("x");
-      expect(result.youtube).toHaveProperty("videos");
-      expect(result.youtube).toHaveProperty("total");
-      expect(result.x).toHaveProperty("tweets");
-      expect(result.x).toHaveProperty("total");
-    });
-
-    it("should filter by daysBack parameter", () => {
-      const result = handleGetSocialDigest(store, { daysBack: 7 });
-
-      expect(result).toHaveProperty("youtube");
-      expect(result).toHaveProperty("x");
     });
   });
 
@@ -1284,14 +1257,6 @@ describe("gemini-tools", () => {
 
       expect(result.name).toBe("getEmails");
       expect(Array.isArray(result.response)).toBe(true);
-    });
-
-    it("should execute getSocialDigest function", () => {
-      const result = executeFunctionCall("getSocialDigest", { daysBack: 3 }, store);
-
-      expect(result.name).toBe("getSocialDigest");
-      expect(result.response).toHaveProperty("youtube");
-      expect(result.response).toHaveProperty("x");
     });
 
     it("should execute getHabitsGoalsStatus function", () => {

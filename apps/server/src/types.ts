@@ -72,8 +72,6 @@ export type ChatCitationType =
   | "email"
   | "withings-weight"
   | "withings-sleep"
-  | "social-youtube"
-  | "social-x"
   | "github-course-doc";
 
 export interface ChatCitation {
@@ -439,50 +437,6 @@ export interface StudyPlanAdherenceMetrics {
   skippedMinutes: number;
   pendingMinutes: number;
   checkInTrends: StudyPlanSessionCheckInTrends;
-}
-
-export type ContentRecommendationTargetType = "deadline" | "lecture";
-export type ContentRecommendationPlatform = "youtube" | "x";
-
-export interface ContentRecommendationTarget {
-  type: ContentRecommendationTargetType;
-  id: string;
-  course: string;
-  title: string;
-  dueDate?: string;
-  startTime?: string;
-  priority?: Priority;
-}
-
-export interface ContentRecommendationContent {
-  platform: ContentRecommendationPlatform;
-  id: string;
-  title: string;
-  description: string;
-  author: string;
-  url: string;
-  publishedAt: string;
-  engagement: number;
-}
-
-export interface ContentRecommendation {
-  id: string;
-  target: ContentRecommendationTarget;
-  content: ContentRecommendationContent;
-  score: number;
-  matchedKeywords: string[];
-  reason: string;
-}
-
-export interface ContentRecommendationsResult {
-  generatedAt: string;
-  horizonDays: number;
-  summary: {
-    targetsConsidered: number;
-    candidatesConsidered: number;
-    recommendationsReturned: number;
-  };
-  recommendations: ContentRecommendation[];
 }
 
 export type Cadence = "daily" | "weekly";
@@ -1077,44 +1031,4 @@ export interface WithingsSyncResult {
   weightsCount: number;
   sleepDaysCount: number;
   error?: string;
-}
-
-export interface YouTubeData {
-  channels: Array<{
-    id: string;
-    title: string;
-    description: string;
-    thumbnailUrl: string;
-    subscriberCount: number;
-  }>;
-  videos: Array<{
-    id: string;
-    channelId: string;
-    channelTitle: string;
-    title: string;
-    description: string;
-    publishedAt: string;
-    thumbnailUrl: string;
-    duration: string;
-    viewCount: number;
-    likeCount: number;
-    commentCount: number;
-  }>;
-  lastSyncedAt: string | null;
-}
-
-export interface XData {
-  tweets: Array<{
-    id: string;
-    text: string;
-    authorId: string;
-    authorUsername: string;
-    authorName: string;
-    createdAt: string;
-    likeCount: number;
-    retweetCount: number;
-    replyCount: number;
-    conversationId: string;
-  }>;
-  lastSyncedAt: string | null;
 }

@@ -1801,29 +1801,85 @@ button:disabled {
   transition: background 1.2s ease;
 }
 
-/* Chat mood backgrounds — subtle gradient shifts driven by Gemini response tone */
+/* Chat mood backgrounds — gradient shifts driven by Gemini response tone */
 .chat-view.chat-mood-neutral {
   background: var(--surface-soft);
 }
 
 .chat-view.chat-mood-encouraging {
-  background: linear-gradient(160deg, rgba(125, 211, 168, 0.08) 0%, var(--surface-soft) 60%);
+  background: linear-gradient(160deg, rgba(125, 211, 168, 0.18) 0%, rgba(125, 211, 168, 0.06) 50%, var(--surface-soft) 85%);
 }
 
 .chat-view.chat-mood-focused {
-  background: linear-gradient(160deg, rgba(100, 160, 240, 0.08) 0%, var(--surface-soft) 60%);
+  background: linear-gradient(160deg, rgba(100, 160, 240, 0.18) 0%, rgba(100, 160, 240, 0.06) 50%, var(--surface-soft) 85%);
 }
 
 .chat-view.chat-mood-celebratory {
-  background: linear-gradient(160deg, rgba(246, 195, 127, 0.10) 0%, rgba(125, 211, 168, 0.06) 50%, var(--surface-soft) 100%);
+  background: linear-gradient(160deg, rgba(246, 195, 127, 0.22) 0%, rgba(125, 211, 168, 0.10) 50%, var(--surface-soft) 100%);
 }
 
 .chat-view.chat-mood-empathetic {
-  background: linear-gradient(160deg, rgba(180, 140, 220, 0.08) 0%, var(--surface-soft) 60%);
+  background: linear-gradient(160deg, rgba(180, 140, 220, 0.18) 0%, rgba(180, 140, 220, 0.06) 50%, var(--surface-soft) 85%);
 }
 
 .chat-view.chat-mood-urgent {
-  background: linear-gradient(160deg, rgba(255, 138, 128, 0.08) 0%, var(--surface-soft) 60%);
+  background: linear-gradient(160deg, rgba(255, 138, 128, 0.18) 0%, rgba(255, 138, 128, 0.06) 50%, var(--surface-soft) 85%);
+}
+
+/* Floating mood indicator pill */
+.chat-mood-indicator {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 6px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+  font-size: 0.7rem;
+  color: var(--text-secondary, #666);
+  pointer-events: none;
+  animation: mood-fade-in 0.6s ease;
+}
+
+.chat-mood-indicator-emoji {
+  font-size: 0.8rem;
+}
+
+.chat-mood-indicator-label {
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+
+@keyframes mood-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mood-specific indicator tints */
+.chat-mood-encouraging .chat-mood-indicator {
+  background: rgba(125, 211, 168, 0.15);
+}
+.chat-mood-focused .chat-mood-indicator {
+  background: rgba(100, 160, 240, 0.15);
+}
+.chat-mood-celebratory .chat-mood-indicator {
+  background: rgba(246, 195, 127, 0.18);
+}
+.chat-mood-empathetic .chat-mood-indicator {
+  background: rgba(180, 140, 220, 0.15);
+}
+.chat-mood-urgent .chat-mood-indicator {
+  background: rgba(255, 138, 128, 0.15);
 }
 
 .app-shell-chat-active .chat-view {

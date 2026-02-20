@@ -9,7 +9,6 @@ import {
 } from "./gemini.js";
 import { FunctionDeclaration, Part, SchemaType } from "@google/generative-ai";
 import { functionDeclarations, executeFunctionCall, executePendingChatAction } from "./gemini-tools.js";
-import { generateContentRecommendations } from "./content-recommendations.js";
 import { RuntimeStore } from "./store.js";
 import {
   ChatCitation,
@@ -225,35 +224,6 @@ function buildWithingsContextSummary(store: RuntimeStore, now: Date = new Date()
   return parts.join("\n");
 }
 
-function buildContentRecommendationSummary(store: RuntimeStore, now: Date = new Date()): string {
-  const result = generateContentRecommendations(
-    store.getAcademicDeadlines(now),
-    store.getScheduleEvents(),
-    store.getYouTubeData(),
-    store.getXData(),
-    {
-      now,
-      horizonDays: 7,
-      limit: 3
-    }
-  );
-
-  if (result.recommendations.length === 0) {
-    return "";
-  }
-
-  const parts = ["**Recommended content for upcoming work:**"];
-  result.recommendations.slice(0, 3).forEach((recommendation) => {
-    const platform = recommendation.content.platform === "youtube" ? "YouTube" : "X";
-    const targetLabel = recommendation.target.type === "deadline"
-      ? `${recommendation.target.course} ${recommendation.target.title}`
-      : recommendation.target.title;
-    parts.push(`- ${platform}: ${recommendation.content.title} -> ${targetLabel}`);
-  });
-
-  return parts.join("\n");
-}
-
 function buildNutritionContextSummary(store: RuntimeStore, now: Date = new Date()): string {
   const summary = store.getNutritionDailySummary(now);
   if (summary.mealsLogged === 0) {
@@ -316,7 +286,6 @@ export function buildChatContext(store: RuntimeStore, now: Date = new Date(), hi
   const userState: UserContext = store.getUserContext();
   const canvasContext = buildCanvasContextSummary(store, now);
   const gmailContext = buildGmailContextSummary(store, now);
-  const recommendationContext = buildContentRecommendationSummary(store, now);
   const githubCourseContext = buildGitHubCourseContextSummary(store);
   const nutritionContext = buildNutritionContextSummary(store, now);
   const withingsContext = buildWithingsContextSummary(store, now);
@@ -328,7 +297,6 @@ export function buildChatContext(store: RuntimeStore, now: Date = new Date(), hi
     customContext: [
       canvasContext,
       gmailContext,
-      recommendationContext,
       githubCourseContext,
       nutritionContext,
       withingsContext
@@ -1457,58 +1425,6 @@ function buildWithingsFallbackSection(response: unknown): string | null {
   return lines.join("\n");
 }
 
-function buildSocialFallbackSection(response: unknown): string | null {
-  const payload = asRecord(response);
-  if (!payload) {
-    return null;
-  }
-
-  const youtube = asRecord(payload.youtube);
-  const videos = Array.isArray(youtube?.videos) ? youtube.videos : [];
-  const x = asRecord(payload.x);
-  const tweets = Array.isArray(x?.tweets) ? x.tweets : [];
-
-  const sections: string[] = [];
-  if (videos.length > 0) {
-    const lines = [`Recent YouTube videos (${videos.length}):`];
-    videos.slice(0, 3).forEach((value) => {
-      const record = asRecord(value);
-      if (!record) {
-        return;
-      }
-      const title = asNonEmptyString(record.title) ?? "Untitled video";
-      const channel = asNonEmptyString(record.channelTitle);
-      lines.push(`- ${channel ? `${channel}: ` : ""}${textSnippet(title, 100)}`);
-    });
-    if (videos.length > 3) {
-      lines.push(`- +${videos.length - 3} more`);
-    }
-    sections.push(lines.join("\n"));
-  }
-
-  if (tweets.length > 0) {
-    const lines = [`Recent X posts (${tweets.length}):`];
-    tweets.slice(0, 3).forEach((value) => {
-      const record = asRecord(value);
-      if (!record) {
-        return;
-      }
-      const author = asNonEmptyString(record.authorUsername);
-      const text = asNonEmptyString(record.text) ?? "";
-      lines.push(`- ${author ? `@${author}: ` : ""}${textSnippet(text, 100)}`);
-    });
-    if (tweets.length > 3) {
-      lines.push(`- +${tweets.length - 3} more`);
-    }
-    sections.push(lines.join("\n"));
-  }
-
-  if (sections.length === 0) {
-    return "Social media: no recent items found.";
-  }
-  return sections.join("\n");
-}
-
 function buildHabitsGoalsFallbackSection(response: unknown): string | null {
   const payload = asRecord(response);
   if (!payload) {
@@ -1814,9 +1730,6 @@ function buildToolDataFallbackReply(
         break;
       case "getWithingsHealthSummary":
         section = buildWithingsFallbackSection(result.rawResponse);
-        break;
-      case "getSocialDigest":
-        section = buildSocialFallbackSection(result.rawResponse);
         break;
       case "getHabitsGoalsStatus":
         section = buildHabitsGoalsFallbackSection(result.rawResponse);
@@ -2128,53 +2041,6 @@ function compactWithingsForModel(response: unknown): unknown {
       };
     }),
     truncated: weight.length > TOOL_RESULT_ITEM_LIMIT || sleepSummary.length > TOOL_RESULT_ITEM_LIMIT
-  };
-}
-
-function compactSocialDigestForModel(response: unknown): unknown {
-  const payload = asRecord(response);
-  if (!payload) {
-    return compactGenericValue(response);
-  }
-
-  const youtube = asRecord(payload.youtube);
-  const youtubeVideos = Array.isArray(youtube?.videos) ? youtube.videos : [];
-  const x = asRecord(payload.x);
-  const xTweets = Array.isArray(x?.tweets) ? x.tweets : [];
-
-  return {
-    youtube: {
-      total: typeof youtube?.total === "number" ? youtube.total : youtubeVideos.length,
-      videos: youtubeVideos.slice(0, TOOL_RESULT_ITEM_LIMIT).map((value) => {
-        const record = asRecord(value);
-        if (!record) {
-          return {};
-        }
-        return {
-          id: asNonEmptyString(record.id) ?? "",
-          channelTitle: compactTextValue(asNonEmptyString(record.channelTitle) ?? "", 60),
-          title: compactTextValue(asNonEmptyString(record.title) ?? "", 120),
-          publishedAt: asNonEmptyString(record.publishedAt) ?? null
-        };
-      }),
-      truncated: youtubeVideos.length > TOOL_RESULT_ITEM_LIMIT
-    },
-    x: {
-      total: typeof x?.total === "number" ? x.total : xTweets.length,
-      tweets: xTweets.slice(0, TOOL_RESULT_ITEM_LIMIT).map((value) => {
-        const record = asRecord(value);
-        if (!record) {
-          return {};
-        }
-        return {
-          id: asNonEmptyString(record.id) ?? "",
-          authorUsername: asNonEmptyString(record.authorUsername) ?? null,
-          text: compactTextValue(asNonEmptyString(record.text) ?? "", 180),
-          createdAt: asNonEmptyString(record.createdAt) ?? null
-        };
-      }),
-      truncated: xTweets.length > TOOL_RESULT_ITEM_LIMIT
-    }
   };
 }
 
@@ -2523,8 +2389,6 @@ function compactFunctionResponseForModel(functionName: string, response: unknown
       return compactEmailsForModel(response);
     case "getWithingsHealthSummary":
       return compactWithingsForModel(response);
-    case "getSocialDigest":
-      return compactSocialDigestForModel(response);
     case "getHabitsGoalsStatus":
       return compactHabitsGoalsForModel(response);
     case "updateHabitCheckIn":
@@ -2661,67 +2525,6 @@ function collectToolCitations(
   if (functionName === "getEmails") {
     // Do not emit email citations in chat UI; they appear as non-actionable repeated subjects.
     return [];
-  }
-
-  if (functionName === "getSocialDigest") {
-    const payload = asRecord(response);
-    if (!payload) {
-      return [];
-    }
-
-    const next: ChatCitation[] = [];
-    const youtube = asRecord(payload.youtube);
-    const videos = youtube?.videos;
-    if (Array.isArray(videos)) {
-      videos.forEach((value) => {
-        const record = asRecord(value);
-        if (!record) {
-          return;
-        }
-        const id = asNonEmptyString(record.id);
-        const title = asNonEmptyString(record.title);
-        const channelTitle = asNonEmptyString(record.channelTitle);
-        const publishedAt = asNonEmptyString(record.publishedAt);
-        if (!id || !title) {
-          return;
-        }
-        next.push({
-          id,
-          type: "social-youtube",
-          label: channelTitle ? `${channelTitle}: ${title}` : title,
-          timestamp: publishedAt ?? undefined
-        });
-      });
-    }
-
-    const x = asRecord(payload.x);
-    const tweets = x?.tweets;
-    if (Array.isArray(tweets)) {
-      tweets.forEach((value) => {
-        const record = asRecord(value);
-        if (!record) {
-          return;
-        }
-        const id = asNonEmptyString(record.id);
-        const text = asNonEmptyString(record.text);
-        const authorUsername = asNonEmptyString(record.authorUsername);
-        const createdAt = asNonEmptyString(record.createdAt);
-        if (!id || !text) {
-          return;
-        }
-        const label = authorUsername
-          ? `@${authorUsername}: ${textSnippet(text)}`
-          : textSnippet(text);
-        next.push({
-          id,
-          type: "social-x",
-          label,
-          timestamp: createdAt ?? undefined
-        });
-      });
-    }
-
-    return next;
   }
 
   if (functionName === "getHabitsGoalsStatus") {

@@ -25,16 +25,12 @@ import { fetchTPSchedule, diffScheduleEvents } from "./tp-sync.js";
 import { TPSyncService } from "./tp-sync-service.js";
 import { CanvasSyncService } from "./canvas-sync.js";
 import { GitHubCourseSyncService } from "./github-course-sync.js";
-import { YouTubeSyncService } from "./youtube-sync.js";
-import { XSyncService } from "./x-sync.js";
-import { SocialMediaSummarizer } from "./social-media-summarizer.js";
 import { GmailOAuthService } from "./gmail-oauth.js";
 import { GmailSyncService } from "./gmail-sync.js";
 import { WithingsOAuthService } from "./withings-oauth.js";
 import { WithingsSyncService } from "./withings-sync.js";
 import { buildStudyPlanCalendarIcs } from "./study-plan-export.js";
 import { generateWeeklyStudyPlan } from "./study-plan.js";
-import { generateContentRecommendations } from "./content-recommendations.js";
 import { generateAnalyticsCoachInsight } from "./analytics-coach.js";
 import {
   buildWeeklyGrowthSundayPushSummary,
@@ -140,8 +136,6 @@ const digestService = new EmailDigestService(store);
 const tpSyncService = new TPSyncService(store);
 const canvasSyncService = new CanvasSyncService(store);
 const githubCourseSyncService = new GitHubCourseSyncService(store);
-const youtubeSyncService = new YouTubeSyncService(store);
-const xSyncService = new XSyncService(store);
 const gmailOAuthService = new GmailOAuthService(store);
 const gmailSyncService = new GmailSyncService(store, gmailOAuthService);
 const withingsOAuthService = new WithingsOAuthService(store);
@@ -288,8 +282,6 @@ digestService.start();
 tpSyncService.start();
 canvasSyncService.start();
 githubCourseSyncService.start();
-youtubeSyncService.start();
-xSyncService.start();
 gmailSyncService.start();
 withingsSyncService.start();
 
@@ -1364,11 +1356,6 @@ const studyPlanSessionsQuerySchema = z.object({
 const studyPlanAdherenceQuerySchema = z.object({
   windowStart: z.string().datetime().optional(),
   windowEnd: z.string().datetime().optional()
-});
-
-const contentRecommendationsQuerySchema = z.object({
-  horizonDays: z.coerce.number().int().min(1).max(14).optional().default(7),
-  limit: z.coerce.number().int().min(1).max(25).optional().default(10)
 });
 
 const githubCourseContentQuerySchema = z.object({
@@ -2467,8 +2454,6 @@ app.get("/api/sync/status", (_req, res) => {
   const storage = storageDiagnostics();
   const canvasData = store.getCanvasData();
   const githubData = store.getGitHubCourseData();
-  const xData = store.getXData();
-  const youtubeData = store.getYouTubeData();
   const gmailData = store.getGmailData();
   const withingsData = store.getWithingsData();
   const geminiClient = getGeminiClient();
@@ -2508,18 +2493,6 @@ app.get("/api/sync/status", (_req, res) => {
       dailyLimit: null,
       rateLimitSource: "provider"
     },
-    youtube: {
-      lastSyncAt: youtubeData?.lastSyncedAt ?? null,
-      status: youtubeData ? "ok" : "not_synced",
-      videosTracked: youtubeData?.videos.length ?? 0,
-      quotaUsedToday: 0, // Will be tracked when quota tracking is implemented
-      quotaLimit: 10000
-    },
-    x: {
-      lastSyncAt: xData?.lastSyncedAt ?? null,
-      status: xData ? "ok" : "not_synced",
-      tweetsProcessed: xData?.tweets.length ?? 0
-    },
     gmail: {
       lastSyncAt: gmailData.lastSyncedAt,
       status: gmailConnection.connected ? "ok" : "not_connected",
@@ -2544,8 +2517,6 @@ app.get("/api/sync/status", (_req, res) => {
       tp: tpSyncService.getAutoHealingStatus(),
       canvas: canvasSyncService.getAutoHealingStatus(),
       github: githubCourseSyncService.getAutoHealingStatus(),
-      youtube: youtubeSyncService.getAutoHealingStatus(),
-      x: xSyncService.getAutoHealingStatus(),
       gmail: gmailSyncService.getAutoHealingStatus(),
       withings: withingsSyncService.getAutoHealingStatus()
     }
@@ -2792,84 +2763,6 @@ app.post("/api/canvas/sync", async (req, res) => {
   return res.json({
     ...result,
     recoveryPrompt
-  });
-});
-
-app.get("/api/x/status", (_req, res) => {
-  const xData = store.getXData();
-  return res.json({
-    lastSyncedAt: xData?.lastSyncedAt ?? null,
-    tweetsCount: xData?.tweets.length ?? 0
-  });
-});
-
-app.post("/api/x/sync", async (_req, res) => {
-  const result = await xSyncService.sync();
-  return res.json(result);
-});
-
-app.get("/api/social-media", (_req, res) => {
-  const youtubeData = store.getYouTubeData();
-  const xData = store.getXData();
-
-  return res.json({
-    youtube: {
-      videos: youtubeData?.videos ?? [],
-      lastSyncedAt: youtubeData?.lastSyncedAt ?? null
-    },
-    x: {
-      tweets: xData?.tweets ?? [],
-      lastSyncedAt: xData?.lastSyncedAt ?? null
-    }
-  });
-});
-
-app.get("/api/recommendations/content", (req, res) => {
-  const parsed = contentRecommendationsQuerySchema.safeParse(req.query ?? {});
-
-  if (!parsed.success) {
-    return res.status(400).json({ error: "Invalid recommendations query", issues: parsed.error.issues });
-  }
-
-  const result = generateContentRecommendations(
-    store.getAcademicDeadlines(),
-    store.getScheduleEvents(),
-    store.getYouTubeData(),
-    store.getXData(),
-    {
-      now: new Date(),
-      horizonDays: parsed.data.horizonDays,
-      limit: parsed.data.limit
-    }
-  );
-
-  return res.json(result);
-});
-
-app.post("/api/social-media/sync", async (_req, res) => {
-  const [youtubeResult, xResult] = await Promise.all([
-    youtubeSyncService.sync({ maxChannels: 20, maxVideosPerChannel: 5 }),
-    xSyncService.sync({ maxTweets: 40 })
-  ]);
-  const youtubeData = store.getYouTubeData();
-  const xData = store.getXData();
-
-  return res.json({
-    youtube: {
-      success: youtubeResult.success,
-      channelsCount: youtubeResult.channelsCount,
-      videosCount: youtubeResult.videosCount,
-      error: youtubeResult.error,
-      lastSyncedAt: youtubeData?.lastSyncedAt ?? null
-    },
-    x: {
-      success: xResult.success,
-      tweetsCount: xResult.tweetsCount,
-      error: xResult.error,
-      errorCode: xResult.errorCode,
-      lastSyncedAt: xData?.lastSyncedAt ?? null
-    },
-    syncedAt: new Date().toISOString()
   });
 });
 
@@ -3153,30 +3046,6 @@ app.get("/api/gmail/summary", (req, res) => {
   }
 });
 
-app.post("/api/social-media/digest", async (req, res) => {
-  const geminiClient = getGeminiClient();
-  
-  if (!geminiClient.isConfigured()) {
-    return res.status(503).json({ 
-      error: "Gemini API not configured. Set GEMINI_API_KEY environment variable." 
-    });
-  }
-
-  try {
-    const options = req.body;
-    const youtubeData = store.getYouTubeData();
-    const xData = store.getXData();
-
-    const summarizer = new SocialMediaSummarizer(geminiClient);
-    const digest = await summarizer.generateDigest(youtubeData, xData, options);
-
-    return res.json(digest);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return res.status(500).json({ error: `Failed to generate digest: ${errorMessage}` });
-  }
-});
-
 async function fetchCalendarIcs(url: string): Promise<string | null> {
   try {
     const response = await fetch(url);
@@ -3218,8 +3087,6 @@ const shutdown = (): void => {
   tpSyncService.stop();
   canvasSyncService.stop();
   githubCourseSyncService.stop();
-  youtubeSyncService.stop();
-  xSyncService.stop();
   gmailSyncService.stop();
   withingsSyncService.stop();
 
