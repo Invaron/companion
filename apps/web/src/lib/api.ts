@@ -1406,3 +1406,23 @@ export async function getChatHistory(page = 1, pageSize = 50): Promise<GetChatHi
     }
   };
 }
+
+export interface ScheduledReminder {
+  id: string;
+  title: string;
+  message: string;
+  icon: string | null;
+  priority: string;
+  scheduledFor: string;
+  createdAt: string;
+  recurrence: string | null;
+}
+
+export async function getScheduledReminders(): Promise<ScheduledReminder[]> {
+  const response = await jsonOrThrow<{ reminders: ScheduledReminder[] }>("/api/scheduled-notifications");
+  return response.reminders;
+}
+
+export async function cancelScheduledReminder(id: string): Promise<void> {
+  await jsonOrThrow<{ success: boolean }>(`/api/scheduled-notifications/${id}`, { method: "DELETE" });
+}

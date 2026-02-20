@@ -38,6 +38,8 @@ import {
   handleQueueCreateRoutinePreset,
   handleQueueUpdateRoutinePreset,
   handleScheduleReminder,
+  handleGetReminders,
+  handleCancelReminder,
   executePendingChatAction,
   executeFunctionCall
 } from "./gemini-tools.js";
@@ -52,8 +54,8 @@ describe("gemini-tools", () => {
   });
 
   describe("functionDeclarations", () => {
-    it("should define 45 function declarations", () => {
-      expect(functionDeclarations).toHaveLength(45);
+    it("should define 47 function declarations", () => {
+      expect(functionDeclarations).toHaveLength(47);
     });
 
     it("should include getSchedule function", () => {
@@ -1728,6 +1730,107 @@ describe("gemini-tools", () => {
 
       expect(result.name).toBe("scheduleReminder");
       expect(result.response).toHaveProperty("success", true);
+    });
+
+    it("supports recurrence parameter", () => {
+      const futureTime = new Date(Date.now() + 3600_000).toISOString();
+      const result = handleScheduleReminder(store, {
+        title: "Daily standup",
+        message: "Check in with the team",
+        scheduledFor: futureTime,
+        recurrence: "daily",
+        icon: "📋"
+      });
+
+      expect(result).toHaveProperty("success", true);
+      const scheduled = (result as { scheduledNotification: { recurrence?: string } }).scheduledNotification;
+      expect(scheduled.recurrence).toBe("daily");
+    });
+  });
+
+  describe("handleGetReminders", () => {
+    it("returns empty array when no reminders scheduled", () => {
+      const result = handleGetReminders(store);
+      expect(result.reminders).toEqual([]);
+    });
+
+    it("returns all scheduled reminders", () => {
+      const t1 = new Date(Date.now() + 3600_000).toISOString();
+      const t2 = new Date(Date.now() + 7200_000).toISOString();
+      handleScheduleReminder(store, {
+        title: "First",
+        message: "First reminder",
+        scheduledFor: t1,
+        icon: "1️⃣"
+      });
+      handleScheduleReminder(store, {
+        title: "Second",
+        message: "Second reminder",
+        scheduledFor: t2
+      });
+
+      const result = handleGetReminders(store);
+      expect(result.reminders).toHaveLength(2);
+      expect(result.reminders[0].title).toBe("First");
+      expect(result.reminders[0].icon).toBe("1️⃣");
+      expect(result.reminders[1].title).toBe("Second");
+    });
+  });
+
+  describe("handleCancelReminder", () => {
+    it("cancels by ID", () => {
+      const futureTime = new Date(Date.now() + 3600_000).toISOString();
+      const schedResult = handleScheduleReminder(store, {
+        title: "Cancel me",
+        message: "Should be cancelled",
+        scheduledFor: futureTime
+      });
+
+      const reminderId = (schedResult as { scheduledNotification: { id: string } }).scheduledNotification.id;
+      const cancelResult = handleCancelReminder(store, { reminderId });
+      expect(cancelResult).toHaveProperty("success", true);
+      expect((cancelResult as { title: string }).title).toBe("Cancel me");
+
+      // Should be gone
+      const remaining = handleGetReminders(store);
+      expect(remaining.reminders).toHaveLength(0);
+    });
+
+    it("cancels by title hint", () => {
+      const futureTime = new Date(Date.now() + 3600_000).toISOString();
+      handleScheduleReminder(store, {
+        title: "DAT520 lab deadline",
+        message: "Start the lab",
+        scheduledFor: futureTime
+      });
+
+      const result = handleCancelReminder(store, { titleHint: "dat520" });
+      expect(result).toHaveProperty("success", true);
+      expect((result as { title: string }).title).toBe("DAT520 lab deadline");
+    });
+
+    it("returns error when no match found", () => {
+      const result = handleCancelReminder(store, { titleHint: "nonexistent" });
+      expect(result).toHaveProperty("error");
+    });
+
+    it("returns error when no identifier provided", () => {
+      const result = handleCancelReminder(store, {});
+      expect(result).toHaveProperty("error");
+    });
+
+    it("works via executeFunctionCall", () => {
+      const futureTime = new Date(Date.now() + 3600_000).toISOString();
+      const schedResult = executeFunctionCall(
+        "scheduleReminder",
+        { title: "Test cancel", message: "To be cancelled", scheduledFor: futureTime },
+        store
+      );
+
+      const id = (schedResult.response as { scheduledNotification: { id: string } }).scheduledNotification.id;
+      const cancelResult = executeFunctionCall("cancelReminder", { reminderId: id }, store);
+      expect(cancelResult.name).toBe("cancelReminder");
+      expect(cancelResult.response).toHaveProperty("success", true);
     });
   });
 });

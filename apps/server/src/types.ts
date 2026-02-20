@@ -204,12 +204,15 @@ export interface EmailDigest {
   generatedAt: string;
 }
 
+export type ReminderRecurrence = "none" | "daily" | "weekly" | "monthly";
+
 export interface ScheduledNotification {
   id: string;
   notification: Omit<Notification, "id" | "timestamp">;
   scheduledFor: string;
   createdAt: string;
   eventId?: string;
+  recurrence?: ReminderRecurrence;
 }
 
 export interface AgentState {

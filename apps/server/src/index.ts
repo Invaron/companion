@@ -2606,6 +2606,30 @@ app.post("/api/notifications/snooze", (req, res) => {
   return res.json({ scheduled });
 });
 
+app.get("/api/scheduled-notifications", (_req, res) => {
+  const upcoming = store.getUpcomingScheduledNotifications();
+  return res.json({
+    reminders: upcoming.map((s) => ({
+      id: s.id,
+      title: s.notification.title,
+      message: s.notification.message,
+      icon: s.notification.icon ?? null,
+      priority: s.notification.priority,
+      scheduledFor: s.scheduledFor,
+      createdAt: s.createdAt,
+      recurrence: s.recurrence ?? null
+    }))
+  });
+});
+
+app.delete("/api/scheduled-notifications/:id", (req, res) => {
+  const removed = store.removeScheduledNotification(req.params.id);
+  if (!removed) {
+    return res.status(404).json({ error: "Scheduled notification not found" });
+  }
+  return res.json({ success: true });
+});
+
 app.post("/api/push/subscribe", (req, res) => {
   const parsed = pushSubscriptionSchema.safeParse(req.body ?? {});
 

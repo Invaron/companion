@@ -1,5 +1,6 @@
 import { ScheduleView } from "./ScheduleView";
 import { DeadlineList } from "./DeadlineList";
+import { RemindersWidget } from "./RemindersWidget";
 
 interface ScheduleTabProps {
   scheduleKey: string;
@@ -10,6 +11,7 @@ interface ScheduleTabProps {
 export function ScheduleTab({ scheduleKey, focusDeadlineId, focusLectureId }: ScheduleTabProps): JSX.Element {
   return (
     <div className="schedule-tab-container">
+      <RemindersWidget key={`reminders-${scheduleKey}`} />
       <div className="schedule-grid">
         <ScheduleView key={scheduleKey} focusLectureId={focusLectureId} />
         <DeadlineList key={`deadline-${scheduleKey}`} focusDeadlineId={focusDeadlineId} />

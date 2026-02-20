@@ -10,7 +10,7 @@ import {
   resolveNextDigestWindow
 } from "./notification-digest-batching.js";
 import { RuntimeStore } from "./store.js";
-import { AgentEvent } from "./types.js";
+import { AgentEvent, ScheduledNotification } from "./types.js";
 import { checkProactiveTriggersWithCooldown } from "./proactive-chat-triggers.js";
 
 export class OrchestratorRuntime {
@@ -175,6 +175,7 @@ export class OrchestratorRuntime {
 
     for (const scheduled of immediateNotifications) {
       this.store.pushNotification(scheduled.notification);
+      this.rescheduleIfRecurring(scheduled);
       this.store.removeScheduledNotification(scheduled.id);
     }
 
@@ -185,9 +186,50 @@ export class OrchestratorRuntime {
       }
 
       for (const scheduled of digestCandidates) {
+        this.rescheduleIfRecurring(scheduled);
         this.store.removeScheduledNotification(scheduled.id);
       }
     }
+  }
+
+  /**
+   * If a delivered notification has a recurrence, schedule the next occurrence
+   */
+  private rescheduleIfRecurring(scheduled: ScheduledNotification): void {
+    if (!scheduled.recurrence || scheduled.recurrence === "none") {
+      return;
+    }
+
+    const current = new Date(scheduled.scheduledFor);
+    let next: Date;
+
+    switch (scheduled.recurrence) {
+      case "daily":
+        next = new Date(current.getTime() + 24 * 60 * 60 * 1000);
+        break;
+      case "weekly":
+        next = new Date(current.getTime() + 7 * 24 * 60 * 60 * 1000);
+        break;
+      case "monthly": {
+        next = new Date(current);
+        next.setMonth(next.getMonth() + 1);
+        break;
+      }
+      default:
+        return;
+    }
+
+    // Don't reschedule if the next occurrence would be more than 1 year out
+    if (next.getTime() > Date.now() + 365 * 24 * 60 * 60 * 1000) {
+      return;
+    }
+
+    this.store.scheduleNotification(
+      scheduled.notification,
+      next,
+      scheduled.eventId,
+      scheduled.recurrence
+    );
   }
 
   /**

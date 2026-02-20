@@ -17,6 +17,7 @@ import {
   NutritionPlanSnapshot,
   NutritionMealType,
   ScheduledNotification,
+  ReminderRecurrence,
   WithingsSleepSummaryEntry,
   WithingsWeightEntry
 } from "./types.js";
@@ -1043,9 +1044,42 @@ export const functionDeclarations: FunctionDeclaration[] = [
         priority: {
           type: SchemaType.STRING,
           description: "Priority: low, medium, high, or critical (default: medium)"
+        },
+        recurrence: {
+          type: SchemaType.STRING,
+          description: "For repeating reminders: 'daily', 'weekly', or 'monthly'. Omit or 'none' for one-time reminders."
         }
       },
       required: ["title", "message", "scheduledFor"]
+    }
+  },
+  {
+    name: "getReminders",
+    description:
+      "List all upcoming scheduled reminders/notifications. Use this when the user asks about their reminders, or before cancelling one to find the ID.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: "cancelReminder",
+    description:
+      "Cancel/delete a scheduled reminder by ID. Use getReminders first to find the ID, or use titleHint to match by title. Use this when the user wants to remove or cancel a reminder they previously set.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        reminderId: {
+          type: SchemaType.STRING,
+          description: "The ID of the scheduled reminder to cancel (from getReminders)"
+        },
+        titleHint: {
+          type: SchemaType.STRING,
+          description: "Partial title match if ID is unknown — will cancel the first upcoming reminder containing this text"
+        }
+      },
+      required: []
     }
   },
   {
@@ -3983,6 +4017,12 @@ export function handleScheduleReminder(
 
   const icon = asTrimmedString(args.icon) ?? undefined;
 
+  const recurrenceRaw = asTrimmedString(args.recurrence)?.toLowerCase();
+  const recurrence: ReminderRecurrence =
+    recurrenceRaw === "daily" || recurrenceRaw === "weekly" || recurrenceRaw === "monthly"
+      ? recurrenceRaw
+      : "none";
+
   const scheduled = store.scheduleNotification(
     {
       title,
@@ -3992,13 +4032,74 @@ export function handleScheduleReminder(
       actions: ["snooze", "view"],
       ...(icon ? { icon } : {})
     },
-    scheduledFor
+    scheduledFor,
+    undefined,
+    recurrence
   );
 
+  const recurrenceLabel = recurrence !== "none" ? ` (repeats ${recurrence})` : "";
   return {
     success: true,
     scheduledNotification: scheduled,
-    message: `Reminder scheduled: "${title}" at ${scheduledFor.toISOString()}${icon ? ` ${icon}` : ""}`
+    message: `Reminder scheduled: "${title}" at ${scheduledFor.toISOString()}${icon ? ` ${icon}` : ""}${recurrenceLabel}`
+  };
+}
+
+export function handleGetReminders(
+  store: RuntimeStore
+): { reminders: Array<{ id: string; title: string; message: string; icon?: string; scheduledFor: string; recurrence?: string; priority: string }> } {
+  const all = store.getUpcomingScheduledNotifications();
+  return {
+    reminders: all.map((s) => ({
+      id: s.id,
+      title: s.notification.title,
+      message: s.notification.message,
+      icon: s.notification.icon,
+      scheduledFor: s.scheduledFor,
+      recurrence: s.recurrence,
+      priority: s.notification.priority
+    }))
+  };
+}
+
+export function handleCancelReminder(
+  store: RuntimeStore,
+  args: Record<string, unknown> = {}
+): { success: true; cancelledId: string; title: string; message: string } | { error: string } {
+  const reminderId = asTrimmedString(args.reminderId);
+  const titleHint = asTrimmedString(args.titleHint)?.toLowerCase();
+
+  if (!reminderId && !titleHint) {
+    return { error: "Provide either reminderId or titleHint to identify which reminder to cancel." };
+  }
+
+  if (reminderId) {
+    const all = store.getUpcomingScheduledNotifications();
+    const target = all.find((s) => s.id === reminderId);
+    if (!target) {
+      return { error: `No scheduled reminder found with ID: ${reminderId}` };
+    }
+    store.removeScheduledNotification(reminderId);
+    return {
+      success: true,
+      cancelledId: reminderId,
+      title: target.notification.title,
+      message: `Cancelled reminder: "${target.notification.title}"`
+    };
+  }
+
+  // Search by title hint
+  const all = store.getUpcomingScheduledNotifications();
+  const match = all.find((s) => s.notification.title.toLowerCase().includes(titleHint!));
+  if (!match) {
+    return { error: `No upcoming reminder found matching "${titleHint}"` };
+  }
+  store.removeScheduledNotification(match.id);
+  return {
+    success: true,
+    cancelledId: match.id,
+    title: match.notification.title,
+    message: `Cancelled reminder: "${match.notification.title}"`
   };
 }
 
@@ -5227,6 +5328,12 @@ export function executeFunctionCall(
       break;
     case "scheduleReminder":
       response = handleScheduleReminder(store, args);
+      break;
+    case "getReminders":
+      response = handleGetReminders(store);
+      break;
+    case "cancelReminder":
+      response = handleCancelReminder(store, args);
       break;
     case "createScheduleBlock":
       response = handleCreateScheduleBlock(store, args);

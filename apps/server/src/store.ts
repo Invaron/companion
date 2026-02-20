@@ -79,10 +79,42 @@ import {
   AuthUserWithPassword,
   WithingsData,
   WithingsSleepSummaryEntry,
-  WithingsWeightEntry
+  WithingsWeightEntry,
+  ReminderRecurrence
 } from "./types.js";
 import { isAssignmentOrExamDeadline } from "./deadline-eligibility.js";
 import { makeId, nowIso } from "./utils.js";
+
+interface ScheduledNotificationRow {
+  id: string;
+  source: string;
+  title: string;
+  message: string;
+  priority: string;
+  scheduledFor: string;
+  createdAt: string;
+  eventId: string | null;
+  icon: string | null;
+  recurrence: string | null;
+}
+
+function mapScheduledNotificationRow(row: ScheduledNotificationRow): ScheduledNotification {
+  const recurrence = row.recurrence as ReminderRecurrence | null;
+  return {
+    id: row.id,
+    notification: {
+      source: row.source as Notification["source"],
+      title: row.title,
+      message: row.message,
+      priority: row.priority as Notification["priority"],
+      ...(row.icon ? { icon: row.icon } : {})
+    },
+    scheduledFor: row.scheduledFor,
+    createdAt: row.createdAt,
+    eventId: row.eventId ?? undefined,
+    ...(recurrence && recurrence !== "none" ? { recurrence } : {})
+  };
+}
 
 const agentNames: AgentName[] = [
   "notes",
@@ -825,6 +857,10 @@ export class RuntimeStore {
     const hasScheduledIconColumn = scheduledNotifColumns.some((col) => col.name === "icon");
     if (!hasScheduledIconColumn) {
       this.db.prepare("ALTER TABLE scheduled_notifications ADD COLUMN icon TEXT").run();
+    }
+    const hasRecurrenceColumn = scheduledNotifColumns.some((col) => col.name === "recurrence");
+    if (!hasRecurrenceColumn) {
+      this.db.prepare("ALTER TABLE scheduled_notifications ADD COLUMN recurrence TEXT").run();
     }
   }
 
@@ -6168,20 +6204,22 @@ export class RuntimeStore {
   scheduleNotification(
     notification: Omit<Notification, "id" | "timestamp">,
     scheduledFor: Date,
-    eventId?: string
+    eventId?: string,
+    recurrence?: ReminderRecurrence
   ): ScheduledNotification {
     const scheduled: ScheduledNotification = {
       id: makeId("sched-notif"),
       notification,
       scheduledFor: scheduledFor.toISOString(),
       createdAt: nowIso(),
-      eventId
+      eventId,
+      recurrence: recurrence && recurrence !== "none" ? recurrence : undefined
     };
 
     this.db
       .prepare(
-        `INSERT INTO scheduled_notifications (id, source, title, message, priority, scheduledFor, createdAt, eventId, icon)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO scheduled_notifications (id, source, title, message, priority, scheduledFor, createdAt, eventId, icon, recurrence)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         scheduled.id,
@@ -6192,7 +6230,8 @@ export class RuntimeStore {
         scheduled.scheduledFor,
         scheduled.createdAt,
         eventId ?? null,
-        notification.icon ?? null
+        notification.icon ?? null,
+        scheduled.recurrence ?? null
       );
 
     return scheduled;
@@ -6204,31 +6243,20 @@ export class RuntimeStore {
   getDueScheduledNotifications(currentTime: Date = new Date()): ScheduledNotification[] {
     const rows = this.db
       .prepare("SELECT * FROM scheduled_notifications WHERE scheduledFor <= ? ORDER BY scheduledFor ASC")
-      .all(currentTime.toISOString()) as Array<{
-      id: string;
-      source: string;
-      title: string;
-      message: string;
-      priority: string;
-      scheduledFor: string;
-      createdAt: string;
-      eventId: string | null;
-      icon: string | null;
-    }>;
+      .all(currentTime.toISOString()) as Array<ScheduledNotificationRow>;
 
-    return rows.map((row) => ({
-      id: row.id,
-      notification: {
-        source: row.source as Notification["source"],
-        title: row.title,
-        message: row.message,
-        priority: row.priority as Notification["priority"],
-        ...(row.icon ? { icon: row.icon } : {})
-      },
-      scheduledFor: row.scheduledFor,
-      createdAt: row.createdAt,
-      eventId: row.eventId ?? undefined
-    }));
+    return rows.map(mapScheduledNotificationRow);
+  }
+
+  /**
+   * Get all upcoming (not yet due) scheduled notifications, ordered by scheduledFor
+   */
+  getUpcomingScheduledNotifications(): ScheduledNotification[] {
+    const rows = this.db
+      .prepare("SELECT * FROM scheduled_notifications ORDER BY scheduledFor ASC")
+      .all() as Array<ScheduledNotificationRow>;
+
+    return rows.map(mapScheduledNotificationRow);
   }
 
   /**
