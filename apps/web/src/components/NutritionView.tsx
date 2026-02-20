@@ -26,12 +26,7 @@ import {
   NutritionTargetProfile,
 } from "../types";
 import { hapticSuccess } from "../lib/haptics";
-import { NutritionTrackingChart } from "./NutritionTrackingChart";
-
-function formatDateLabel(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
-}
+import { CalorieWeightChart, MacroAdherenceChart } from "./NutritionTrackingChart";
 
 interface MealDraft {
   name: string;
@@ -2036,13 +2031,16 @@ export function NutritionView(): JSX.Element {
                 <div className="nutrition-tracking-stats">
                   {(() => {
                     const daysWithMeals = historyEntries.filter((e) => e.mealsLogged > 0);
-                    const avgCalories = daysWithMeals.length > 0
-                      ? Math.round(daysWithMeals.reduce((s, e) => s + e.totals.calories, 0) / daysWithMeals.length)
-                      : 0;
-                    const avgProtein = daysWithMeals.length > 0
-                      ? Math.round(daysWithMeals.reduce((s, e) => s + e.totals.proteinGrams, 0) / daysWithMeals.length)
-                      : 0;
-                    const latestTarget = [...historyEntries].reverse().find((e) => e.targets)?.targets;
+                    const daysWithTargets = daysWithMeals.filter((e) => e.targets !== null);
+
+                    // Avg % adherence (accounts for changing targets)
+                    const avgCalPct = daysWithTargets.length > 0
+                      ? Math.round(daysWithTargets.reduce((s, e) => s + (e.totals.calories / e.targets!.calories) * 100, 0) / daysWithTargets.length)
+                      : null;
+                    const avgProteinPct = daysWithTargets.length > 0
+                      ? Math.round(daysWithTargets.reduce((s, e) => s + (e.totals.proteinGrams / e.targets!.proteinGrams) * 100, 0) / daysWithTargets.length)
+                      : null;
+
                     const weightEntries = historyEntries.filter((e) => e.weightKg !== null);
                     const latestWeight = weightEntries.length > 0
                       ? weightEntries[weightEntries.length - 1]!.weightKg
@@ -2057,18 +2055,14 @@ export function NutritionView(): JSX.Element {
                     return (
                       <div className="nutrition-summary-grid nutrition-tracking-stat-grid">
                         <article className="summary-tile">
-                          <p className="summary-label">Avg Calories</p>
-                          <p className="summary-value">{avgCalories} kcal</p>
-                          {latestTarget && (
-                            <p className="summary-sub">Target: {Math.round(latestTarget.calories)}</p>
-                          )}
+                          <p className="summary-label">Avg Cal Adherence</p>
+                          <p className="summary-value">{avgCalPct !== null ? `${avgCalPct}%` : "—"}</p>
+                          <p className="summary-sub">of daily target</p>
                         </article>
                         <article className="summary-tile">
-                          <p className="summary-label">Avg Protein</p>
-                          <p className="summary-value">{avgProtein}g</p>
-                          {latestTarget && (
-                            <p className="summary-sub">Target: {Math.round(latestTarget.proteinGrams)}g</p>
-                          )}
+                          <p className="summary-label">Avg Protein Hit</p>
+                          <p className="summary-value">{avgProteinPct !== null ? `${avgProteinPct}%` : "—"}</p>
+                          <p className="summary-sub">of daily target</p>
                         </article>
                         <article className="summary-tile">
                           <p className="summary-label">Days Tracked</p>
@@ -2091,103 +2085,14 @@ export function NutritionView(): JSX.Element {
                 </div>
               </article>
 
-              {/* Charts */}
+              {/* Calories + Weight dual-axis chart */}
               <article className="nutrition-card nutrition-tracking-chart-card">
-                <NutritionTrackingChart
-                  entries={historyEntries}
-                  metric="calories"
-                  label="Calories"
-                  color="rgb(255, 179, 71)"
-                  targetColor="rgba(255, 179, 71, 0.3)"
-                  unit="kcal"
-                />
+                <CalorieWeightChart entries={historyEntries} />
               </article>
 
+              {/* Macros as % of daily target */}
               <article className="nutrition-card nutrition-tracking-chart-card">
-                <NutritionTrackingChart
-                  entries={historyEntries}
-                  metric="proteinGrams"
-                  label="Protein"
-                  color="rgb(129, 199, 132)"
-                  targetColor="rgba(129, 199, 132, 0.3)"
-                  unit="g"
-                />
-              </article>
-
-              <article className="nutrition-card nutrition-tracking-chart-card">
-                <NutritionTrackingChart
-                  entries={historyEntries}
-                  metric="carbsGrams"
-                  label="Carbs"
-                  color="rgb(100, 181, 246)"
-                  targetColor="rgba(100, 181, 246, 0.3)"
-                  unit="g"
-                />
-              </article>
-
-              <article className="nutrition-card nutrition-tracking-chart-card">
-                <NutritionTrackingChart
-                  entries={historyEntries}
-                  metric="fatGrams"
-                  label="Fat"
-                  color="rgb(239, 154, 154)"
-                  targetColor="rgba(239, 154, 154, 0.3)"
-                  unit="g"
-                />
-              </article>
-
-              {historyEntries.some((e) => e.weightKg !== null) && (
-                <article className="nutrition-card nutrition-tracking-chart-card">
-                  <NutritionTrackingChart
-                    entries={historyEntries}
-                    metric="weight"
-                    label="Weight"
-                    color="rgb(186, 147, 232)"
-                    unit="kg"
-                  />
-                </article>
-              )}
-
-              {/* Daily breakdown table */}
-              <article className="nutrition-card">
-                <h3>Daily Breakdown</h3>
-                <div className="nutrition-tracking-table-wrap">
-                  <table className="nutrition-tracking-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Cal</th>
-                        <th>P (g)</th>
-                        <th>C (g)</th>
-                        <th>F (g)</th>
-                        <th>Meals</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...historyEntries].reverse().map((entry) => {
-                        const hasTarget = entry.targets !== null;
-                        const calDiff = hasTarget ? entry.totals.calories - entry.targets!.calories : null;
-                        return (
-                          <tr key={entry.date} className={entry.mealsLogged === 0 ? "nutrition-tracking-row-empty" : ""}>
-                            <td>{formatDateLabel(entry.date)}</td>
-                            <td>
-                              {Math.round(entry.totals.calories)}
-                              {calDiff !== null && (
-                                <span className={calDiff >= 0 ? "tracking-delta-positive" : "tracking-delta-negative"}>
-                                  {" "}{calDiff >= 0 ? "+" : ""}{Math.round(calDiff)}
-                                </span>
-                              )}
-                            </td>
-                            <td>{Math.round(entry.totals.proteinGrams)}</td>
-                            <td>{Math.round(entry.totals.carbsGrams)}</td>
-                            <td>{Math.round(entry.totals.fatGrams)}</td>
-                            <td>{entry.mealsLogged}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <MacroAdherenceChart entries={historyEntries} />
               </article>
             </>
           )}

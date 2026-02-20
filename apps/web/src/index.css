@@ -3917,47 +3917,6 @@ body.keyboard-open .pull-to-refresh-container {
   border-radius: 8px;
 }
 
-.nutrition-tracking-table-wrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.nutrition-tracking-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-  white-space: nowrap;
-}
-
-.nutrition-tracking-table th {
-  text-align: left;
-  padding: 6px 8px;
-  color: var(--muted);
-  font-weight: 700;
-  border-bottom: 1px solid var(--border-soft);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.nutrition-tracking-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  color: var(--text);
-}
-
-.nutrition-tracking-row-empty td {
-  opacity: 0.35;
-}
-
-.tracking-delta-positive {
-  color: var(--accent);
-  font-size: 0.72rem;
-}
-
-.tracking-delta-negative {
-  color: var(--warn);
-  font-size: 0.72rem;
 }
 
 @media (min-width: 720px) {
