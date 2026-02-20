@@ -126,12 +126,12 @@ function parseMealItemDrafts(
 }
 
 function computeMealTotalsFromItems(items: Array<Pick<NutritionMealItem, "quantity" | "caloriesPerUnit" | "proteinGramsPerUnit" | "carbsGramsPerUnit" | "fatGramsPerUnit">>): NutritionDailySummary["totals"] {
-  return items.reduce(
+  const raw = items.reduce(
     (totals, item) => ({
       calories: totals.calories + item.quantity * item.caloriesPerUnit,
-      proteinGrams: roundToTenth(totals.proteinGrams + item.quantity * item.proteinGramsPerUnit),
-      carbsGrams: roundToTenth(totals.carbsGrams + item.quantity * item.carbsGramsPerUnit),
-      fatGrams: roundToTenth(totals.fatGrams + item.quantity * item.fatGramsPerUnit)
+      proteinGrams: totals.proteinGrams + item.quantity * item.proteinGramsPerUnit,
+      carbsGrams: totals.carbsGrams + item.quantity * item.carbsGramsPerUnit,
+      fatGrams: totals.fatGrams + item.quantity * item.fatGramsPerUnit
     }),
     {
       calories: 0,
@@ -140,6 +140,12 @@ function computeMealTotalsFromItems(items: Array<Pick<NutritionMealItem, "quanti
       fatGrams: 0
     }
   );
+  return {
+    calories: raw.calories,
+    proteinGrams: roundToTenth(raw.proteinGrams),
+    carbsGrams: roundToTenth(raw.carbsGrams),
+    fatGrams: roundToTenth(raw.fatGrams)
+  };
 }
 
 function scaleMealPortion(meal: NutritionMeal, factor: number): NutritionMeal {
@@ -169,12 +175,12 @@ function scaleMealPortion(meal: NutritionMeal, factor: number): NutritionMeal {
 }
 
 function computeMealTotals(meals: NutritionMeal[]): NutritionDailySummary["totals"] {
-  return meals.reduce(
+  const raw = meals.reduce(
     (totals, meal) => ({
       calories: totals.calories + meal.calories,
-      proteinGrams: roundToTenth(totals.proteinGrams + meal.proteinGrams),
-      carbsGrams: roundToTenth(totals.carbsGrams + meal.carbsGrams),
-      fatGrams: roundToTenth(totals.fatGrams + meal.fatGrams)
+      proteinGrams: totals.proteinGrams + meal.proteinGrams,
+      carbsGrams: totals.carbsGrams + meal.carbsGrams,
+      fatGrams: totals.fatGrams + meal.fatGrams
     }),
     {
       calories: 0,
@@ -183,6 +189,12 @@ function computeMealTotals(meals: NutritionMeal[]): NutritionDailySummary["total
       fatGrams: 0
     }
   );
+  return {
+    calories: raw.calories,
+    proteinGrams: roundToTenth(raw.proteinGrams),
+    carbsGrams: roundToTenth(raw.carbsGrams),
+    fatGrams: roundToTenth(raw.fatGrams)
+  };
 }
 
 function withMealsSummary(
