@@ -1,6 +1,7 @@
 import {
   CanvasSettings,
   CanvasStatus,
+  ChatMood,
   NotificationPreferences,
   OnboardingProfile,
   IntegrationScopeSettings,
@@ -31,7 +32,8 @@ const STORAGE_KEYS = {
   canvasSettings: "companion:canvas-settings",
   canvasStatus: "companion:canvas-status",
   integrationScopeSettings: "companion:integration-scope-settings",
-  authToken: "companion:auth-token"
+  authToken: "companion:auth-token",
+  chatMood: "companion:chat-mood"
 } as const;
 
 export interface SyncQueueItem {
@@ -124,6 +126,24 @@ export function loadTalkModeEnabled(): boolean {
 
 export function saveTalkModeEnabled(enabled: boolean): void {
   localStorage.setItem(STORAGE_KEYS.talkModeEnabled, enabled ? "true" : "false");
+}
+
+const VALID_MOODS: ChatMood[] = ["neutral", "encouraging", "focused", "celebratory", "empathetic", "urgent"];
+
+export function loadChatMood(): ChatMood {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.chatMood);
+    if (raw && VALID_MOODS.includes(raw as ChatMood)) {
+      return raw as ChatMood;
+    }
+    return "neutral";
+  } catch {
+    return "neutral";
+  }
+}
+
+export function saveChatMood(mood: ChatMood): void {
+  localStorage.setItem(STORAGE_KEYS.chatMood, mood);
 }
 
 export function loadAuthToken(): string | null {

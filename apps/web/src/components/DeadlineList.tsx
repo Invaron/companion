@@ -270,16 +270,6 @@ export function DeadlineList({ focusDeadlineId }: DeadlineListProps): JSX.Elemen
         )}
       </div>
 
-      {!loading && (
-        <button
-          type="button"
-          className="deadline-refresh-btn"
-          onClick={() => void handleRefresh()}
-          disabled={refreshing || !isOnline}
-        >
-          {refreshing ? "Refreshing…" : "↻ Refresh"}
-        </button>
-      )}
     </section>
   );
 }

@@ -359,7 +359,12 @@ function renderMessageAttachments(attachments: ChatImageAttachment[]): ReactNode
   );
 }
 
-export function ChatView(): JSX.Element {
+interface ChatViewProps {
+  mood: ChatMood;
+  onMoodChange: (mood: ChatMood) => void;
+}
+
+export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<ChatImageAttachment[]>([]);
@@ -367,7 +372,6 @@ export function ChatView(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [expandedCitationMessageIds, setExpandedCitationMessageIds] = useState<Set<string>>(new Set());
   const [isListening, setIsListening] = useState(false);
-  const [chatMood, setChatMood] = useState<ChatMood>("neutral");
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const nextPageRef = useRef(2);
@@ -449,7 +453,7 @@ export function ChatView(): JSX.Element {
         // Restore mood from most recent assistant message
         const lastAssistant = [...response.history.messages].reverse().find((m) => m.role === "assistant");
         if (lastAssistant?.metadata?.mood) {
-          setChatMood(lastAssistant.metadata.mood);
+          onMoodChange(lastAssistant.metadata.mood);
         }
       } catch (err) {
         setError("Failed to load chat history");
@@ -618,7 +622,7 @@ export function ChatView(): JSX.Element {
         streamRafRef.current = null;
       }
       if (response.metadata?.mood) {
-        setChatMood(response.metadata.mood);
+        onMoodChange(response.metadata.mood);
       }
       setMessages((prev) =>
         prev.map((msg) =>
@@ -758,18 +762,18 @@ export function ChatView(): JSX.Element {
   ];
 
   // Track mood changes to trigger burst only on transitions
-  const prevMoodRef = useRef<ChatMood>(chatMood);
+  const prevMoodRef = useRef<ChatMood>(mood);
   const [burstMood, setBurstMood] = useState<ChatMood>("neutral");
 
   useEffect(() => {
-    if (chatMood !== prevMoodRef.current && chatMood !== "neutral") {
-      setBurstMood(chatMood);
+    if (mood !== prevMoodRef.current && mood !== "neutral") {
+      setBurstMood(mood);
     }
-    prevMoodRef.current = chatMood;
-  }, [chatMood]);
+    prevMoodRef.current = mood;
+  }, [mood]);
 
   return (
-    <div className={`chat-view chat-mood-${chatMood}`}>
+    <div className="chat-view">
       <MoodBurst mood={burstMood} />
       <div className="chat-messages" ref={messagesContainerRef}>
         {hasMore && (

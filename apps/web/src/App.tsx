@@ -18,12 +18,14 @@ import {
   clearAuthToken,
   clearCompanionSessionData,
   loadAuthToken,
+  loadChatMood,
   loadOnboardingProfile,
+  saveChatMood,
   saveOnboardingProfile
 } from "./lib/storage";
 import { hapticCriticalAlert } from "./lib/haptics";
 import { parseDeepLink } from "./lib/deepLink";
-import { OnboardingProfile } from "./types";
+import { ChatMood, OnboardingProfile } from "./types";
 
 type PushState = "checking" | "ready" | "enabled" | "unsupported" | "denied" | "error";
 type AuthState = "checking" | "required-login" | "ready";
@@ -66,6 +68,7 @@ export default function App(): JSX.Element {
   const [focusDeadlineId, setFocusDeadlineId] = useState<string | null>(initialDeepLink.deadlineId);
   const [focusLectureId, setFocusLectureId] = useState<string | null>(initialDeepLink.lectureId);
   const [settingsSection, setSettingsSection] = useState<string | null>(initialDeepLink.section);
+  const [chatMood, setChatMood] = useState<ChatMood>(loadChatMood);
   const seenCriticalNotifications = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -353,6 +356,11 @@ export default function App(): JSX.Element {
     }
   };
 
+  const handleMoodChange = useCallback((mood: ChatMood): void => {
+    setChatMood(mood);
+    saveChatMood(mood);
+  }, []);
+
   const pushButtonLabel =
     pushState === "enabled"
       ? "Push Enabled"
@@ -420,7 +428,7 @@ export default function App(): JSX.Element {
   }
 
   return (
-    <main className={`app-shell ${activeTab === "chat" ? "app-shell-chat-active" : ""}`}>
+    <main className={`app-shell chat-mood-${chatMood} ${activeTab === "chat" ? "app-shell-chat-active" : ""}`}>
       <InstallPrompt />
 
       {/* Push setup messaging stays in Settings to avoid squashing chat layout */}
@@ -451,7 +459,7 @@ export default function App(): JSX.Element {
           {/* Tab content area */}
           <div className="tab-content-area">
             <div className={`tab-panel ${activeTab === "chat" ? "tab-panel-active" : "tab-panel-hidden"}`}>
-              <ChatTab />
+              <ChatTab mood={chatMood} onMoodChange={handleMoodChange} />
             </div>
             {activeTab === "schedule" && (
               <ScheduleTab

@@ -216,22 +216,6 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
   const [suggestionMutes, setSuggestionMutes] = useState<ScheduleSuggestionMute[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState<boolean>(() => navigator.onLine);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const handleRefresh = async (): Promise<void> => {
-    setRefreshing(true);
-    try {
-      const [refreshedSchedule, refreshedDeadlines, refreshedSuggestionMutes] = await Promise.all([
-        getSchedule(),
-        getDeadlines(),
-        getScheduleSuggestionMutes(new Date())
-      ]);
-      setSchedule(refreshedSchedule);
-      setDeadlines(refreshedDeadlines);
-      setSuggestionMutes(refreshedSuggestionMutes);
-    } catch { /* keep current state */ }
-    setRefreshing(false);
-  };
 
   useEffect(() => {
     let disposed = false;
@@ -347,7 +331,7 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
     <section className="schedule-card">
       <div className="schedule-card-header">
         <div className="schedule-card-title-row">
-          <span className="schedule-card-icon">📅</span>
+          <span className="schedule-card-icon">�</span>
           <h2>Today&apos;s Schedule</h2>
         </div>
         <div className="schedule-card-meta">
@@ -359,12 +343,6 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
           {!isOnline && <span className="schedule-badge schedule-badge-offline">Offline</span>}
         </div>
       </div>
-
-      {pendingDeadlines.length > 0 && (
-        <p className="schedule-context-line">
-          {pendingDeadlines.length} deadline{pendingDeadlines.length === 1 ? "" : "s"} ahead — gaps filled with study suggestions
-        </p>
-      )}
 
       {loading ? (
         <div className="schedule-loading">
@@ -379,28 +357,20 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
               key={`${segment.type}-${segment.start.toISOString()}-${index}`}
               className={`timeline-item ${segment.type === "event" ? "timeline-item--lecture" : "timeline-item--gap"}`}
             >
-              <div className="timeline-item-time">
-                <span className="timeline-time-start">
-                  {segment.start.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}
-                </span>
-                <span className="timeline-time-divider">–</span>
-                <span className="timeline-time-end">
-                  {segment.end.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}
-                </span>
-              </div>
-              <div className="timeline-item-body">
-                <div className="timeline-item-indicator">
-                  <span className={`timeline-dot ${segment.type === "event" ? "timeline-dot--lecture" : "timeline-dot--gap"}`} />
-                  {index < dayTimeline.length - 1 && <span className="timeline-connector" />}
-                </div>
-                <div className="timeline-item-content">
-                  <p className="timeline-item-label">
-                    {formatDayTimelineLabel(segment)}
-                  </p>
+              <div className="timeline-item-content">
+                <div className="timeline-item-time-row">
+                  <span className="timeline-time">
+                    {segment.start.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}
+                    {" – "}
+                    {segment.end.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}
+                  </span>
                   <span className="timeline-item-duration">
                     {formatDuration(minutesBetween(segment.start, segment.end))}
                   </span>
                 </div>
+                <p className="timeline-item-label">
+                  {formatDayTimelineLabel(segment)}
+                </p>
               </div>
             </li>
           ))}
@@ -413,16 +383,6 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
         </div>
       )}
 
-      {!loading && (
-        <button
-          type="button"
-          className="schedule-refresh-btn"
-          onClick={() => void handleRefresh()}
-          disabled={refreshing || !isOnline}
-        >
-          {refreshing ? "Refreshing…" : "↻ Refresh"}
-        </button>
-      )}
     </section>
   );
 }

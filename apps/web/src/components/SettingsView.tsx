@@ -13,12 +13,31 @@ export function SettingsView({
 }: SettingsViewProps): JSX.Element {
   return (
     <div className="settings-container">
-      <h2>Settings</h2>
-      <IntegrationStatusView />
-      <IntegrationScopeSettings />
-      <NotificationSettings />
-      <CalendarImportView onImported={onCalendarImported} />
-      <NotificationHistoryView />
+      <div className="settings-header">
+        <span className="settings-header-icon">⚙️</span>
+        <h2>Settings</h2>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">🔌 Integrations</h3>
+        <IntegrationStatusView />
+        <IntegrationScopeSettings />
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">🔔 Notifications</h3>
+        <NotificationSettings />
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">📅 Calendar</h3>
+        <CalendarImportView onImported={onCalendarImported} />
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">📊 History</h3>
+        <NotificationHistoryView />
+      </div>
     </div>
   );
 }

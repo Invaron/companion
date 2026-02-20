@@ -97,9 +97,6 @@ export function NotificationHistoryView(): JSX.Element {
     <section className="panel notification-history-panel">
       <header className="panel-header">
         <h2>Notification History</h2>
-        <button type="button" onClick={() => void refresh()} disabled={busy}>
-          {busy ? "Loading..." : "Refresh"}
-        </button>
       </header>
 
       {error && <p className="error">{error}</p>}

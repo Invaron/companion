@@ -179,9 +179,6 @@ export function HabitsGoalsView(): JSX.Element {
       <section className="daily-summary-panel">
         <header className="panel-header">
           <h3>Daily Reflection Summary</h3>
-          <button type="button" className="ghost-button" onClick={() => void refreshSummary()} disabled={summaryLoading}>
-            {summaryLoading ? "Refreshing..." : "Refresh"}
-          </button>
         </header>
         {summaryLoading && <p className="muted">Generating today's summary...</p>}
         {!summaryLoading && dailySummary && (
