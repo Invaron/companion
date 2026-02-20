@@ -50,7 +50,8 @@ describe("RuntimeStore - habits and goals", () => {
     vi.setSystemTime(new Date("2026-02-16T12:00:00.000Z"));
     const recovered = store.getHabitsWithStatus().find((h) => h.id === habit.id);
 
-    expect(recovered?.streak).toBe(3);
+    // Grace bridges the gap (Feb 15 missed) but doesn't count it as a streak day
+    expect(recovered?.streak).toBe(2);
   });
 
   it("tracks goal progress, remaining counts, and allows toggling check-ins", () => {

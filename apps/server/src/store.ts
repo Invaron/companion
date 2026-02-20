@@ -6295,19 +6295,25 @@ export class RuntimeStore {
 
   private computeStreak(checkIns: Array<{ date: string; completed: boolean }>, referenceDateKey: string): number {
     const completedDates = new Set(checkIns.filter((c) => c.completed).map((c) => this.toDateKey(c.date)));
-    const referenceDate = new Date(`${referenceDateKey}T00:00:00.000Z`);
-    const graceWindowMs = 24 * 60 * 60 * 1000;
     let streak = 0;
     let graceUsed = false;
-    let cursor = new Date(referenceDate);
+    const cursor = new Date(`${referenceDateKey}T00:00:00.000Z`);
 
     while (true) {
       const key = this.toDateKey(cursor);
       if (completedDates.has(key)) {
         streak += 1;
-      } else if (!graceUsed && streak > 0 && referenceDate.getTime() - cursor.getTime() <= graceWindowMs) {
-        graceUsed = true;
-        streak += 1;
+      } else if (!graceUsed && streak > 0) {
+        // Grace: skip one missed day, but only if the day BEFORE it was completed
+        // (bridges a single gap, doesn't extend past the last real check-in)
+        const peek = new Date(cursor);
+        peek.setUTCDate(peek.getUTCDate() - 1);
+        if (completedDates.has(this.toDateKey(peek))) {
+          graceUsed = true;
+          // don't increment streak — just skip this gap day
+        } else {
+          break;
+        }
       } else {
         break;
       }
