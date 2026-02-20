@@ -444,6 +444,23 @@ export function BodyCompChart({ entries }: BodyCompProps) {
 
     ctx.clearRect(0, 0, w, h);
 
+    // Calorie surplus column shading (drawn first, behind everything)
+    const SURPLUS_CLR = "rgb(255, 152, 0)"; // orange
+    const colW = entries.length > 1 ? xStep : plotW;
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i]!;
+      if (e.targets === null || e.targets.calories === 0 || e.totals.calories === 0) continue;
+      const ratio = e.totals.calories / e.targets.calories;
+      if (ratio <= 1.10) continue; // only shade when >10% over target
+      // Scale opacity: 10% over → 0.03, 50%+ over → 0.15
+      const excess = Math.min(ratio - 1.10, 0.40);
+      const alpha = 0.03 + (excess / 0.40) * 0.12;
+      const cx = PAD.left + (entries.length > 1 ? i * xStep : plotW / 2);
+      const halfCol = colW / 2;
+      ctx.fillStyle = toAlpha(SURPLUS_CLR, alpha);
+      ctx.fillRect(cx - halfCol, PAD.top, colW, plotH);
+    }
+
     // Grid + axis labels
     ctx.strokeStyle = GRID;
     ctx.lineWidth = 1;
@@ -544,6 +561,16 @@ export function BodyCompChart({ entries }: BodyCompProps) {
       lx += ctx.measureText(" · ").width;
       ctx.fillStyle = GYM_CLR;
       ctx.fillText("▲ Gym", lx, 16);
+      lx += ctx.measureText("▲ Gym").width;
+    }
+    // Surplus legend indicator
+    const hasSurplus = entries.some((e) => e.targets !== null && e.targets.calories > 0 && e.totals.calories / e.targets.calories > 1.10);
+    if (hasSurplus) {
+      ctx.fillStyle = LABEL_CLR;
+      ctx.fillText(" · ", lx, 16);
+      lx += ctx.measureText(" · ").width;
+      ctx.fillStyle = "rgb(255, 152, 0)";
+      ctx.fillText("█ Surplus", lx, 16);
     }
 
     // Latest values on second row (below legend) to avoid overlap on mobile
@@ -577,6 +604,12 @@ export function BodyCompChart({ entries }: BodyCompProps) {
     if (highlightIdx !== null && highlightIdx >= 0 && highlightIdx < entries.length) {
       const e = entries[highlightIdx]!;
       const tipLines = [fmtDate(e.date)];
+      if (e.totals.calories > 0) {
+        const calTxt = e.targets !== null && e.targets.calories > 0
+          ? `${Math.round(e.totals.calories)} / ${Math.round(e.targets.calories)} kcal`
+          : `${Math.round(e.totals.calories)} kcal`;
+        tipLines.push(calTxt);
+      }
       if (e.fatRatioPercent !== null) tipLines.push(`BF: ${e.fatRatioPercent.toFixed(1)}%`);
       if (e.muscleMassKg !== null) tipLines.push(`Muscle: ${e.muscleMassKg.toFixed(1)} kg`);
       if (e.gymCheckedIn) tipLines.push("🏋️ Gym day");
