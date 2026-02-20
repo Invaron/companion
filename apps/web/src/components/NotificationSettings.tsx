@@ -2,12 +2,26 @@ import { useEffect, useState } from "react";
 import { getNotificationPreferences, updateNotificationPreferences } from "../lib/api";
 import { NotificationPreferences } from "../types";
 
+const categoryLabels: Record<string, { label: string; emoji: string; description: string }> = {
+  notes: { label: "Notes Agent", emoji: "📝", description: "Journal reflections and capture prompts" },
+  "lecture-plan": { label: "Lecture Planner", emoji: "📅", description: "Upcoming lectures and schedule changes" },
+  "assignment-tracker": { label: "Assignments", emoji: "📚", description: "Lab deadlines and progress alerts" },
+  orchestrator: { label: "Smart Nudges", emoji: "🧠", description: "Proactive reminders and check-ins" }
+};
+
 const categoryOrder: Array<keyof NotificationPreferences["categoryToggles"]> = [
-  "notes",
-  "lecture-plan",
+  "orchestrator",
   "assignment-tracker",
-  "orchestrator"
+  "lecture-plan",
+  "notes"
 ];
+
+const priorityLabels: Record<string, string> = {
+  low: "All notifications",
+  medium: "Medium and above",
+  high: "High and critical only",
+  critical: "Critical only"
+};
 
 const defaultPreferences: NotificationPreferences = {
   quietHours: {
@@ -25,6 +39,29 @@ const defaultPreferences: NotificationPreferences = {
   }
 };
 
+function ToggleSwitch({
+  checked,
+  onChange,
+  disabled
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      className={`noti-toggle-switch ${checked ? "noti-toggle-on" : ""}`}
+      onClick={() => onChange(!checked)}
+      disabled={disabled}
+    >
+      <span className="noti-toggle-thumb" />
+    </button>
+  );
+}
+
 export function NotificationSettings(): JSX.Element {
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [busy, setBusy] = useState(false);
@@ -41,131 +78,156 @@ export function NotificationSettings(): JSX.Element {
 
   const save = async (next: Partial<NotificationPreferences>): Promise<void> => {
     setBusy(true);
+    setMessage("");
     try {
       const updated = await updateNotificationPreferences(next);
       setPreferences(updated);
-      setMessage("Notification preferences saved.");
+      setMessage("Saved");
+      setTimeout(() => setMessage(""), 1500);
     } finally {
       setBusy(false);
     }
   };
 
-  return (
-    <section className="panel">
-      <header className="panel-header">
-        <h2>Notification settings</h2>
-      </header>
-      {message && <p>{message}</p>}
+  const formatHour = (h: number): string => {
+    const period = h >= 12 ? "PM" : "AM";
+    const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${display}:00 ${period}`;
+  };
 
-      <div className="settings-stack">
-        <label>
-          <input
-            type="checkbox"
+  return (
+    <section className="noti-settings">
+      <header className="noti-settings-header">
+        <h2>🔔 Notifications</h2>
+        {message && <span className="noti-settings-saved">{message}</span>}
+      </header>
+
+      {/* Quiet Hours */}
+      <div className="noti-settings-card">
+        <div className="noti-settings-row">
+          <div className="noti-settings-row-text">
+            <span className="noti-settings-label">🌙 Quiet Hours</span>
+            <span className="noti-settings-desc">
+              {preferences.quietHours.enabled
+                ? `Silent ${formatHour(preferences.quietHours.startHour)} – ${formatHour(preferences.quietHours.endHour)}`
+                : "Notifications can arrive anytime"}
+            </span>
+          </div>
+          <ToggleSwitch
             checked={preferences.quietHours.enabled}
-            onChange={(event) =>
-              void save({
-                quietHours: {
-                  ...preferences.quietHours,
-                  enabled: event.target.checked
-                }
-              })
+            onChange={(checked) =>
+              void save({ quietHours: { ...preferences.quietHours, enabled: checked } })
             }
             disabled={busy}
           />
-          Enable quiet hours
-        </label>
-
-        <div className="grid-two">
-          <label>
-            Quiet hours start
-            <input
-              type="number"
-              min={0}
-              max={23}
-              value={preferences.quietHours.startHour}
-              onChange={(event) =>
-                setPreferences((prev) => ({
-                  ...prev,
-                  quietHours: {
-                    ...prev.quietHours,
-                    startHour: Number(event.target.value)
-                  }
-                }))
-              }
-              onBlur={() => void save({ quietHours: preferences.quietHours })}
-            />
-          </label>
-
-          <label>
-            Quiet hours end
-            <input
-              type="number"
-              min={0}
-              max={23}
-              value={preferences.quietHours.endHour}
-              onChange={(event) =>
-                setPreferences((prev) => ({
-                  ...prev,
-                  quietHours: {
-                    ...prev.quietHours,
-                    endHour: Number(event.target.value)
-                  }
-                }))
-              }
-              onBlur={() => void save({ quietHours: preferences.quietHours })}
-            />
-          </label>
         </div>
 
-        <label>
-          Minimum priority
-          <select
-            value={preferences.minimumPriority}
-            onChange={(event) =>
-              void save({
-                minimumPriority: event.target.value as NotificationPreferences["minimumPriority"]
-              })
-            }
-            disabled={busy}
-          >
-            <option value="low">low</option>
-            <option value="medium">medium</option>
-            <option value="high">high</option>
-            <option value="critical">critical</option>
-          </select>
-        </label>
+        {preferences.quietHours.enabled && (
+          <>
+            <div className="noti-settings-time-row">
+              <label className="noti-settings-time-label">
+                From
+                <select
+                  className="noti-settings-time-select"
+                  value={preferences.quietHours.startHour}
+                  onChange={(e) => {
+                    const startHour = Number(e.target.value);
+                    setPreferences((prev) => ({
+                      ...prev,
+                      quietHours: { ...prev.quietHours, startHour }
+                    }));
+                    void save({ quietHours: { ...preferences.quietHours, startHour } });
+                  }}
+                  disabled={busy}
+                >
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <option key={i} value={i}>{formatHour(i)}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="noti-settings-time-label">
+                Until
+                <select
+                  className="noti-settings-time-select"
+                  value={preferences.quietHours.endHour}
+                  onChange={(e) => {
+                    const endHour = Number(e.target.value);
+                    setPreferences((prev) => ({
+                      ...prev,
+                      quietHours: { ...prev.quietHours, endHour }
+                    }));
+                    void save({ quietHours: { ...preferences.quietHours, endHour } });
+                  }}
+                  disabled={busy}
+                >
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <option key={i} value={i}>{formatHour(i)}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
-        <label>
-          <input
-            type="checkbox"
-            checked={preferences.allowCriticalInQuietHours}
-            onChange={(event) => void save({ allowCriticalInQuietHours: event.target.checked })}
-            disabled={busy}
-          />
-          Allow critical notifications in quiet hours
-        </label>
+            <div className="noti-settings-row noti-settings-sub-row">
+              <div className="noti-settings-row-text">
+                <span className="noti-settings-label">🚨 Critical override</span>
+                <span className="noti-settings-desc">Allow critical alerts during quiet hours</span>
+              </div>
+              <ToggleSwitch
+                checked={preferences.allowCriticalInQuietHours}
+                onChange={(checked) => void save({ allowCriticalInQuietHours: checked })}
+                disabled={busy}
+              />
+            </div>
+          </>
+        )}
+      </div>
 
-        <div>
-          <p>Category toggles</p>
-          {categoryOrder.map((category) => (
-            <label key={category}>
-              <input
-                type="checkbox"
+      {/* Priority Filter */}
+      <div className="noti-settings-card">
+        <div className="noti-settings-row">
+          <div className="noti-settings-row-text">
+            <span className="noti-settings-label">📊 Minimum Priority</span>
+            <span className="noti-settings-desc">{priorityLabels[preferences.minimumPriority]}</span>
+          </div>
+        </div>
+        <div className="noti-priority-options">
+          {(["low", "medium", "high", "critical"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`noti-priority-btn ${preferences.minimumPriority === p ? "noti-priority-active" : ""}`}
+              onClick={() => void save({ minimumPriority: p })}
+              disabled={busy}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Category Toggles */}
+      <div className="noti-settings-card">
+        <p className="noti-settings-section-title">Sources</p>
+        {categoryOrder.map((category) => {
+          const info = categoryLabels[category] ?? { label: category, emoji: "🔔", description: "" };
+          return (
+            <div key={category} className="noti-settings-row">
+              <div className="noti-settings-row-text">
+                <span className="noti-settings-label">{info.emoji} {info.label}</span>
+                <span className="noti-settings-desc">{info.description}</span>
+              </div>
+              <ToggleSwitch
                 checked={preferences.categoryToggles[category]}
-                onChange={(event) =>
+                onChange={(checked) =>
                   void save({
-                    categoryToggles: {
-                      ...preferences.categoryToggles,
-                      [category]: event.target.checked
-                    }
+                    categoryToggles: { ...preferences.categoryToggles, [category]: checked }
                   })
                 }
                 disabled={busy}
               />
-              {category}
-            </label>
-          ))}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
