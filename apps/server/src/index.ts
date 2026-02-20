@@ -18,7 +18,7 @@ import {
 import { OrchestratorRuntime } from "./orchestrator.js";
 import { EmailDigestService } from "./email-digest.js";
 import { getVapidPublicKey, hasStaticVapidKeys, sendPushNotification } from "./push.js";
-import { sendChatMessage, compressChatContext, GeminiError, RateLimitError, flushJournalSessionBuffer, startJournalFlushTimer, stopJournalFlushTimer } from "./chat.js";
+import { sendChatMessage, compressChatContext, GeminiError, RateLimitError, flushJournalSessionBuffer } from "./chat.js";
 import { getGeminiClient } from "./gemini.js";
 import { RuntimeStore } from "./store.js";
 import { fetchTPSchedule, diffScheduleEvents } from "./tp-sync.js";
@@ -3314,7 +3314,6 @@ const server = app.listen(config.PORT, () => {
         ? ` restoredSnapshotAt=${persistenceContext.restoredSnapshotAt}`
         : "")
   );
-  startJournalFlushTimer(store);
 });
 
 let shuttingDown = false;
@@ -3335,7 +3334,6 @@ const shutdown = (): void => {
   withingsSyncService.stop();
 
   const finalize = async (): Promise<void> => {
-    stopJournalFlushTimer();
     // Flush any remaining buffered journal entries before shutdown
     try {
       await flushJournalSessionBuffer(store);
