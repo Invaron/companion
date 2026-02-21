@@ -862,21 +862,23 @@ export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
                     </button>
                   ) : (
                     <div className="chat-citation-stack">
-                      <button
-                        type="button"
-                        className="chat-citation-stack-chip"
-                        onClick={() => toggleCitationStack(msg.id)}
-                        title={citations.map((citation) => citation.label).join("\n")}
-                        aria-expanded={expandedCitationMessageIds.has(msg.id)}
-                        aria-label={`Show ${citations.length} citations`}
-                      >
-                        <span className="chat-citation-stack-layer chat-citation-stack-layer-back" aria-hidden="true" />
-                        <span className="chat-citation-stack-layer chat-citation-stack-layer-mid" aria-hidden="true" />
-                        <span className="chat-citation-stack-layer chat-citation-stack-layer-front">
-                          {formatCitationChipLabel(citations[0]!)}
-                        </span>
-                        <span className="chat-citation-stack-count">+{citations.length - 1}</span>
-                      </button>
+                      {!expandedCitationMessageIds.has(msg.id) && (
+                        <button
+                          type="button"
+                          className="chat-citation-stack-chip"
+                          onClick={() => toggleCitationStack(msg.id)}
+                          title={citations.map((citation) => citation.label).join("\n")}
+                          aria-expanded={false}
+                          aria-label={`Show ${citations.length} citations`}
+                        >
+                          <span className="chat-citation-stack-layer chat-citation-stack-layer-back" aria-hidden="true" />
+                          <span className="chat-citation-stack-layer chat-citation-stack-layer-mid" aria-hidden="true" />
+                          <span className="chat-citation-stack-layer chat-citation-stack-layer-front">
+                            {formatCitationChipLabel(citations[0]!)}
+                          </span>
+                          <span className="chat-citation-stack-count">+{citations.length - 1}</span>
+                        </button>
+                      )}
                       {expandedCitationMessageIds.has(msg.id) && (
                         <div className="chat-citation-stack-menu" role="list" aria-label="Expanded citations">
                           {citations.map((citation) => (
@@ -890,6 +892,14 @@ export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
                               {formatCitationChipLabel(citation)}
                             </button>
                           ))}
+                          <button
+                            type="button"
+                            className="chat-citation-chip chat-citation-collapse"
+                            onClick={() => toggleCitationStack(msg.id)}
+                            aria-label="Collapse citations"
+                          >
+                            Collapse
+                          </button>
                         </div>
                       )}
                     </div>

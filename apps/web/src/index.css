@@ -2541,9 +2541,9 @@ button:disabled {
 }
 
 .chat-bubble-content {
-  padding: 10px 12px;
-  border-radius: 14px;
-  line-height: 1.42;
+  padding: 12px 14px;
+  border-radius: 18px;
+  line-height: 1.48;
   word-wrap: break-word;
   white-space: pre-wrap;
   font-size: 0.92rem;
@@ -2593,16 +2593,20 @@ button:disabled {
 }
 
 .chat-bubble-user .chat-bubble-content {
-  background: var(--accent);
+  background: linear-gradient(135deg, rgba(246, 195, 127, 0.95), rgba(236, 172, 85, 0.92));
   color: #0f172a;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 1px 6px rgba(246, 195, 127, 0.15);
 }
 
 .chat-bubble-assistant .chat-bubble-content {
-  background: var(--card);
-  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text);
   border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.12);
 }
 
 /* Streaming text with blinking cursor */
@@ -2628,14 +2632,17 @@ button:disabled {
 }
 
 .chat-citation-chip {
-  border: 1px solid var(--border-soft);
-  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--text);
   border-radius: 999px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   font-size: 0.69rem;
   line-height: 1.2;
   cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .chat-citation-chip:hover {
@@ -2657,10 +2664,10 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  border: 1px solid var(--border-soft);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.69rem;
   line-height: 1.2;
-  padding: 3px 8px;
+  padding: 4px 10px;
   white-space: nowrap;
 }
 
@@ -2670,8 +2677,8 @@ button:disabled {
   left: 0;
   width: calc(100% - 24px);
   height: 100%;
-  background: var(--surface-soft);
-  transform: translate(6px, -2px);
+  background: rgba(255, 255, 255, 0.03);
+  transform: translate(6px, -3px);
   z-index: 1;
 }
 
@@ -2681,14 +2688,16 @@ button:disabled {
   left: 0;
   width: calc(100% - 24px);
   height: 100%;
-  background: var(--surface);
-  transform: translate(3px, -1px);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translate(3px, -1.5px);
   z-index: 2;
 }
 
 .chat-citation-stack-layer-front {
   position: relative;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--text);
   z-index: 3;
 }
@@ -2699,8 +2708,10 @@ button:disabled {
   right: 0;
   transform: translateY(-50%);
   border-radius: 999px;
-  border: 1px solid var(--border-soft);
-  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--muted);
   font-size: 0.65rem;
   line-height: 1;
@@ -2723,6 +2734,13 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  padding-top: 2px;
+}
+
+.chat-citation-collapse {
+  color: var(--muted);
+  opacity: 0.7;
+  font-size: 0.62rem;
 }
 
 .chat-pending-action-list {
@@ -2732,10 +2750,12 @@ button:disabled {
 }
 
 .chat-pending-action-card {
-  border: 1px solid var(--border-soft);
-  background: var(--surface);
-  border-radius: 10px;
-  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  padding: 10px;
   display: grid;
   gap: 6px;
 }
@@ -2786,10 +2806,11 @@ button:disabled {
 }
 
 .chat-bubble-timestamp {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--muted);
-  margin-top: 3px;
-  padding: 0 4px;
+  opacity: 0.7;
+  margin-top: 2px;
+  padding: 0 6px;
 }
 
 .chat-bubble-footer {
@@ -4283,24 +4304,28 @@ body.keyboard-open .pull-to-refresh-container {
   background: linear-gradient(140deg, rgba(92, 68, 162, 0.5), rgba(75, 52, 141, 0.55));
 }
 
-.nutrition-target-card-protein .summary-label,
-.nutrition-target-card-protein .summary-value {
+.nutrition-target-card .summary-value {
   color: #fff;
 }
 
-.nutrition-target-card-carbs .summary-label,
-.nutrition-target-card-carbs .summary-value {
-  color: #fff;
+.nutrition-target-card-protein .summary-label {
+  color: #8eb9ff;
+  font-weight: 600;
 }
 
-.nutrition-target-card-fat .summary-label,
-.nutrition-target-card-fat .summary-value {
-  color: #fff;
+.nutrition-target-card-carbs .summary-label {
+  color: #8ff0c3;
+  font-weight: 600;
 }
 
-.nutrition-target-card-calories .summary-label,
-.nutrition-target-card-calories .summary-value {
-  color: #fff;
+.nutrition-target-card-fat .summary-label {
+  color: #f4da77;
+  font-weight: 600;
+}
+
+.nutrition-target-card-calories .summary-label {
+  color: #d4b8ff;
+  font-weight: 600;
 }
 
 .nutrition-daily-dashboard {
@@ -4331,18 +4356,22 @@ body.keyboard-open .pull-to-refresh-container {
 
 .nutrition-daily-metric:nth-child(1) .summary-label {
   color: #8eb9ff;
+  font-weight: 600;
 }
 
 .nutrition-daily-metric:nth-child(2) .summary-label {
   color: #8ff0c3;
+  font-weight: 600;
 }
 
 .nutrition-daily-metric:nth-child(3) .summary-label {
   color: #f4da77;
+  font-weight: 600;
 }
 
 .nutrition-daily-metric:nth-child(4) .summary-label {
   color: #d4b8ff;
+  font-weight: 600;
 }
 
 .nutrition-daily-delta {
