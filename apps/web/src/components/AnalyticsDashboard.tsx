@@ -141,9 +141,9 @@ export function AnalyticsDashboard(): JSX.Element {
             )}
 
             {/* Insight cards: each category is its own swipeable row */}
-            <div className="swipeable-card-stack decorated-stack">
+            <div className="swipeable-card-stack">
               <div className="swipe-card decorated-card next-steps-card">
-                <h3>Next Steps</h3>
+                <div className="challenge-header"><span className="challenge-icon">🎯</span><span className="challenge-type" style={{color: 'var(--accent)'}}>Next Steps</span></div>
                 <ol className="analytics-list analytics-list-numbered">
                   {insight.recommendations.map((item) => (
                     <li key={item}>{item}</li>
@@ -151,7 +151,7 @@ export function AnalyticsDashboard(): JSX.Element {
                 </ol>
               </div>
               <div className="swipe-card decorated-card coaching-card">
-                <h3>Coaching Observations</h3>
+                <div className="challenge-header"><span className="challenge-icon">🧠</span><span className="challenge-type" style={{color: '#a78bfa'}}>Coaching</span></div>
                 <ul className="analytics-list">
                   {insight.correlations.map((item) => (
                     <li key={item}>{item}</li>
@@ -159,7 +159,7 @@ export function AnalyticsDashboard(): JSX.Element {
                 </ul>
               </div>
               <div className="swipe-card decorated-card strengths-card">
-                <h3>Strengths</h3>
+                <div className="challenge-header"><span className="challenge-icon">💪</span><span className="challenge-type" style={{color: '#34d399'}}>Strengths</span></div>
                 <ul className="analytics-list">
                   {insight.strengths.map((item) => (
                     <li key={item}>{item}</li>
@@ -167,7 +167,7 @@ export function AnalyticsDashboard(): JSX.Element {
                 </ul>
               </div>
               <div className="swipe-card decorated-card risks-card">
-                <h3>Risks</h3>
+                <div className="challenge-header"><span className="challenge-icon">⚠️</span><span className="challenge-type" style={{color: 'var(--danger)'}}>Risks</span></div>
                 <ul className="analytics-list">
                   {insight.risks.map((item) => (
                     <li key={item}>{item}</li>

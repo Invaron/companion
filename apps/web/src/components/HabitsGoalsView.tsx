@@ -213,7 +213,9 @@ export function HabitsGoalsView(): JSX.Element {
                 </figcaption>
               </figure>
             )}
-            <p className="daily-summary-text">{dailySummary.summary}</p>
+            <div className="daily-summary-narrative">
+              <p className="daily-summary-text">{dailySummary.summary}</p>
+            </div>
             {dailySummary.highlights.length > 0 && (
               <ul className="daily-summary-list">
                 {dailySummary.highlights.map((item, index) => (
@@ -227,9 +229,9 @@ export function HabitsGoalsView(): JSX.Element {
                   const cards = dailySummary.challenges!.filter((c: ChallengePrompt) => c.type === type);
                   if (cards.length === 0) return null;
                   return (
-                    <div key={type} className="daily-summary-challenges challenge-type-row">
+                    <div key={type} className="swipeable-card-stack challenge-type-row">
                       {cards.map((c: ChallengePrompt, i: number) => (
-                        <div key={i} className="challenge-card challenge-card-compact swipe-card">
+                        <div key={i} className="swipe-card challenge-card">
                           <div className="challenge-header">
                             <span className="challenge-icon">{CHALLENGE_ICONS[type]}</span>
                             <span className="challenge-type">{CHALLENGE_LABELS[type]}</span>

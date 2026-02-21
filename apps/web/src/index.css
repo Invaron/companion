@@ -1281,9 +1281,18 @@ button:disabled {
   font-size: 0.85rem;
 }
 
+.daily-summary-narrative {
+  background: rgba(9, 18, 38, 0.35);
+  border-left: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
 .daily-summary-text {
-  margin: 0 0 8px;
-  line-height: 1.5;
+  margin: 0;
+  line-height: 1.55;
+  font-size: 0.92rem;
+  color: color-mix(in srgb, var(--text) 90%, var(--muted));
 }
 
 .daily-summary-visual {
@@ -1311,9 +1320,25 @@ button:disabled {
 
 .daily-summary-list {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 0;
+  list-style: none;
   display: grid;
-  gap: 4px;
+  gap: 6px;
+}
+
+.daily-summary-list li {
+  position: relative;
+  padding-left: 20px;
+  line-height: 1.45;
+  font-size: 0.88rem;
+}
+
+.daily-summary-list li::before {
+  content: '•';
+  position: absolute;
+  left: 6px;
+  color: var(--accent);
+  font-weight: 700;
 }
 
 /* ─── Daily summary smooth rendering ─── */
@@ -5676,20 +5701,15 @@ label small.muted {
 
 .challenge-card {
   background: var(--surface);
-  border: 1px solid color-mix(in srgb, #f59e0b 30%, var(--border-soft));
-  border-left: 3px solid #f59e0b;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 12px 14px;
   min-width: 240px;
   max-width: 280px;
   flex-shrink: 0;
   scroll-snap-align: start;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-.challenge-card-compact {
-  padding: 10px 12px;
-}
 
 .challenge-header {
   display: flex;
@@ -6047,65 +6067,31 @@ label small.muted {
   scroll-snap-align: start;
 }
 
-/* Decorated insight cards (next steps / coaching / strengths / risks) */
-.decorated-stack .swipe-card {
-  min-width: 280px;
-  max-width: 340px;
-}
+
 
 .decorated-card {
-  background: var(--surface-soft);
+  background: var(--surface);
   border: 1px solid var(--border-soft);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 14px;
   display: grid;
   gap: 8px;
 }
 
-.decorated-card h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0;
-  color: var(--text);
-}
-
 .next-steps-card {
-  border-color: color-mix(in srgb, var(--accent-border) 56%, var(--border-soft));
-  border-left: 3px solid var(--accent);
-}
-
-.next-steps-card h3 {
-  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent-border) 40%, var(--border-soft));
 }
 
 .coaching-card {
-  border-color: color-mix(in srgb, #a78bfa 50%, var(--border-soft));
-  background: color-mix(in srgb, #a78bfa 4%, var(--background));
-  border-left: 3px solid #a78bfa;
-}
-
-.coaching-card h3 {
-  color: #a78bfa;
+  border-color: color-mix(in srgb, #a78bfa 30%, var(--border-soft));
 }
 
 .strengths-card {
-  border-color: color-mix(in srgb, #34d399 44%, var(--border-soft));
-  background: color-mix(in srgb, #34d399 4%, var(--background));
-  border-left: 3px solid #34d399;
-}
-
-.strengths-card h3 {
-  color: #34d399;
+  border-color: color-mix(in srgb, #34d399 30%, var(--border-soft));
 }
 
 .risks-card {
-  border-color: color-mix(in srgb, var(--danger) 42%, var(--border-soft));
-  background: color-mix(in srgb, var(--danger) 4%, var(--background));
-  border-left: 3px solid var(--danger);
-}
-
-.risks-card h3 {
-  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border-soft));
 }
 
 /* Swipe indicator pill */
