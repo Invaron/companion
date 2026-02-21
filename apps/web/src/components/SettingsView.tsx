@@ -1,6 +1,5 @@
 import { NotificationSettings } from "./NotificationSettings";
 import { CalendarImportView } from "./CalendarImportView";
-import { IntegrationStatusView } from "./IntegrationStatusView";
 import { IntegrationScopeSettings } from "./IntegrationScopeSettings";
 import { ConnectorsView } from "./ConnectorsView";
 import type { UserPlanInfo } from "../types";
@@ -61,13 +60,8 @@ export function SettingsView({
       )}
 
       <div className="settings-section">
-        <h3 className="settings-section-title">🔗 Connected Apps</h3>
+        <h3 className="settings-section-title">🔗 Integrations</h3>
         <ConnectorsView />
-      </div>
-
-      <div className="settings-section">
-        <h3 className="settings-section-title">🔌 Integrations</h3>
-        <IntegrationStatusView />
       </div>
 
       <div className="settings-section">

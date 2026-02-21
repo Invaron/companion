@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { ConnectorService, UserConnection } from "../types";
-import { connectService, disconnectService, getConnectors } from "../lib/api";
+import { ConnectorService, UserConnection, CanvasStatus, GeminiStatus } from "../types";
+import {
+  connectService,
+  disconnectService,
+  getCanvasStatus,
+  getConnectors,
+  getGeminiStatus,
+  triggerCanvasSync
+} from "../lib/api";
+import { saveCanvasStatus } from "../lib/storage";
 
 interface ConnectorMeta {
   service: ConnectorService;
@@ -12,12 +20,20 @@ interface ConnectorMeta {
   configFields?: { key: string; label: string; placeholder: string }[];
 }
 
+/** Gemini is server-configured, not a user connector — shown as a status-only card. */
+interface GeminiCard {
+  service: "gemini";
+  label: string;
+  icon: string;
+  description: string;
+}
+
 const CONNECTORS: ConnectorMeta[] = [
   {
     service: "canvas",
     label: "Canvas LMS",
     icon: "🎓",
-    description: "Access courses, assignments, deadlines, and grades from UiS Canvas.",
+    description: "Courses, assignments, deadlines, and grades from UiS Canvas.",
     type: "token",
     placeholder: "Paste your Canvas access token"
   },
@@ -25,14 +41,14 @@ const CONNECTORS: ConnectorMeta[] = [
     service: "gmail",
     label: "Gmail",
     icon: "📧",
-    description: "Read inbox summaries and email digests for the AI context.",
+    description: "Inbox summaries and email digests for the AI context.",
     type: "oauth"
   },
   {
     service: "github_course",
     label: "GitHub (Course Orgs)",
     icon: "🐙",
-    description: "Access lab assignments and repos from course organizations.",
+    description: "Lab assignments and repos from course organizations.",
     type: "token",
     placeholder: "Paste your GitHub personal access token"
   },
@@ -40,18 +56,39 @@ const CONNECTORS: ConnectorMeta[] = [
     service: "withings",
     label: "Withings Health",
     icon: "💪",
-    description: "Sync sleep, weight, and health data from Withings devices.",
+    description: "Sleep, weight, and health data from Withings devices.",
     type: "oauth"
   },
   {
     service: "tp_schedule",
     label: "TP EduCloud Schedule",
     icon: "📅",
-    description: "Import your lecture schedule via iCal subscription link from TP.",
+    description: "Lecture schedule via iCal subscription from TP.",
     type: "url",
     placeholder: "Paste your TP iCal URL here"
   }
 ];
+
+const GEMINI_CARD: GeminiCard = {
+  service: "gemini",
+  label: "Gemini AI",
+  icon: "✨",
+  description: "Conversational AI, summaries, coaching"
+};
+
+function formatRelative(timestamp: string | null): string {
+  if (!timestamp) return "Never";
+  const diffMs = Date.now() - new Date(timestamp).getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffSec < 10) return "Just now";
+  if (diffSec < 60) return `${diffSec}s ago`;
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  return `${diffDay}d ago`;
+}
 
 export function ConnectorsView(): JSX.Element {
   const [connections, setConnections] = useState<UserConnection[]>([]);
@@ -60,6 +97,14 @@ export function ConnectorsView(): JSX.Element {
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<ConnectorService | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Live integration status
+  const [canvasStatus, setCanvasStatus] = useState<CanvasStatus>({ baseUrl: "", lastSyncedAt: null, courses: [] });
+  const [geminiStatus, setGeminiStatus] = useState<GeminiStatus>({
+    apiConfigured: false, model: "unknown", rateLimitRemaining: null, lastRequestAt: null
+  });
+  const [canvasSyncing, setCanvasSyncing] = useState(false);
+  const [canvasMessage, setCanvasMessage] = useState("");
 
   const fetchConnections = useCallback(async () => {
     try {
@@ -74,7 +119,35 @@ export function ConnectorsView(): JSX.Element {
 
   useEffect(() => {
     void fetchConnections();
+    // Also load integration statuses
+    void (async () => {
+      try {
+        const [canvas, gemini] = await Promise.all([getCanvasStatus(), getGeminiStatus()]);
+        setCanvasStatus(canvas);
+        setGeminiStatus(gemini);
+      } catch { /* ignore */ }
+    })();
   }, [fetchConnections]);
+
+  const handleCanvasSync = async (): Promise<void> => {
+    setCanvasSyncing(true);
+    setCanvasMessage("");
+    const result = await triggerCanvasSync(undefined);
+    setCanvasMessage(result.success ? "Synced successfully" : result.error ?? "Sync failed");
+    const nextStatus = await getCanvasStatus();
+    setCanvasStatus(nextStatus);
+    saveCanvasStatus(nextStatus);
+    setCanvasSyncing(false);
+    setTimeout(() => setCanvasMessage(""), 3000);
+  };
+
+  /** Get live status detail text for a connector service. */
+  const getStatusDetail = (service: ConnectorService): string | null => {
+    if (service === "canvas" && canvasStatus.lastSyncedAt) {
+      return `${canvasStatus.courses.length} courses · Synced ${formatRelative(canvasStatus.lastSyncedAt)}`;
+    }
+    return null;
+  };
 
   const isConnected = (service: ConnectorService): boolean =>
     connections.some((c) => c.service === service);
@@ -177,11 +250,37 @@ export function ConnectorsView(): JSX.Element {
 
   return (
     <div className="connectors-list">
+      {/* Gemini AI — server-configured status card */}
+      <div className={`connector-card ${geminiStatus.apiConfigured ? "connector-connected" : ""}`}>
+        <div className="connector-header">
+          <span className="connector-icon">{GEMINI_CARD.icon}</span>
+          <div className="connector-info">
+            <span className="connector-label">{GEMINI_CARD.label}</span>
+            {geminiStatus.apiConfigured ? (
+              <span className="connector-display-label">
+                {geminiStatus.model} · Last used {formatRelative(geminiStatus.lastRequestAt)}
+              </span>
+            ) : (
+              <span className="connector-desc">{GEMINI_CARD.description}</span>
+            )}
+          </div>
+          <div className="connector-status">
+            {geminiStatus.apiConfigured ? (
+              <span className="connector-badge connector-badge-connected">Connected</span>
+            ) : (
+              <span className="connector-badge connector-badge-disconnected">Not configured</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* User-connectable services */}
       {CONNECTORS.map((connector) => {
         const connected = isConnected(connector.service);
         const connection = getConnection(connector.service);
         const expanded = expandedService === connector.service && !connected;
         const busy = submitting === connector.service;
+        const statusDetail = connected ? getStatusDetail(connector.service) : null;
 
         return (
           <div
@@ -198,7 +297,10 @@ export function ConnectorsView(): JSX.Element {
               <span className="connector-icon">{connector.icon}</span>
               <div className="connector-info">
                 <span className="connector-label">{connector.label}</span>
-                {connected && connection?.displayLabel && (
+                {connected && statusDetail && (
+                  <span className="connector-display-label">{statusDetail}</span>
+                )}
+                {connected && !statusDetail && connection?.displayLabel && (
                   <span className="connector-display-label">{connection.displayLabel}</span>
                 )}
                 {!connected && (
@@ -219,6 +321,15 @@ export function ConnectorsView(): JSX.Element {
                 <span className="connector-connected-since">
                   Connected {new Date(connection!.connectedAt).toLocaleDateString()}
                 </span>
+                {connector.service === "canvas" && (
+                  <button
+                    className="connector-sync-btn"
+                    onClick={() => void handleCanvasSync()}
+                    disabled={canvasSyncing}
+                  >
+                    {canvasSyncing ? "Syncing…" : "Sync"}
+                  </button>
+                )}
                 <button
                   className="connector-disconnect-btn"
                   onClick={() => void handleDisconnect(connector.service)}
@@ -227,6 +338,9 @@ export function ConnectorsView(): JSX.Element {
                   {busy ? "Disconnecting..." : "Disconnect"}
                 </button>
               </div>
+            )}
+            {connected && canvasMessage && connector.service === "canvas" && (
+              <p className="connector-sync-message">{canvasMessage}</p>
             )}
 
             {expanded && (
