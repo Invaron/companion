@@ -440,7 +440,7 @@ Challenge types:
 - "reflect": A reflection question (e.g., "What's the one thing that would make tomorrow's meal prep easier?")
 - "commit": A micro-commitment (e.g., "Name one meal you'll prep tonight for tomorrow.")
 
-Generate 2-3 challenges for EACH of the 4 types (8-12 total). Each type should have its own set of prompts so the user can swipe through multiple challenges per category. They should feel like a coach prompting active thinking, not a quiz.
+Generate EXACTLY 2 challenges for EACH of the 4 types (8 total). Each type must have exactly 2 prompts so the user can swipe through them. They should feel like a coach prompting active thinking, not a quiz.
 
 Rules:
 - No markdown. No extra keys.

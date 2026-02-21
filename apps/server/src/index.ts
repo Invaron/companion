@@ -765,7 +765,7 @@ Challenge types:
 - "reflect": Reflection prompt ("What's the one thing that would make tomorrow easier?")
 - "commit": Micro-commitment ("Name one meal you'll prep tonight.")
 
-Generate 2-3 challenges for EACH of the 4 types (8-12 total). Each type should have its own set of prompts. They should feel like a coach prompting active thinking.
+Generate EXACTLY 2 challenges for EACH of the 4 types (8 total). Each type must have exactly 2 prompts. They should feel like a coach prompting active thinking.
 
 CONTEXT:
 - "weightKg" in nutrition targets is the user's BASELINE weight for macros, NOT a goal weight.

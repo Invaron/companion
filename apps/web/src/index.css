@@ -2582,6 +2582,11 @@ button:disabled {
   border-bottom-left-radius: 4px;
 }
 
+/* Smooth streaming: gentle height transition so the bubble doesn't jump */
+.chat-bubble-assistant.streaming .chat-bubble-content {
+  transition: min-height 0.15s ease-out;
+}
+
 .chat-citation-list {
   display: flex;
   flex-wrap: wrap;

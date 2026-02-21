@@ -383,7 +383,7 @@ export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
   const scrollFrameRef = useRef<number | null>(null);
   const pendingInitialScrollRef = useRef(false);
   const streamContentRef = useRef("");
-  const streamRafRef = useRef<number | null>(null);
+  const streamIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamPlaceholderIdRef = useRef<string | null>(null);
 
   const recognitionCtor = getSpeechRecognitionCtor();
@@ -589,6 +589,21 @@ export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
     try {
       streamContentRef.current = "";
       streamPlaceholderIdRef.current = assistantPlaceholder.id;
+
+      // Flush accumulated stream content to React state
+      const flushStream = (): void => {
+        const content = streamContentRef.current;
+        const placeholderId = streamPlaceholderIdRef.current;
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === placeholderId
+              ? { ...msg, content, streaming: true }
+              : msg
+          )
+        );
+        scheduleScrollToBottom("auto");
+      };
+
       const response = await sendChatMessageStream(
         trimmedText,
         {
@@ -597,29 +612,20 @@ export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
               return;
             }
             streamContentRef.current += delta;
-            if (streamRafRef.current === null) {
-              streamRafRef.current = requestAnimationFrame(() => {
-                streamRafRef.current = null;
-                const content = streamContentRef.current;
-                const placeholderId = streamPlaceholderIdRef.current;
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === placeholderId
-                      ? { ...msg, content, streaming: true }
-                      : msg
-                  )
-                );
-                scheduleScrollToBottom("auto");
-              });
+            // Start a throttled interval to flush content every 60ms
+            // This reduces React re-renders from ~60fps to ~16fps
+            if (streamIntervalRef.current === null) {
+              flushStream(); // Show the first token immediately
+              streamIntervalRef.current = setInterval(flushStream, 60);
             }
           }
         },
         attachmentsToSend
       );
-      // Cancel any pending rAF frame before final commit
-      if (streamRafRef.current !== null) {
-        cancelAnimationFrame(streamRafRef.current);
-        streamRafRef.current = null;
+      // Clear interval and do one final flush
+      if (streamIntervalRef.current !== null) {
+        clearInterval(streamIntervalRef.current);
+        streamIntervalRef.current = null;
       }
       if (response.metadata?.mood) {
         onMoodChange(response.metadata.mood);
@@ -815,7 +821,7 @@ export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
           const pendingActions = msg.metadata?.pendingActions ?? [];
 
           return (
-            <div key={msg.id} data-message-id={msg.id} className={`chat-bubble chat-bubble-${msg.role}`}>
+            <div key={msg.id} data-message-id={msg.id} className={`chat-bubble chat-bubble-${msg.role}${msg.streaming ? " streaming" : ""}`}>
               <div className="chat-bubble-content">
                 {msg.streaming && msg.content === "" ? (
                   <div className="chat-typing">
