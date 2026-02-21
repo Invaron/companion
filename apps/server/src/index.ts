@@ -71,6 +71,14 @@ import {
   type UserPlanInfo
 } from "./plan-config.js";
 import { SyncFailureRecoveryTracker, SyncRecoveryPrompt } from "./sync-failure-recovery.js";
+import {
+  isStripeConfigured,
+  createCheckoutSession,
+  createPortalSession,
+  parseWebhookEvent,
+  getStripeStatus,
+  getPriceForPlan
+} from "./stripe-integration.js";
 import { nowIso } from "./utils.js";
 
 const app = express();
@@ -461,11 +469,71 @@ function isPublicApiRoute(method: string, path: string): boolean {
     (method === "GET" && path === "/api/auth/gmail/callback") ||
     (method === "GET" && path === "/api/auth/withings") ||
     (method === "GET" && path === "/api/auth/withings/callback") ||
-    (method === "GET" && path === "/api/plan/tiers")
+    (method === "GET" && path === "/api/plan/tiers") ||
+    (method === "POST" && path === "/api/stripe/webhook")
   );
 }
 
 app.use(cors());
+
+// Stripe webhook needs raw body — register BEFORE express.json()
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), (req, res) => {
+  const signature = req.headers["stripe-signature"];
+  if (!signature || typeof signature !== "string") {
+    return res.status(400).json({ error: "Missing stripe-signature header" });
+  }
+
+  try {
+    const event = parseWebhookEvent(req.body as Buffer, signature);
+    console.log(`[stripe] webhook: ${event.type} userId=${event.userId} plan=${event.planId}`);
+
+    switch (event.type) {
+      case "checkout.session.completed": {
+        if (event.userId && event.planId) {
+          store.updateUserPlan(event.userId, event.planId);
+        }
+        if (event.userId && event.stripeCustomerId) {
+          store.updateStripeCustomerId(event.userId, event.stripeCustomerId);
+        }
+        break;
+      }
+      case "customer.subscription.updated": {
+        // Subscription change (upgrade/downgrade)
+        const user = event.userId
+          ? store.getUserById(event.userId)
+          : event.stripeCustomerId
+            ? store.getUserByStripeCustomerId(event.stripeCustomerId)
+            : null;
+        if (user && event.planId && event.status === "active") {
+          store.updateUserPlan(user.id, event.planId);
+        }
+        break;
+      }
+      case "customer.subscription.deleted": {
+        // Subscription cancelled — downgrade to free
+        const cancelledUser = event.userId
+          ? store.getUserById(event.userId)
+          : event.stripeCustomerId
+            ? store.getUserByStripeCustomerId(event.stripeCustomerId)
+            : null;
+        if (cancelledUser) {
+          store.updateUserPlan(cancelledUser.id, "free");
+        }
+        break;
+      }
+      case "invoice.payment_failed": {
+        console.warn(`[stripe] payment failed for customer=${event.stripeCustomerId}`);
+        break;
+      }
+    }
+
+    return res.json({ received: true });
+  } catch (err) {
+    console.error("[stripe] webhook error:", err);
+    return res.status(400).json({ error: "Webhook verification failed" });
+  }
+});
+
 app.use(express.json({ limit: MAX_API_JSON_BODY_SIZE }));
 app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
   const maybeError = error as { type?: string; status?: number; statusCode?: number; body?: unknown } | undefined;
@@ -804,6 +872,61 @@ app.post("/api/plan/start-trial", (req, res) => {
   const updated = store.getUserById(user.id);
   if (!updated) return res.status(500).json({ error: "Failed to update" });
   return res.json(buildUserPlanInfo(updated));
+});
+
+/** Create a Stripe Checkout Session for plan upgrade */
+app.post("/api/stripe/create-checkout", async (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.authUser) return res.status(401).json({ error: "Unauthorized" });
+
+  if (!isStripeConfigured()) {
+    return res.status(503).json({ error: "Payment system not configured yet" });
+  }
+
+  const { planId } = req.body as { planId?: string };
+  if (!planId || (planId !== "plus" && planId !== "pro")) {
+    return res.status(400).json({ error: "Invalid plan. Choose 'plus' or 'pro'." });
+  }
+
+  if (!getPriceForPlan(planId as PlanId)) {
+    return res.status(400).json({ error: `No price configured for plan "${planId}"` });
+  }
+
+  try {
+    const result = await createCheckoutSession({
+      userId: authReq.authUser.id,
+      email: authReq.authUser.email,
+      planId: planId as PlanId,
+      stripeCustomerId: authReq.authUser.stripeCustomerId
+    });
+    return res.json(result);
+  } catch (err) {
+    console.error("[stripe] checkout error:", err);
+    return res.status(500).json({ error: "Failed to create checkout session" });
+  }
+});
+
+/** Create a Stripe Customer Portal session for managing subscription */
+app.post("/api/stripe/portal", async (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.authUser) return res.status(401).json({ error: "Unauthorized" });
+
+  if (!authReq.authUser.stripeCustomerId) {
+    return res.status(400).json({ error: "No active subscription found" });
+  }
+
+  try {
+    const url = await createPortalSession(authReq.authUser.stripeCustomerId);
+    return res.json({ url });
+  } catch (err) {
+    console.error("[stripe] portal error:", err);
+    return res.status(500).json({ error: "Failed to create portal session" });
+  }
+});
+
+/** Get Stripe configuration status */
+app.get("/api/stripe/status", (_req, res) => {
+  return res.json(getStripeStatus());
 });
 
 

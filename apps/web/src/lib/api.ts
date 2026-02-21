@@ -1477,3 +1477,30 @@ export async function getPlanTiers(): Promise<PlanTierSummary[]> {
 export async function startTrial(): Promise<UserPlanInfo> {
   return await jsonOrThrow<UserPlanInfo>("/api/plan/start-trial", { method: "POST" });
 }
+
+// ── Stripe Payment ───────────────────────────────────────────────────────
+
+export interface StripeCheckoutResult {
+  sessionId: string;
+  url: string;
+}
+
+export interface StripeStatusResponse {
+  configured: boolean;
+  prices: { plus: boolean; pro: boolean };
+}
+
+export async function getStripeStatus(): Promise<StripeStatusResponse> {
+  return await jsonOrThrow<StripeStatusResponse>("/api/stripe/status");
+}
+
+export async function createStripeCheckout(planId: string): Promise<StripeCheckoutResult> {
+  return await jsonOrThrow<StripeCheckoutResult>("/api/stripe/create-checkout", {
+    method: "POST",
+    body: JSON.stringify({ planId })
+  });
+}
+
+export async function createStripePortal(): Promise<{ url: string }> {
+  return await jsonOrThrow<{ url: string }>("/api/stripe/portal", { method: "POST" });
+}

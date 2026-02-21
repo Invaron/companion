@@ -180,6 +180,7 @@ export interface AuthUser {
   role: AuthRole;
   plan: PlanId;
   trialEndsAt: string | null;
+  stripeCustomerId?: string;
   createdAt: string;
   updatedAt: string;
 }

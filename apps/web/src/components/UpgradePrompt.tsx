@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { getPlanTiers, getUserPlan, startTrial } from "../lib/api";
-import type { FeatureId, PlanTierSummary, UserPlanInfo } from "../types";
+import {
+  createStripeCheckout,
+  getPlanTiers,
+  getStripeStatus,
+  getUserPlan,
+  startTrial
+} from "../lib/api";
+import type { FeatureId, PlanId, PlanTierSummary, UserPlanInfo } from "../types";
 
 interface UpgradePromptProps {
   feature?: string;
@@ -12,10 +18,16 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
   const [planInfo, setPlanInfo] = useState<UserPlanInfo | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stripeReady, setStripeReady] = useState(false);
+  const [stripePrices, setStripePrices] = useState<{ plus: boolean; pro: boolean }>({ plus: false, pro: false });
 
   useEffect(() => {
     void getPlanTiers().then(setTiers).catch(() => {});
     void getUserPlan().then(setPlanInfo).catch(() => {});
+    void getStripeStatus().then((s) => {
+      setStripeReady(s.configured);
+      setStripePrices(s.prices);
+    }).catch(() => {});
   }, []);
 
   const handleStartTrial = useCallback(async () => {
@@ -24,7 +36,6 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
     try {
       const updated = await startTrial();
       setPlanInfo(updated);
-      // Reload to apply new plan
       window.location.reload();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to start trial";
@@ -35,6 +46,24 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
         setError(msg);
       }
     } finally {
+      setStarting(false);
+    }
+  }, []);
+
+  const handleStripeCheckout = useCallback(async (plan: PlanId) => {
+    setStarting(true);
+    setError(null);
+    try {
+      const result = await createStripeCheckout(plan);
+      window.location.href = result.url;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to start checkout";
+      try {
+        const parsed = JSON.parse(msg) as { error?: string };
+        setError(parsed.error ?? msg);
+      } catch {
+        setError(msg);
+      }
       setStarting(false);
     }
   }, []);
@@ -98,14 +127,19 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
                   onClick={() => {
                     if (canTrial && tier.id === "plus") {
                       void handleStartTrial();
+                    } else if (stripeReady && stripePrices[tier.id as "plus" | "pro"]) {
+                      void handleStripeCheckout(tier.id as PlanId);
                     }
-                    // TODO: Vipps/Stripe payment flow for paid upgrades
                   }}
-                  disabled={starting}
+                  disabled={starting || (!canTrial && !(stripeReady && stripePrices[tier.id as "plus" | "pro"]))}
                 >
-                  {canTrial && tier.id === "plus"
-                    ? (starting ? "Starting..." : `Start ${tier.trialDays}-day free trial`)
-                    : "Coming soon"}
+                  {starting
+                    ? "Processing..."
+                    : canTrial && tier.id === "plus"
+                      ? `Start ${tier.trialDays}-day free trial`
+                      : stripeReady && stripePrices[tier.id as "plus" | "pro"]
+                        ? `Subscribe — ${tier.priceMonthlyNok} kr/mo`
+                        : "Coming soon"}
                 </button>
               )}
             </div>
@@ -117,7 +151,9 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
         <p className="upgrade-footer">
           {canTrial
             ? "Start your free trial — cancel anytime within 7 days."
-            : "Payment integration coming soon (Vipps + Stripe)."}
+            : stripeReady
+              ? "Secure checkout powered by Stripe. Cancel anytime."
+              : "Payment integration coming soon."}
         </p>
       </div>
     </div>

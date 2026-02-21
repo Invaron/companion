@@ -917,6 +917,12 @@ export class RuntimeStore {
       this.db.prepare("ALTER TABLE users ADD COLUMN trialEndsAt TEXT").run();
     }
 
+    // Migration: add stripeCustomerId column
+    const hasStripeCustomerId = userColumns.some((col) => col.name === "stripeCustomerId");
+    if (!hasStripeCustomerId) {
+      this.db.prepare("ALTER TABLE users ADD COLUMN stripeCustomerId TEXT").run();
+    }
+
     // Migration: create daily_usage table for rate limiting
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS daily_usage (
@@ -1783,7 +1789,7 @@ export class RuntimeStore {
   }
 
   getUserById(id: string): AuthUser | null {
-    const row = this.db.prepare("SELECT id, email, name, avatarUrl, provider, role, plan, trialEndsAt, createdAt, updatedAt FROM users WHERE id = ?").get(id) as
+    const row = this.db.prepare("SELECT id, email, name, avatarUrl, provider, role, plan, trialEndsAt, stripeCustomerId, createdAt, updatedAt FROM users WHERE id = ?").get(id) as
       | {
           id: string;
           email: string;
@@ -1793,6 +1799,7 @@ export class RuntimeStore {
           role: string;
           plan: string | null;
           trialEndsAt: string | null;
+          stripeCustomerId: string | null;
           createdAt: string;
           updatedAt: string;
         }
@@ -1811,6 +1818,7 @@ export class RuntimeStore {
       role: this.parseAuthRole(row.role),
       plan: this.parsePlanId(row.plan),
       trialEndsAt: row.trialEndsAt ?? null,
+      stripeCustomerId: row.stripeCustomerId ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt
     };
@@ -1823,6 +1831,20 @@ export class RuntimeStore {
     this.db
       .prepare("UPDATE users SET plan = ?, trialEndsAt = COALESCE(?, trialEndsAt), updatedAt = ? WHERE id = ?")
       .run(plan, trialEndsAt ?? null, updatedAt, userId);
+  }
+
+  updateStripeCustomerId(userId: string, stripeCustomerId: string): void {
+    this.db
+      .prepare("UPDATE users SET stripeCustomerId = ?, updatedAt = ? WHERE id = ?")
+      .run(stripeCustomerId, nowIso(), userId);
+  }
+
+  getUserByStripeCustomerId(stripeCustomerId: string): AuthUser | null {
+    const row = this.db.prepare("SELECT id FROM users WHERE stripeCustomerId = ?").get(stripeCustomerId) as
+      | { id: string }
+      | undefined;
+    if (!row) return null;
+    return this.getUserById(row.id);
   }
 
   startTrial(userId: string, durationDays: number): void {
