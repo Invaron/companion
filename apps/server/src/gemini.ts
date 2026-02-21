@@ -1450,12 +1450,17 @@ export function buildContextWindow(context: ContextWindow): string {
   if (context.upcomingDeadlines.length > 0) {
     parts.push("\n**Upcoming Deadlines:**");
     context.upcomingDeadlines.forEach((deadline) => {
-      const dueDate = new Date(deadline.dueDate).toLocaleDateString("en-US", {
+      const dueObj = new Date(deadline.dueDate);
+      const dueLocal = dueObj.toLocaleString("en-US", {
+        timeZone: config.TIMEZONE,
         month: "short",
-        day: "numeric"
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
       });
       const status = deadline.completed ? "✅" : "⬜";
-      parts.push(`- ${status} [${deadline.id}] ${deadline.course}: ${deadline.task} (Due ${dueDate}, Priority: ${deadline.priority})`);
+      parts.push(`- ${status} [${deadline.id}] ${deadline.course}: ${deadline.task} (Due ${dueLocal} local / ${dueObj.toISOString()} UTC, Priority: ${deadline.priority})`);
     });
   }
 
