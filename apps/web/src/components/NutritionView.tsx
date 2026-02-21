@@ -509,6 +509,7 @@ export function NutritionView(): JSX.Element {
   const [showLogMealPanel, setShowLogMealPanel] = useState(false);
   const [showCustomFoodsPanel, setShowCustomFoodsPanel] = useState(false);
   const [mealFoodPickerByMeal, setMealFoodPickerByMeal] = useState<Record<string, string>>({});
+  const [expandedMealFoods, setExpandedMealFoods] = useState<Set<string>>(new Set());
 
   // Tracking tab state
   const [historyEntries, setHistoryEntries] = useState<NutritionDayHistoryEntry[]>([]);
@@ -1116,6 +1117,25 @@ export function NutritionView(): JSX.Element {
       ...previous,
       [mealId]: customFoodId
     }));
+  };
+
+  const toggleMealFoodsExpanded = (mealId: string): void => {
+    setExpandedMealFoods((previous) => {
+      const next = new Set(previous);
+      if (next.has(mealId)) {
+        next.delete(mealId);
+      } else {
+        next.add(mealId);
+      }
+      return next;
+    });
+  };
+
+  const isMealFoodsExpanded = (meal: NutritionMeal): boolean => {
+    // Completed meals default to collapsed, active meals default to expanded
+    const isCompleted = isMealCompleted(meal);
+    const hasExplicitToggle = expandedMealFoods.has(meal.id);
+    return isCompleted ? hasExplicitToggle : !hasExplicitToggle;
   };
 
   const handleAddFoodToMeal = async (mealId: string): Promise<void> => {
@@ -1816,88 +1836,100 @@ export function NutritionView(): JSX.Element {
                       </div>
                     </div>
 
-                    <ul className="nutrition-meal-item-list nutrition-meal-food-list">
-                      {meal.items.map((item, index) => {
-                        const itemCalories = Math.round(item.quantity * item.caloriesPerUnit);
-                        return (
-                          <li key={`${item.id ?? item.customFoodId ?? item.name}-${index}`} className="nutrition-meal-food-item">
-                            <p className="nutrition-meal-food-name">{item.name}</p>
-                            <div className="nutrition-meal-food-bottom">
-                              <div className="nutrition-meal-food-main">
-                                <span>
-                                  {formatMetric(item.quantity)}
-                                  {item.unitLabel || "g"}
-                                </span>
-                                <span>{itemCalories} kcal</span>
-                              </div>
-                              <div className="nutrition-meal-food-actions">
-                                <button
-                                  type="button"
-                                  onPointerDown={(event) => {
-                                    event.preventDefault();
-                                    startMealItemHold(`meal-item-${meal.id}-${index}-dec`, meal.id, index, -1);
-                                  }}
-                                  onPointerUp={() => stopMealItemHold(`meal-item-${meal.id}-${index}-dec`, meal.id)}
-                                  onPointerLeave={() => stopMealItemHold(`meal-item-${meal.id}-${index}-dec`, meal.id)}
-                                  onPointerCancel={() => stopMealItemHold(`meal-item-${meal.id}-${index}-dec`, meal.id)}
-                                  onClick={(event) => {
-                                    if (event.detail === 0) {
-                                      handleAdjustMealItemQuantity(meal.id, index, -1, true);
-                                    }
-                                  }}
-                                  aria-label="Decrease food amount"
-                                >
-                                  -
-                                </button>
-                                <button
-                                  type="button"
-                                  onPointerDown={(event) => {
-                                    event.preventDefault();
-                                    startMealItemHold(`meal-item-${meal.id}-${index}-inc`, meal.id, index, 1);
-                                  }}
-                                  onPointerUp={() => stopMealItemHold(`meal-item-${meal.id}-${index}-inc`, meal.id)}
-                                  onPointerLeave={() => stopMealItemHold(`meal-item-${meal.id}-${index}-inc`, meal.id)}
-                                  onPointerCancel={() => stopMealItemHold(`meal-item-${meal.id}-${index}-inc`, meal.id)}
-                                  onClick={(event) => {
-                                    if (event.detail === 0) {
-                                      handleAdjustMealItemQuantity(meal.id, index, 1, true);
-                                    }
-                                  }}
-                                  aria-label="Increase food amount"
-                                >
-                                  +
-                                </button>
-                                <button
-                                  type="button"
-                                  className="nutrition-secondary-button"
-                                  onClick={() => void handleRemoveMealItem(meal.id, index)}
-                                  aria-label="Remove food item"
-                                >
-                                  🗑
-                                </button>
-                              </div>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-
-                    <div className="nutrition-meal-add-food-row">
-                      <select
-                        value={mealFoodPickerByMeal[meal.id] ?? customFoods[0]?.id ?? ""}
-                        onChange={(event) => handleMealFoodPickerChange(meal.id, event.target.value)}
+                    {meal.items.length > 0 && (
+                      <button
+                        type="button"
+                        className="nutrition-meal-food-toggle"
+                        onClick={() => toggleMealFoodsExpanded(meal.id)}
+                        aria-expanded={isMealFoodsExpanded(meal)}
                       >
-                        {customFoods.length === 0 && <option value="">No custom foods</option>}
-                        {customFoods.map((food) => (
-                          <option key={food.id} value={food.id}>
-                            {food.name}
-                          </option>
-                        ))}
-                      </select>
-                      <button type="button" onClick={() => void handleAddFoodToMeal(meal.id)} disabled={customFoods.length === 0}>
-                        + Add food
+                        <span className="nutrition-meal-food-toggle-summary">
+                          {meal.items.length} item{meal.items.length !== 1 ? "s" : ""} · {Math.round(mealDisplayCalories(meal))} kcal
+                        </span>
+                        <span className={`nutrition-meal-food-toggle-chevron ${isMealFoodsExpanded(meal) ? "expanded" : ""}`}>▾</span>
                       </button>
-                    </div>
+                    )}
+
+                    {isMealFoodsExpanded(meal) && (
+                      <>
+                        <ul className="nutrition-meal-item-list nutrition-meal-food-list">
+                          {meal.items.map((item, index) => {
+                            const itemCalories = Math.round(item.quantity * item.caloriesPerUnit);
+                            return (
+                              <li key={`${item.id ?? item.customFoodId ?? item.name}-${index}`} className="nutrition-meal-food-item">
+                                <span className="nutrition-meal-food-name">{item.name}</span>
+                                <span className="nutrition-meal-food-qty">
+                                  {formatMetric(item.quantity)}{item.unitLabel || "g"}
+                                </span>
+                                <span className="nutrition-meal-food-cal">{itemCalories}</span>
+                                <span className="nutrition-meal-food-actions">
+                                  <button
+                                    type="button"
+                                    onPointerDown={(event) => {
+                                      event.preventDefault();
+                                      startMealItemHold(`meal-item-${meal.id}-${index}-dec`, meal.id, index, -1);
+                                    }}
+                                    onPointerUp={() => stopMealItemHold(`meal-item-${meal.id}-${index}-dec`, meal.id)}
+                                    onPointerLeave={() => stopMealItemHold(`meal-item-${meal.id}-${index}-dec`, meal.id)}
+                                    onPointerCancel={() => stopMealItemHold(`meal-item-${meal.id}-${index}-dec`, meal.id)}
+                                    onClick={(event) => {
+                                      if (event.detail === 0) {
+                                        handleAdjustMealItemQuantity(meal.id, index, -1, true);
+                                      }
+                                    }}
+                                    aria-label="Decrease food amount"
+                                  >
+                                    −
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onPointerDown={(event) => {
+                                      event.preventDefault();
+                                      startMealItemHold(`meal-item-${meal.id}-${index}-inc`, meal.id, index, 1);
+                                    }}
+                                    onPointerUp={() => stopMealItemHold(`meal-item-${meal.id}-${index}-inc`, meal.id)}
+                                    onPointerLeave={() => stopMealItemHold(`meal-item-${meal.id}-${index}-inc`, meal.id)}
+                                    onPointerCancel={() => stopMealItemHold(`meal-item-${meal.id}-${index}-inc`, meal.id)}
+                                    onClick={(event) => {
+                                      if (event.detail === 0) {
+                                        handleAdjustMealItemQuantity(meal.id, index, 1, true);
+                                      }
+                                    }}
+                                    aria-label="Increase food amount"
+                                  >
+                                    +
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleRemoveMealItem(meal.id, index)}
+                                    aria-label="Remove food item"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+
+                        <div className="nutrition-meal-add-food-row">
+                          <select
+                            value={mealFoodPickerByMeal[meal.id] ?? customFoods[0]?.id ?? ""}
+                            onChange={(event) => handleMealFoodPickerChange(meal.id, event.target.value)}
+                          >
+                            {customFoods.length === 0 && <option value="">No custom foods</option>}
+                            {customFoods.map((food) => (
+                              <option key={food.id} value={food.id}>
+                                {food.name}
+                              </option>
+                            ))}
+                          </select>
+                          <button type="button" onClick={() => void handleAddFoodToMeal(meal.id)} disabled={customFoods.length === 0}>
+                            + Add food
+                          </button>
+                        </div>
+                      </>
+                    )}
 
                     <div className="nutrition-meal-status-row">
                       <button
