@@ -38,10 +38,10 @@ function TabIcon({ id }: { id: TabId }): ReactNode {
       return (
         <svg {...props}>
           {/* Sapling: stem from curved soil with two leaves */}
-          <line x1="12" y1="21" x2="12" y2="10" />
-          <path d="M12 14c-3-1-6-4-5-7 3 0 5 3 5 7z" />
-          <path d="M12 10c3-1 6-4 5-7-3 0-5 3-5 7z" />
-          <path d="M6 22c0-3 3-4 6-4s6 1 6 4" fill="none" />
+          <line x1="12" y1="18" x2="12" y2="8" />
+          <path d="M12 12c-3-1-5.5-3.5-4.5-6.5 2.5 0 4.5 3 4.5 6.5z" />
+          <path d="M12 8c3-1 5.5-3.5 4.5-6.5-2.5 0-4.5 3-4.5 6.5z" />
+          <path d="M5 22c0-4 3.5-5 7-5s7 1 7 5" fill="none" />
         </svg>
       );
     case "settings":
