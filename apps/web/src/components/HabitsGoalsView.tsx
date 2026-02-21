@@ -9,6 +9,22 @@ import {
 import { Goal, Habit, DailyGrowthSummary, ChallengePrompt } from "../types";
 import { hapticSuccess } from "../lib/haptics";
 
+const CHALLENGE_ICONS: Record<ChallengePrompt["type"], string> = {
+  connect: "🔗",
+  predict: "🔮",
+  reflect: "💭",
+  commit: "✊"
+};
+
+const CHALLENGE_LABELS: Record<ChallengePrompt["type"], string> = {
+  connect: "Connect the dots",
+  predict: "Predict",
+  reflect: "Reflect",
+  commit: "Commit"
+};
+
+const CHALLENGE_TYPES: ChallengePrompt["type"][] = ["reflect", "predict", "commit", "connect"];
+
 interface BusyState {
   type: "habit" | "goal";
   id: string;
@@ -176,11 +192,22 @@ export function HabitsGoalsView(): JSX.Element {
         {goals.length === 0 && <p className="muted">No goals yet — ask Gemini to create one.</p>}
       </div>
 
-      <section className="daily-summary-panel">
+      <section className="daily-summary-panel daily-summary-animate">
         <header className="panel-header">
           <h3>Daily Reflection Summary</h3>
         </header>
-        {summaryLoading && <p className="muted">Generating today's summary...</p>}
+        {summaryLoading && (
+          <div className="daily-summary-skeleton">
+            <div className="skeleton-block skeleton-visual" />
+            <div className="skeleton-block skeleton-text-lg" />
+            <div className="skeleton-block skeleton-text-md" />
+            <div className="skeleton-block skeleton-text-md" />
+            <div className="skeleton-row">
+              <div className="skeleton-block skeleton-card" />
+              <div className="skeleton-block skeleton-card" />
+            </div>
+          </div>
+        )}
         {!summaryLoading && dailySummary && (
           <>
             {dailySummary.visual && (
@@ -200,18 +227,23 @@ export function HabitsGoalsView(): JSX.Element {
               </ul>
             )}
             {dailySummary.challenges && dailySummary.challenges.length > 0 && (
-              <div className="daily-summary-challenges">
-                {dailySummary.challenges.map((c: ChallengePrompt, i: number) => (
-                  <div key={i} className="challenge-card challenge-card-compact swipe-card">
-                    <div className="challenge-header">
-                      <span className="challenge-icon">{c.type === "connect" ? "🔗" : c.type === "predict" ? "🔮" : c.type === "reflect" ? "💭" : "✊"}</span>
-                      <span className="challenge-type">{c.type === "connect" ? "Connect" : c.type === "predict" ? "Predict" : c.type === "reflect" ? "Reflect" : "Commit"}</span>
+              <div className="daily-summary-challenge-groups">
+                {CHALLENGE_TYPES.map((type) => {
+                  const cards = dailySummary.challenges!.filter((c: ChallengePrompt) => c.type === type);
+                  if (cards.length === 0) return null;
+                  return (
+                    <div key={type} className="daily-summary-challenges challenge-type-row">
+                      <div className="challenge-row-label">{CHALLENGE_ICONS[type]} {CHALLENGE_LABELS[type]}</div>
+                      {cards.map((c: ChallengePrompt, i: number) => (
+                        <div key={i} className="challenge-card challenge-card-compact swipe-card">
+                          <p className="challenge-question">{c.question}</p>
+                          {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
+                        </div>
+                      ))}
+                      <div className="swipe-indicator">← →</div>
                     </div>
-                    <p className="challenge-question">{c.question}</p>
-                    {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
-                  </div>
-                ))}
-                <div className="swipe-indicator">← Swipe →</div>
+                  );
+                })}
               </div>
             )}
           </>

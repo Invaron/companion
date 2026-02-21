@@ -1316,6 +1316,92 @@ button:disabled {
   gap: 4px;
 }
 
+/* ─── Daily summary smooth rendering ─── */
+
+.daily-summary-animate > *:not(.panel-header) {
+  animation: fadeSlideUp 0.35s ease-out both;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Skeleton loading for daily summary */
+.daily-summary-skeleton {
+  display: grid;
+  gap: 10px;
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, var(--surface-soft) 25%, rgba(255,255,255,0.06) 50%, var(--surface-soft) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 10px;
+}
+
+.skeleton-visual {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+}
+
+.skeleton-text-lg {
+  height: 56px;
+  width: 100%;
+}
+
+.skeleton-text-md {
+  height: 18px;
+  width: 85%;
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 10px;
+}
+
+.skeleton-card {
+  height: 100px;
+  flex: 0 0 220px;
+  border-radius: 10px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Challenge type row labels */
+.challenge-type-row {
+  position: relative;
+}
+
+.challenge-row-label {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #f59e0b;
+  padding: 4px 10px;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.daily-summary-challenge-groups {
+  display: grid;
+  gap: 10px;
+}
+
 .ghost-button {
   border-radius: 10px;
   border: 1px solid var(--border-soft);

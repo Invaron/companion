@@ -752,7 +752,10 @@ Return strict JSON only:
   "summary": "2-3 sentence coaching take on the day. Connect domains naturally. Interpret, don't describe.",
   "highlights": ["2-3 short coaching insights — one sentence each, actionable."],
   "challenges": [
-    {"type": "connect|predict|reflect|commit", "question": "Short interactive prompt that makes the user think", "hint": "Optional"}
+    {"type": "connect", "question": "...", "hint": "Optional"},
+    {"type": "predict", "question": "...", "hint": "Optional"},
+    {"type": "reflect", "question": "...", "hint": "Optional"},
+    {"type": "commit", "question": "...", "hint": "Optional"}
   ]
 }
 
@@ -762,7 +765,7 @@ Challenge types:
 - "reflect": Reflection prompt ("What's the one thing that would make tomorrow easier?")
 - "commit": Micro-commitment ("Name one meal you'll prep tonight.")
 
-Include 1-2 challenges. They should feel like a coach prompting active thinking.
+Generate 2-3 challenges for EACH of the 4 types (8-12 total). Each type should have its own set of prompts. They should feel like a coach prompting active thinking.
 
 CONTEXT:
 - "weightKg" in nutrition targets is the user's BASELINE weight for macros, NOT a goal weight.
@@ -799,7 +802,7 @@ Journal (${reflections.length}): ${reflectionLines || "none"}`;
                   question: String(c.question),
                   ...(typeof c.hint === "string" ? { hint: c.hint } : {})
                 }))
-                .slice(0, 2)
+                .slice(0, 12)
             : undefined;
           if (challenges && challenges.length === 0) challenges = undefined;
         } else {

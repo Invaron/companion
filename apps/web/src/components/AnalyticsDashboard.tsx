@@ -34,23 +34,7 @@ const CHALLENGE_LABELS: Record<ChallengePrompt["type"], string> = {
   commit: "Commit"
 };
 
-function CollapsibleSection({ title, className, children, defaultOpen = false }: {
-  title: string;
-  className?: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}): JSX.Element {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <section className={`analytics-card ${className ?? ""} ${open ? "analytics-card-open" : "analytics-card-collapsed"}`}>
-      <h3 className="analytics-card-toggle" onClick={() => setOpen(!open)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setOpen(!open); }}>
-        <span>{title}</span>
-        <span className="analytics-card-chevron">{open ? "▾" : "▸"}</span>
-      </h3>
-      {open && children}
-    </section>
-  );
-}
+const CHALLENGE_TYPES: ChallengePrompt["type"][] = ["reflect", "predict", "commit", "connect"];
 
 export function AnalyticsDashboard(): JSX.Element {
   const [periodDays, setPeriodDays] = useState<PeriodDays>(14);
@@ -105,7 +89,19 @@ export function AnalyticsDashboard(): JSX.Element {
 
       {error && <p className="error">{error}</p>}
 
-      {loading && !insight && <p>Loading analytics...</p>}
+      {loading && !insight && (
+        <div className="daily-summary-skeleton">
+          <div className="skeleton-block skeleton-visual" />
+          <div className="skeleton-block skeleton-text-lg" />
+          <div className="skeleton-block skeleton-text-md" />
+          <div className="skeleton-block skeleton-text-md" />
+          <div className="skeleton-row">
+            <div className="skeleton-block skeleton-card" />
+            <div className="skeleton-block skeleton-card" />
+            <div className="skeleton-block skeleton-card" />
+          </div>
+        </div>
+      )}
 
       {insight && (
         <>
@@ -125,24 +121,29 @@ export function AnalyticsDashboard(): JSX.Element {
           </section>
 
           <div className="analytics-swipe-stack">
-            {/* Swipeable challenge cards, stacked vertically, one per challenge */}
+            {/* Challenge cards grouped by type — each type gets its own swipeable row */}
             {insight.challenges && insight.challenges.length > 0 && (
-              <div className="swipeable-card-stack">
-                {insight.challenges.map((c, i) => (
-                  <div key={i} className="swipe-card challenge-card">
-                    <div className="challenge-header">
-                      <span className="challenge-icon">{CHALLENGE_ICONS[c.type]}</span>
-                      <span className="challenge-type">{CHALLENGE_LABELS[c.type]}</span>
+              <>
+                {CHALLENGE_TYPES.map((type) => {
+                  const cards = insight.challenges!.filter((c) => c.type === type);
+                  if (cards.length === 0) return null;
+                  return (
+                    <div key={type} className="swipeable-card-stack challenge-type-row">
+                      <div className="challenge-row-label">{CHALLENGE_ICONS[type]} {CHALLENGE_LABELS[type]}</div>
+                      {cards.map((c, i) => (
+                        <div key={i} className="swipe-card challenge-card">
+                          <p className="challenge-question">{c.question}</p>
+                          {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
+                        </div>
+                      ))}
+                      <div className="swipe-indicator">← →</div>
                     </div>
-                    <p className="challenge-question">{c.question}</p>
-                    {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
-                  </div>
-                ))}
-                <div className="swipe-indicator">⇅ Swipe</div>
-              </div>
+                  );
+                })}
+              </>
             )}
 
-            {/* Swipeable recommendation/observation/strength/risk cards */}
+            {/* Insight cards: each category is its own swipeable row */}
             <div className="swipeable-card-stack decorated-stack">
               <div className="swipe-card decorated-card next-steps-card">
                 <h3>Next Steps</h3>
@@ -176,7 +177,7 @@ export function AnalyticsDashboard(): JSX.Element {
                   ))}
                 </ul>
               </div>
-              <div className="swipe-indicator">⇅ Swipe</div>
+              <div className="swipe-indicator">← →</div>
             </div>
           </div>
         </>

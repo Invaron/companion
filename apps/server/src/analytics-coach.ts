@@ -427,7 +427,10 @@ Return strict JSON only:
   "risks": ["2-3 patterns to watch. Warm warnings, not alarms."],
   "recommendations": ["3-4 specific, immediately actionable steps. Each one sentence."],
   "challenges": [
-    {"type": "connect|predict|reflect|commit", "question": "A short interactive prompt that makes the user think actively", "hint": "Optional hint to guide thinking"}
+    {"type": "connect", "question": "...", "hint": "..."},
+    {"type": "predict", "question": "...", "hint": "..."},
+    {"type": "reflect", "question": "...", "hint": "..."},
+    {"type": "commit", "question": "...", "hint": "..."}
   ]
 }
 
@@ -437,7 +440,7 @@ Challenge types:
 - "reflect": A reflection question (e.g., "What's the one thing that would make tomorrow's meal prep easier?")
 - "commit": A micro-commitment (e.g., "Name one meal you'll prep tonight for tomorrow.")
 
-Include 2-3 challenges. They should feel like a coach prompting active thinking, not a quiz.
+Generate 2-3 challenges for EACH of the 4 types (8-12 total). Each type should have its own set of prompts so the user can swipe through multiple challenges per category. They should feel like a coach prompting active thinking, not a quiz.
 
 Rules:
 - No markdown. No extra keys.
@@ -530,7 +533,7 @@ function parseInsightJson(raw: string): ParsedCoachInsight | null {
           question: enforceSecondPersonVoice(String(c.question)),
           ...(typeof c.hint === "string" ? { hint: c.hint } : {})
         }))
-        .slice(0, 3)
+        .slice(0, 12)
     : [];
 
   if (!summary) {
