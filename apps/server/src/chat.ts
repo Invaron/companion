@@ -263,6 +263,15 @@ function buildGitHubCourseContextSummary(store: RuntimeStore): string {
     parts.push(`- +${githubData.documents.length - 4} more course docs`);
   }
 
+  // Include student work progress if available
+  if (githubData.studentProgress && githubData.studentProgress.length > 0) {
+    parts.push("");
+    parts.push("**Student Work Progress:**");
+    for (const p of githubData.studentProgress) {
+      parts.push(`- ${p.progressSummary}`);
+    }
+  }
+
   return parts.join("\n");
 }
 

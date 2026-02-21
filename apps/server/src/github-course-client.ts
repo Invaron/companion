@@ -9,10 +9,26 @@ export interface GitHubFileContent {
 }
 
 interface GitHubRepositoryTree {
+  sha: string;
   tree: Array<{
     path: string;
     type: "blob" | "tree";
+    sha: string;
+    size?: number;
   }>;
+}
+
+export interface TreeEntry {
+  path: string;
+  blobSha: string;
+  size: number;
+}
+
+export interface RepoCommit {
+  sha: string;
+  message: string;
+  date: string;
+  author: string;
 }
 
 export class GitHubCourseClient {
@@ -101,5 +117,50 @@ export class GitHubCourseClient {
     return data.tree
       .filter((entry) => entry.type === "blob")
       .map((entry) => entry.path);
+  }
+
+  /**
+   * List repository files with blob SHAs for change detection.
+   * Returns [treeSha, entries[]] — treeSha is the HEAD commit tree SHA.
+   */
+  async listRepositoryTree(owner: string, repo: string): Promise<{ treeSha: string; entries: TreeEntry[] }> {
+    const data = await this.fetch<GitHubRepositoryTree>(
+      `/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`
+    );
+
+    const entries = data.tree
+      .filter((entry) => entry.type === "blob")
+      .map((entry) => ({
+        path: entry.path,
+        blobSha: entry.sha,
+        size: entry.size ?? 0
+      }));
+
+    return { treeSha: data.sha, entries };
+  }
+
+  /**
+   * Fetch recent commits for a repository.
+   */
+  async listCommits(owner: string, repo: string, perPage = 5): Promise<RepoCommit[]> {
+    interface GitHubCommitResponse {
+      sha: string;
+      commit: {
+        message: string;
+        author: { name: string; date: string } | null;
+        committer: { date: string } | null;
+      };
+    }
+
+    const data = await this.fetch<GitHubCommitResponse[]>(
+      `/repos/${owner}/${repo}/commits?per_page=${perPage}`
+    );
+
+    return data.map((c) => ({
+      sha: c.sha,
+      message: c.commit.message.split("\n")[0],
+      date: c.commit.author?.date ?? c.commit.committer?.date ?? "",
+      author: c.commit.author?.name ?? "unknown"
+    }));
   }
 }

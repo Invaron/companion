@@ -844,6 +844,14 @@ export class RuntimeStore {
     if (!hasDeadlinesSyncedColumn) {
       this.db.prepare("ALTER TABLE github_course_data ADD COLUMN deadlinesSynced INTEGER NOT NULL DEFAULT 0").run();
     }
+    const hasBlobIndexColumn = githubCourseColumns.some((col) => col.name === "blobIndex");
+    if (!hasBlobIndexColumn) {
+      this.db.prepare("ALTER TABLE github_course_data ADD COLUMN blobIndex TEXT NOT NULL DEFAULT '{}'").run();
+    }
+    const hasStudentProgressColumn = githubCourseColumns.some((col) => col.name === "studentProgress");
+    if (!hasStudentProgressColumn) {
+      this.db.prepare("ALTER TABLE github_course_data ADD COLUMN studentProgress TEXT NOT NULL DEFAULT '[]'").run();
+    }
 
     const studyPlanColumns = this.db.prepare("PRAGMA table_info(study_plan_sessions)").all() as Array<{ name: string }>;
     const hasEnergyLevelColumn = studyPlanColumns.some((col) => col.name === "energyLevel");
@@ -7614,15 +7622,17 @@ export class RuntimeStore {
   setGitHubCourseData(data: import("./types.js").GitHubCourseData): void {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO github_course_data (
-        id, repositories, documents, deadlinesSynced, lastSyncedAt
-      ) VALUES (1, ?, ?, ?, ?)
+        id, repositories, documents, deadlinesSynced, lastSyncedAt, blobIndex, studentProgress
+      ) VALUES (1, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
       JSON.stringify(data.repositories),
       JSON.stringify(data.documents),
       data.deadlinesSynced,
-      data.lastSyncedAt
+      data.lastSyncedAt,
+      JSON.stringify(data.blobIndex ?? {}),
+      JSON.stringify(data.studentProgress ?? [])
     );
   }
 
@@ -7631,7 +7641,7 @@ export class RuntimeStore {
    */
   getGitHubCourseData(): import("./types.js").GitHubCourseData | null {
     const stmt = this.db.prepare(`
-      SELECT repositories, documents, deadlinesSynced, lastSyncedAt
+      SELECT repositories, documents, deadlinesSynced, lastSyncedAt, blobIndex, studentProgress
       FROM github_course_data WHERE id = 1
     `);
 
@@ -7640,6 +7650,8 @@ export class RuntimeStore {
       documents: string;
       deadlinesSynced: number;
       lastSyncedAt: string | null;
+      blobIndex: string | null;
+      studentProgress: string | null;
     } | undefined;
 
     if (!row) {
@@ -7650,7 +7662,9 @@ export class RuntimeStore {
       repositories: JSON.parse(row.repositories),
       documents: JSON.parse(row.documents),
       deadlinesSynced: row.deadlinesSynced ?? 0,
-      lastSyncedAt: row.lastSyncedAt
+      lastSyncedAt: row.lastSyncedAt,
+      blobIndex: row.blobIndex ? JSON.parse(row.blobIndex) : {},
+      studentProgress: row.studentProgress ? JSON.parse(row.studentProgress) : []
     };
   }
 

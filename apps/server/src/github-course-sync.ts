@@ -1,9 +1,11 @@
 import { RuntimeStore } from "./store.js";
-import { GitHubCourseClient } from "./github-course-client.js";
+import { GitHubCourseClient, TreeEntry } from "./github-course-client.js";
 import { Deadline, GitHubCourseDocument } from "./types.js";
 import { SyncAutoHealingPolicy, SyncAutoHealingState } from "./sync-auto-healing.js";
 import { hasAssignmentOrExamKeyword } from "./deadline-eligibility.js";
 import { publishNewDeadlineReleaseNotifications } from "./deadline-release-notifications.js";
+import { buildIndexedDocument, type IndexedDocument } from "./github-content-indexer.js";
+import { StudentWorkTracker, type StudentRepoProgress } from "./github-student-tracker.js";
 
 export interface CourseRepo {
   owner: string;
@@ -19,6 +21,8 @@ export interface GitHubCourseSyncResult {
   deadlinesCreated: number;
   deadlinesUpdated: number;
   courseDocsSynced: number;
+  filesSkippedUnchanged: number;
+  studentReposTracked: number;
   lastSyncedAt?: string;
   error?: string;
 }
@@ -67,6 +71,7 @@ const EXCLUDED_DOC_PATHS = [
 export class GitHubCourseSyncService {
   private readonly store: RuntimeStore;
   private readonly client: GitHubCourseClient;
+  private readonly studentTracker: StudentWorkTracker;
   private syncInterval: ReturnType<typeof setInterval> | null = null;
   private retryTimeout: ReturnType<typeof setTimeout> | null = null;
   private autoSyncInProgress = false;
@@ -82,6 +87,7 @@ export class GitHubCourseSyncService {
   constructor(store: RuntimeStore, client?: GitHubCourseClient) {
     this.store = store;
     this.client = client ?? new GitHubCourseClient();
+    this.studentTracker = new StudentWorkTracker(this.client);
   }
 
   isConfigured(): boolean {
@@ -635,22 +641,61 @@ export class GitHubCourseSyncService {
     };
   }
 
-  private async extractCourseDocuments(repo: CourseRepo, syncedAt: string, readmeMarkdown?: string): Promise<GitHubCourseDocument[]> {
+  private async extractCourseDocuments(
+    repo: CourseRepo,
+    syncedAt: string,
+    readmeMarkdown?: string,
+    treeEntries?: TreeEntry[],
+    previousBlobIndex?: Record<string, string>,
+    newBlobIndex?: Record<string, string>
+  ): Promise<{ docs: GitHubCourseDocument[]; skipped: number }> {
     let candidates: string[] = ["README.md"];
+    const blobShaMap = new Map<string, string>();
+    let skipped = 0;
 
-    try {
-      const files = await this.client.listRepositoryFiles(repo.owner, repo.repo);
-      const discovered = files
-        .filter((path) => this.isCourseDocPath(path))
-        .sort((a, b) => this.rankCourseDocPath(b) - this.rankCourseDocPath(a));
+    // Use tree entries if available (contains SHA info)
+    if (treeEntries) {
+      for (const entry of treeEntries) {
+        blobShaMap.set(entry.path, entry.blobSha);
+      }
+      const discovered = treeEntries
+        .filter((e) => this.isCourseDocPath(e.path))
+        .sort((a, b) => this.rankCourseDocPath(b.path) - this.rankCourseDocPath(a.path))
+        .map((e) => e.path);
       candidates = [...new Set(["README.md", ...discovered])];
-    } catch {
-      // Fallback to README-only extraction when tree API is unavailable.
+    } else {
+      try {
+        const files = await this.client.listRepositoryFiles(repo.owner, repo.repo);
+        const discovered = files
+          .filter((path) => this.isCourseDocPath(path))
+          .sort((a, b) => this.rankCourseDocPath(b) - this.rankCourseDocPath(a));
+        candidates = [...new Set(["README.md", ...discovered])];
+      } catch {
+        // Fallback to README-only extraction when tree API is unavailable.
+      }
     }
 
     const docs: GitHubCourseDocument[] = [];
     for (const path of candidates.slice(0, 6)) {
       try {
+        const blobKey = `${repo.owner}/${repo.repo}/${path}`;
+        const currentSha = blobShaMap.get(path);
+
+        // Track blob SHA in new index
+        if (currentSha && newBlobIndex) {
+          newBlobIndex[blobKey] = currentSha;
+        }
+
+        // Skip fetch if SHA hasn't changed — reuse previous document
+        if (currentSha && previousBlobIndex && previousBlobIndex[blobKey] === currentSha) {
+          const previousDoc = this.findPreviousDocument(repo, path);
+          if (previousDoc) {
+            docs.push(previousDoc);
+            skipped++;
+            continue;
+          }
+        }
+
         const markdown =
           path === "README.md" && readmeMarkdown !== undefined
             ? readmeMarkdown
@@ -666,7 +711,19 @@ export class GitHubCourseSyncService {
       }
     }
 
-    return docs;
+    return { docs, skipped };
+  }
+
+  /**
+   * Find a previously synced document by repo and path.
+   */
+  private findPreviousDocument(repo: CourseRepo, path: string): GitHubCourseDocument | null {
+    const previousData = this.store.getGitHubCourseData();
+    if (!previousData) return null;
+
+    return previousData.documents.find(
+      (doc) => doc.owner === repo.owner && doc.repo === repo.repo && doc.path === path
+    ) ?? null;
   }
 
   /**
@@ -677,14 +734,29 @@ export class GitHubCourseSyncService {
     let deadlinesUpdated = 0;
     let deadlinesObserved = 0;
     let reposProcessed = 0;
+    let filesSkippedUnchanged = 0;
     const createdDeadlines: Deadline[] = [];
     const syncErrors: string[] = [];
     const courseDocuments: GitHubCourseDocument[] = [];
     const lastSyncedAt = new Date().toISOString();
 
+    // Load previous blob index for SHA-based change detection
+    const previousData = this.store.getGitHubCourseData();
+    const previousBlobIndex: Record<string, string> = previousData?.blobIndex ?? {};
+    const newBlobIndex: Record<string, string> = {};
+
     try {
       for (const repo of COURSE_REPOS) {
         try {
+          // Use tree API for SHA-based change detection
+          let treeEntries: TreeEntry[] | undefined;
+          try {
+            const tree = await this.client.listRepositoryTree(repo.owner, repo.repo);
+            treeEntries = tree.entries;
+          } catch {
+            // Fall back to individual file fetches
+          }
+
           const readme = await this.getRepoReadme(repo);
           const deadlineSourcePaths = new Set<string>(["README.md"]);
           (repo.deadlinePathHints ?? []).forEach((path) => {
@@ -693,15 +765,24 @@ export class GitHubCourseSyncService {
               deadlineSourcePaths.add(normalized);
             }
           });
-          try {
-            const files = await this.client.listRepositoryFiles(repo.owner, repo.repo);
-            files
-              .filter((path) => this.isDeadlineDocPath(path))
-              .sort((a, b) => this.rankDeadlineDocPath(b) - this.rankDeadlineDocPath(a))
+
+          if (treeEntries) {
+            treeEntries
+              .filter((e) => this.isDeadlineDocPath(e.path))
+              .sort((a, b) => this.rankDeadlineDocPath(b.path) - this.rankDeadlineDocPath(a.path))
               .slice(0, 12)
-              .forEach((path) => deadlineSourcePaths.add(path));
-          } catch {
-            // Fall back to README-only parsing when tree API is unavailable.
+              .forEach((e) => deadlineSourcePaths.add(e.path));
+          } else {
+            try {
+              const files = await this.client.listRepositoryFiles(repo.owner, repo.repo);
+              files
+                .filter((path) => this.isDeadlineDocPath(path))
+                .sort((a, b) => this.rankDeadlineDocPath(b) - this.rankDeadlineDocPath(a))
+                .slice(0, 12)
+                .forEach((path) => deadlineSourcePaths.add(path));
+            } catch {
+              // Fall back to README-only parsing when tree API is unavailable.
+            }
           }
 
           const parsedDeadlines: Array<Omit<Deadline, "id">> = [];
@@ -764,13 +845,29 @@ export class GitHubCourseSyncService {
             }
           }
 
-          const repoDocs = await this.extractCourseDocuments(repo, lastSyncedAt, readme);
+          const { docs: repoDocs, skipped } = await this.extractCourseDocuments(
+            repo, lastSyncedAt, readme, treeEntries, previousBlobIndex, newBlobIndex
+          );
           courseDocuments.push(...repoDocs);
+          filesSkippedUnchanged += skipped;
           reposProcessed++;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Unknown error";
           syncErrors.push(`${repo.owner}/${repo.repo}: ${errorMessage}`);
         }
+      }
+
+      // Track student work repos (runs in parallel with minimal API calls)
+      let studentProgress: StudentRepoProgress[] = previousData?.studentProgress ?? [];
+      let studentReposTracked = 0;
+      try {
+        const trackingResult = await this.studentTracker.trackAll();
+        if (trackingResult.success) {
+          studentProgress = trackingResult.progress;
+          studentReposTracked = trackingResult.reposTracked;
+        }
+      } catch {
+        // Student tracking is non-critical — don't fail the sync
       }
 
       if (reposProcessed > 0) {
@@ -779,7 +876,9 @@ export class GitHubCourseSyncService {
           repositories: COURSE_REPOS,
           documents: courseDocuments,
           deadlinesSynced: deadlinesObserved,
-          lastSyncedAt
+          lastSyncedAt,
+          blobIndex: newBlobIndex,
+          studentProgress
         });
       }
 
@@ -789,6 +888,8 @@ export class GitHubCourseSyncService {
         deadlinesCreated,
         deadlinesUpdated,
         courseDocsSynced: courseDocuments.length,
+        filesSkippedUnchanged,
+        studentReposTracked,
         lastSyncedAt,
         error: syncErrors.length > 0 ? syncErrors.join(" | ") : undefined
       };
@@ -801,6 +902,8 @@ export class GitHubCourseSyncService {
         deadlinesCreated,
         deadlinesUpdated,
         courseDocsSynced: courseDocuments.length,
+        filesSkippedUnchanged,
+        studentReposTracked: 0,
         lastSyncedAt,
         error: errorMessage
       };

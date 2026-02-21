@@ -3346,7 +3346,8 @@ app.get("/api/sync/status", (_req, res) => {
       status: githubConfigured ? (githubData ? "ok" : "not_synced") : "not_configured",
       reposTracked: githubData?.repositories.length ?? 0,
       courseDocsSynced: githubData?.documents.length ?? 0,
-      deadlinesFound: githubData?.deadlinesSynced ?? 0
+      deadlinesFound: githubData?.deadlinesSynced ?? 0,
+      studentReposTracked: githubData?.studentProgress?.length ?? 0
     },
     gemini: {
       status: geminiClient.isConfigured() ? "ok" : "not_configured",
@@ -3555,7 +3556,9 @@ app.get("/api/github/status", (_req, res) => {
     lastSyncedAt: githubData?.lastSyncedAt ?? null,
     repositories: githubData?.repositories ?? [],
     courseDocsSynced: githubData?.documents.length ?? 0,
-    deadlinesFound: githubData?.deadlinesSynced ?? 0
+    deadlinesFound: githubData?.deadlinesSynced ?? 0,
+    studentProgress: githubData?.studentProgress ?? [],
+    blobIndexSize: githubData?.blobIndex ? Object.keys(githubData.blobIndex).length : 0
   });
 });
 

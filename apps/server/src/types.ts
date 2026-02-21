@@ -1029,6 +1029,10 @@ export interface GitHubCourseData {
   documents: GitHubCourseDocument[];
   deadlinesSynced: number;
   lastSyncedAt: string | null;
+  /** Blob SHA index for change detection — maps "owner/repo/path" → blobSha */
+  blobIndex?: Record<string, string>;
+  /** Student work progress */
+  studentProgress?: import("./github-student-tracker.js").StudentRepoProgress[];
 }
 
 // Gmail types
