@@ -3160,10 +3160,9 @@ button:disabled {
 /* Settings container */
 .settings-container {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
 }
 
 .settings-container h2 {
@@ -3184,6 +3183,7 @@ button:disabled {
 
 .settings-section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   min-width: 0;
 }
@@ -3375,6 +3375,7 @@ button:disabled {
 
 .intg-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -3384,8 +3385,10 @@ button:disabled {
   border-radius: 14px;
   padding: 14px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   transition: opacity 0.15s;
+  min-width: 0;
 }
 
 .intg-card-inactive {
@@ -4339,7 +4342,6 @@ button:disabled {
   padding-bottom: var(--tab-bar-safe-space);
   min-height: calc(var(--app-viewport-height) - 120px);
   min-width: 0;
-  overflow-x: hidden;
 }
 
 .tab-panel {
@@ -5999,10 +6001,9 @@ body.keyboard-open .pull-to-refresh-container {
 
 .settings-container {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
 }
 
 .settings-container h2 {
