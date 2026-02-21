@@ -202,7 +202,7 @@ export function HabitsGoalsView(): JSX.Element {
             {dailySummary.challenges && dailySummary.challenges.length > 0 && (
               <div className="daily-summary-challenges">
                 {dailySummary.challenges.map((c: ChallengePrompt, i: number) => (
-                  <div key={i} className="challenge-card challenge-card-compact">
+                  <div key={i} className="challenge-card challenge-card-compact swipe-card">
                     <div className="challenge-header">
                       <span className="challenge-icon">{c.type === "connect" ? "🔗" : c.type === "predict" ? "🔮" : c.type === "reflect" ? "💭" : "✊"}</span>
                       <span className="challenge-type">{c.type === "connect" ? "Connect" : c.type === "predict" ? "Predict" : c.type === "reflect" ? "Reflect" : "Commit"}</span>
@@ -211,6 +211,7 @@ export function HabitsGoalsView(): JSX.Element {
                     {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
                   </div>
                 ))}
+                <div className="swipe-indicator">← Swipe →</div>
               </div>
             )}
           </>

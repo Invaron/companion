@@ -100,15 +100,6 @@ export function AnalyticsDashboard(): JSX.Element {
               </button>
             ))}
           </div>
-
-          <button
-            type="button"
-            className="analytics-refresh"
-            onClick={() => void loadInsight(periodDays, { forceRefresh: true })}
-            disabled={loading}
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
         </div>
       </header>
 
@@ -133,57 +124,60 @@ export function AnalyticsDashboard(): JSX.Element {
             </div>
           </section>
 
-          <div className="analytics-grid">
+          <div className="analytics-swipe-stack">
+            {/* Swipeable challenge cards, stacked vertically, one per challenge */}
             {insight.challenges && insight.challenges.length > 0 && (
-              <section className="analytics-card analytics-card-challenge">
-                <h3>🎯 Your Challenges</h3>
-                <div className="analytics-challenges">
-                  {insight.challenges.map((c, i) => (
-                    <div key={i} className="challenge-card">
-                      <div className="challenge-header">
-                        <span className="challenge-icon">{CHALLENGE_ICONS[c.type]}</span>
-                        <span className="challenge-type">{CHALLENGE_LABELS[c.type]}</span>
-                      </div>
-                      <p className="challenge-question">{c.question}</p>
-                      {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
+              <div className="swipeable-card-stack">
+                {insight.challenges.map((c, i) => (
+                  <div key={i} className="swipe-card challenge-card">
+                    <div className="challenge-header">
+                      <span className="challenge-icon">{CHALLENGE_ICONS[c.type]}</span>
+                      <span className="challenge-type">{CHALLENGE_LABELS[c.type]}</span>
                     </div>
-                  ))}
-                </div>
-              </section>
+                    <p className="challenge-question">{c.question}</p>
+                    {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
+                  </div>
+                ))}
+                <div className="swipe-indicator">⇅ Swipe</div>
+              </div>
             )}
 
-            <section className="analytics-card analytics-card-recommendation">
-              <h3>Next Steps</h3>
-              <ol className="analytics-list analytics-list-numbered">
-                {insight.recommendations.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ol>
-            </section>
-
-            <CollapsibleSection title="Coaching Observations" className="analytics-card-correlation" defaultOpen={false}>
-              <ul className="analytics-list">
-                {insight.correlations.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </CollapsibleSection>
-
-            <CollapsibleSection title="Strengths" defaultOpen={false}>
-              <ul className="analytics-list">
-                {insight.strengths.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </CollapsibleSection>
-
-            <CollapsibleSection title="Risks" className="analytics-card-risk" defaultOpen={false}>
-              <ul className="analytics-list">
-                {insight.risks.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </CollapsibleSection>
+            {/* Swipeable recommendation/observation/strength/risk cards */}
+            <div className="swipeable-card-stack decorated-stack">
+              <div className="swipe-card decorated-card next-steps-card">
+                <h3>Next Steps</h3>
+                <ol className="analytics-list analytics-list-numbered">
+                  {insight.recommendations.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ol>
+              </div>
+              <div className="swipe-card decorated-card coaching-card">
+                <h3>Coaching Observations</h3>
+                <ul className="analytics-list">
+                  {insight.correlations.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="swipe-card decorated-card strengths-card">
+                <h3>Strengths</h3>
+                <ul className="analytics-list">
+                  {insight.strengths.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="swipe-card decorated-card risks-card">
+                <h3>Risks</h3>
+                <ul className="analytics-list">
+                  {insight.risks.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="swipe-indicator">⇅ Swipe</div>
+            </div>
           </div>
         </>
       )}

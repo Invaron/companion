@@ -4144,39 +4144,39 @@ body.keyboard-open .pull-to-refresh-container {
 }
 
 .nutrition-target-card-protein {
-  background: linear-gradient(140deg, rgba(67, 115, 201, 0.3), rgba(48, 72, 120, 0.34));
+  background: linear-gradient(140deg, rgba(47, 95, 181, 0.55), rgba(38, 62, 110, 0.6));
 }
 
 .nutrition-target-card-carbs {
-  background: linear-gradient(140deg, rgba(40, 130, 131, 0.28), rgba(34, 88, 103, 0.32));
+  background: linear-gradient(140deg, rgba(30, 120, 111, 0.5), rgba(24, 78, 93, 0.55));
 }
 
 .nutrition-target-card-fat {
-  background: linear-gradient(140deg, rgba(122, 110, 74, 0.32), rgba(74, 68, 66, 0.34));
+  background: linear-gradient(140deg, rgba(142, 120, 54, 0.5), rgba(94, 78, 46, 0.55));
 }
 
 .nutrition-target-card-calories {
-  background: linear-gradient(140deg, rgba(92, 78, 152, 0.3), rgba(75, 62, 131, 0.34));
+  background: linear-gradient(140deg, rgba(92, 68, 162, 0.5), rgba(75, 52, 141, 0.55));
 }
 
 .nutrition-target-card-protein .summary-label,
 .nutrition-target-card-protein .summary-value {
-  color: #8eb9ff;
+  color: #fff;
 }
 
 .nutrition-target-card-carbs .summary-label,
 .nutrition-target-card-carbs .summary-value {
-  color: #8ff0c3;
+  color: #fff;
 }
 
 .nutrition-target-card-fat .summary-label,
 .nutrition-target-card-fat .summary-value {
-  color: #f4da77;
+  color: #fff;
 }
 
 .nutrition-target-card-calories .summary-label,
 .nutrition-target-card-calories .summary-value {
-  color: #d4b8ff;
+  color: #fff;
 }
 
 .nutrition-daily-dashboard {
@@ -4753,8 +4753,6 @@ body.keyboard-open .pull-to-refresh-container {
 .nutrition-tracking-canvas {
   display: block;
   border-radius: 8px;
-}
-
 }
 
 @media (min-width: 720px) {
@@ -5916,4 +5914,159 @@ label small.muted {
   border-radius: 8px;
   font-size: 0.72rem;
   font-weight: 500;
+}
+
+/* ─── Swipeable card stacks (analytics + daily reflection) ─── */
+
+.analytics-swipe-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.swipeable-card-stack {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  gap: 12px;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.swipeable-card-stack::-webkit-scrollbar {
+  display: none;
+}
+
+.swipe-card {
+  flex: 0 0 auto;
+  min-width: 260px;
+  max-width: 320px;
+  scroll-snap-align: start;
+}
+
+/* Decorated insight cards (next steps / coaching / strengths / risks) */
+.decorated-stack .swipe-card {
+  min-width: 280px;
+  max-width: 340px;
+}
+
+.decorated-card {
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.decorated-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.next-steps-card {
+  border-color: color-mix(in srgb, var(--accent-border) 56%, var(--border-soft));
+  border-left: 3px solid var(--accent);
+}
+
+.next-steps-card h3 {
+  color: var(--accent);
+}
+
+.coaching-card {
+  border-color: color-mix(in srgb, #a78bfa 50%, var(--border-soft));
+  background: color-mix(in srgb, #a78bfa 4%, var(--background));
+  border-left: 3px solid #a78bfa;
+}
+
+.coaching-card h3 {
+  color: #a78bfa;
+}
+
+.strengths-card {
+  border-color: color-mix(in srgb, #34d399 44%, var(--border-soft));
+  background: color-mix(in srgb, #34d399 4%, var(--background));
+  border-left: 3px solid #34d399;
+}
+
+.strengths-card h3 {
+  color: #34d399;
+}
+
+.risks-card {
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--border-soft));
+  background: color-mix(in srgb, var(--danger) 4%, var(--background));
+  border-left: 3px solid var(--danger);
+}
+
+.risks-card h3 {
+  color: var(--danger);
+}
+
+/* Swipe indicator pill */
+.swipe-indicator {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  opacity: 0.6;
+  white-space: nowrap;
+  padding: 6px 10px;
+  animation: swipeHintPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes swipeHintPulse {
+  0%, 100% { opacity: 0.4; transform: translateX(0); }
+  50% { opacity: 0.8; transform: translateX(4px); }
+}
+
+/* ─── Nutrition day toggle row (replaces Bulking hero) ─── */
+
+.nutrition-day-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.nutrition-day-toggle-button {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 8px 14px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.nutrition-day-toggle-button:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  background: var(--accent-surface);
+}
+
+.nutrition-day-toggle-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Send button animation ─── */
+
+.chat-send-button:not(:disabled) {
+  transition: all 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chat-send-button:active:not(:disabled) {
+  transform: scale(0.88);
+}
+
+.chat-send-button svg {
+  transition: transform 0.2s ease;
+}
+
+.chat-send-button:hover:not(:disabled) svg {
+  transform: translateX(1px);
 }

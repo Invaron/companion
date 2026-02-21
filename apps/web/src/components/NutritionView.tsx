@@ -1363,9 +1363,6 @@ export function NutritionView(): JSX.Element {
           <p className="eyebrow">Nutrition</p>
           <h2>Macros</h2>
         </div>
-        <button type="button" onClick={() => void refresh()}>
-          Refresh
-        </button>
       </header>
 
       <div className="nutrition-tab-switcher" role="tablist" aria-label="Nutrition sections">
@@ -1399,21 +1396,16 @@ export function NutritionView(): JSX.Element {
 
       {activeTab === "meals" && (
         <>
-          <article className="nutrition-card nutrition-plan-hero">
-            <div className="nutrition-plan-hero-main">
-              <h3>Bulking Meal Plan</h3>
-              <p className="nutrition-plan-hero-badge">Temporary Changes (Today)</p>
-            </div>
-            <div className="nutrition-plan-hero-actions">
-              <button
-                type="button"
-                onClick={() => setShowDayControlPanel((current) => !current)}
-                disabled={dayControlBusy}
-              >
-                {showDayControlPanel ? "Hide Options" : `Options (${daySnapshots.length})`}
-              </button>
-            </div>
-          </article>
+          <div className="nutrition-day-toggle-row">
+            <button
+              type="button"
+              className="nutrition-day-toggle-button"
+              onClick={() => setShowDayControlPanel((current) => !current)}
+              disabled={dayControlBusy}
+            >
+              {showDayControlPanel ? "Hide Day Controls" : `Day Controls (${daySnapshots.length} saved)`}
+            </button>
+          </div>
 
           {showDayControlPanel && (
             <article className="nutrition-card nutrition-day-controls">
