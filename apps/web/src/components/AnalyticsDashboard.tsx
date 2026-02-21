@@ -46,6 +46,9 @@ export function AnalyticsDashboard(): JSX.Element {
   const loadInsight = useCallback(async (days: PeriodDays, options: { forceRefresh?: boolean } = {}): Promise<void> => {
     setLoading(true);
     setError(null);
+    // Clear previous data so skeleton shows during load
+    setInsight(null);
+    setDailySummary(null);
 
     if (days === 1) {
       const next = await getDailyGrowthSummary({ forceRefresh: options.forceRefresh });
@@ -55,7 +58,6 @@ export function AnalyticsDashboard(): JSX.Element {
         return;
       }
       setDailySummary(next);
-      setInsight(null);
     } else {
       const next = await getAnalyticsCoachInsight(days, options);
       if (!next) {
@@ -64,7 +66,6 @@ export function AnalyticsDashboard(): JSX.Element {
         return;
       }
       setInsight(next);
-      setDailySummary(null);
     }
 
     setLoading(false);
@@ -79,7 +80,7 @@ export function AnalyticsDashboard(): JSX.Element {
       <header className="analytics-header">
         <div>
           <h2 className="analytics-title">{periodDays === 1 ? "Daily Reflection" : "Narrative Analytics"}</h2>
-          <p className="analytics-subtitle">{periodDays === 1 ? "Gemini coaching on today's activity." : "Gemini coaching over your recent patterns."}</p>
+          {periodDays !== 1 && <p className="analytics-subtitle">Gemini coaching over your recent patterns.</p>}
         </div>
 
         <div className="analytics-controls">
@@ -102,17 +103,18 @@ export function AnalyticsDashboard(): JSX.Element {
 
       {error && <p className="error">{error}</p>}
 
-      {loading && !insight && !dailySummary && (
-        <div className="daily-summary-skeleton">
+      {loading && (
+        <div className="daily-summary-skeleton analytics-fade-in">
           <div className="skeleton-block skeleton-text-lg" />
           <div className="skeleton-block skeleton-text-md" />
           <div className="skeleton-block skeleton-text-md" />
+          <div className="skeleton-block skeleton-text-sm" />
         </div>
       )}
 
       {/* Daily reflection view (1d) */}
-      {dailySummary && periodDays === 1 && (
-        <>
+      {dailySummary && periodDays === 1 && !loading && (
+        <div className="analytics-fade-in">
           {dailySummary.visual && (
             <figure className="analytics-visual">
               <img src={dailySummary.visual.dataUrl} alt={dailySummary.visual.alt} loading="lazy" />
@@ -132,30 +134,34 @@ export function AnalyticsDashboard(): JSX.Element {
           )}
           {dailySummary.challenges && dailySummary.challenges.length > 0 && (
             <div className="analytics-swipe-stack">
-              <div className="swipeable-card-stack">
-                {dailySummary.challenges.map((c: ChallengePrompt, i: number) => (
-                  <div key={i} className="swipe-card challenge-card">
-                    <div className="challenge-header">
-                      <span className="challenge-icon">{CHALLENGE_ICONS[c.type]}</span>
-                      <span className="challenge-type">{CHALLENGE_LABELS[c.type]}</span>
-                    </div>
-                    <p className="challenge-question">{c.question}</p>
-                    {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
+              {CHALLENGE_TYPES.map((type) => {
+                const cards = dailySummary.challenges!.filter((c) => c.type === type);
+                if (cards.length === 0) return null;
+                return (
+                  <div key={type} className="swipeable-card-stack challenge-type-row">
+                    {cards.map((c, i) => (
+                      <div key={i} className="swipe-card challenge-card">
+                        <div className="challenge-header">
+                          <span className="challenge-icon">{CHALLENGE_ICONS[type]}</span>
+                          <span className="challenge-type">{CHALLENGE_LABELS[type]}</span>
+                        </div>
+                        <p className="challenge-question">{c.question}</p>
+                        {c.hint && <p className="challenge-hint">💡 {c.hint}</p>}
+                      </div>
+                    ))}
+                    {cards.length > 1 && <div className="swipe-indicator">← →</div>}
                   </div>
-                ))}
-                {dailySummary.challenges.length > 1 && (
-                  <div className="swipe-indicator">← →</div>
-                )}
-              </div>
+                );
+              })}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* Multi-day analytics view (7d/14d/30d) */}
 
-      {insight && (
-        <>
+      {insight && !loading && (
+        <div className="analytics-fade-in">
           <section className="analytics-summary-card analytics-summary-hero">
             {insight.visual && (
               <figure className="analytics-visual">
@@ -234,7 +240,7 @@ export function AnalyticsDashboard(): JSX.Element {
               <div className="swipe-indicator">← →</div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

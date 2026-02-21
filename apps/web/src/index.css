@@ -6184,17 +6184,29 @@ label small.muted {
   transform: scale(0.88);
 }
 
-.chat-send-button svg {
+.chat-send-arrow {
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease;
 }
 
-.chat-send-button:hover:not(:disabled) svg {
+.chat-send-button:hover:not(:disabled) .chat-send-arrow {
   transform: translateX(1px);
 }
 
-.chat-send-button.chat-send-flying svg {
-  transform: translateX(14px) translateY(-6px) scale(0.5);
+/* Idle breathing animation on the send arrow */
+@keyframes sendArrowBreath {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(2px); }
+}
+
+.chat-send-button:not(:disabled):not(.chat-send-flying) .chat-send-arrow {
+  animation: sendArrowBreath 2s ease-in-out infinite;
+}
+
+/* Flying animation on send */
+.chat-send-button.chat-send-flying .chat-send-arrow {
+  transform: translateX(18px) translateY(-8px) scale(0.3) rotate(-15deg);
   opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
 }
 
 .chat-send-button.chat-send-flying {
@@ -6209,4 +6221,38 @@ label small.muted {
 
 .chat-send-button.chat-send-flying {
   animation: sendPulse 0.4s ease-out;
+}
+
+/* Animated bouncing dots while waiting */
+.chat-send-dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.chat-send-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: sendDotBounce 1.2s ease-in-out infinite;
+}
+
+.chat-send-dots span:nth-child(2) { animation-delay: 0.15s; }
+.chat-send-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes sendDotBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ─── Analytics fade-in transition ─── */
+
+@keyframes analyticsFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.analytics-fade-in {
+  animation: analyticsFadeIn 0.3s ease-out both;
 }
