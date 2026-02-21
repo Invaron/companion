@@ -74,9 +74,12 @@ import {
   ChatPendingAction,
   GmailMessage,
   AuthRole,
+  AuthProvider,
   AuthSession,
   AuthUser,
   AuthUserWithPassword,
+  ConnectorService,
+  UserConnection,
   WithingsData,
   WithingsSleepSummaryEntry,
   WithingsWeightEntry,
@@ -266,7 +269,10 @@ export class RuntimeStore {
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
-        passwordHash TEXT NOT NULL,
+        passwordHash TEXT NOT NULL DEFAULT '',
+        name TEXT,
+        avatarUrl TEXT,
+        provider TEXT NOT NULL DEFAULT 'local',
         role TEXT NOT NULL,
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL,
@@ -288,6 +294,22 @@ export class RuntimeStore {
 
       CREATE INDEX IF NOT EXISTS idx_auth_sessions_tokenHash ON auth_sessions(tokenHash);
       CREATE INDEX IF NOT EXISTS idx_auth_sessions_expiresAt ON auth_sessions(expiresAt);
+
+      CREATE TABLE IF NOT EXISTS user_connections (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        service TEXT NOT NULL,
+        credentials TEXT NOT NULL DEFAULT '{}',
+        displayLabel TEXT,
+        connectedAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000),
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE(userId, service)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_user_connections_userId ON user_connections(userId);
+      CREATE INDEX IF NOT EXISTS idx_user_connections_service ON user_connections(userId, service);
 
       CREATE TABLE IF NOT EXISTS email_digests (
         id TEXT PRIMARY KEY,
@@ -868,6 +890,39 @@ export class RuntimeStore {
     if (!hasCategoryColumn) {
       this.db.prepare("ALTER TABLE scheduled_notifications ADD COLUMN category TEXT").run();
     }
+
+    // Migration: add OAuth fields to users table
+    const userColumns = this.db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>;
+    const hasNameColumn = userColumns.some((col) => col.name === "name");
+    if (!hasNameColumn) {
+      this.db.prepare("ALTER TABLE users ADD COLUMN name TEXT").run();
+    }
+    const hasAvatarUrlColumn = userColumns.some((col) => col.name === "avatarUrl");
+    if (!hasAvatarUrlColumn) {
+      this.db.prepare("ALTER TABLE users ADD COLUMN avatarUrl TEXT").run();
+    }
+    const hasProviderColumn = userColumns.some((col) => col.name === "provider");
+    if (!hasProviderColumn) {
+      this.db.prepare("ALTER TABLE users ADD COLUMN provider TEXT NOT NULL DEFAULT 'local'").run();
+    }
+
+    // Migration: create user_connections table if missing (for DBs created before this version)
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS user_connections (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        service TEXT NOT NULL,
+        credentials TEXT NOT NULL DEFAULT '{}',
+        displayLabel TEXT,
+        connectedAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        insertOrder INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000000),
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE(userId, service)
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_connections_userId ON user_connections(userId);
+      CREATE INDEX IF NOT EXISTS idx_user_connections_service ON user_connections(userId, service);
+    `);
   }
 
   private loadOrInitializeDefaults(): void {
@@ -1574,21 +1629,30 @@ export class RuntimeStore {
     return role === "admin" ? "admin" : "user";
   }
 
-  createUser(input: { email: string; passwordHash: string; role: AuthRole }): AuthUser {
+  private parseAuthProvider(provider: string | null | undefined): AuthProvider {
+    if (provider === "google" || provider === "github") return provider;
+    return "local";
+  }
+
+  createUser(input: { email: string; passwordHash: string; role: AuthRole; name?: string; avatarUrl?: string; provider?: AuthProvider }): AuthUser {
     const email = this.normalizeEmail(input.email);
     const createdAt = nowIso();
     const id = makeId("user");
+    const provider = input.provider ?? "local";
 
     this.db
       .prepare(
-        `INSERT INTO users (id, email, passwordHash, role, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO users (id, email, passwordHash, name, avatarUrl, provider, role, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(id, email, input.passwordHash, input.role, createdAt, createdAt);
+      .run(id, email, input.passwordHash, input.name ?? null, input.avatarUrl ?? null, provider, input.role, createdAt, createdAt);
 
     return {
       id,
       email,
+      name: input.name,
+      avatarUrl: input.avatarUrl,
+      provider,
       role: input.role,
       createdAt,
       updatedAt: createdAt
@@ -1610,10 +1674,40 @@ export class RuntimeStore {
     return {
       id: existing.id,
       email,
+      provider: existing.provider,
       role: input.role,
       createdAt: existing.createdAt,
       updatedAt
     };
+  }
+
+  upsertOAuthUser(input: { email: string; name?: string; avatarUrl?: string; provider: AuthProvider; role?: AuthRole }): AuthUser {
+    const existing = this.getUserByEmail(input.email);
+    if (existing) {
+      const updatedAt = nowIso();
+      this.db
+        .prepare("UPDATE users SET name = COALESCE(?, name), avatarUrl = COALESCE(?, avatarUrl), provider = ?, updatedAt = ? WHERE id = ?")
+        .run(input.name ?? null, input.avatarUrl ?? null, input.provider, updatedAt, existing.id);
+      return {
+        id: existing.id,
+        email: existing.email,
+        name: input.name ?? existing.name,
+        avatarUrl: input.avatarUrl ?? existing.avatarUrl,
+        provider: input.provider,
+        role: existing.role,
+        createdAt: existing.createdAt,
+        updatedAt
+      };
+    }
+
+    return this.createUser({
+      email: input.email,
+      passwordHash: "",
+      name: input.name,
+      avatarUrl: input.avatarUrl,
+      provider: input.provider,
+      role: input.role ?? "user"
+    });
   }
 
   getUserByEmail(email: string): AuthUserWithPassword | null {
@@ -1623,6 +1717,9 @@ export class RuntimeStore {
           id: string;
           email: string;
           passwordHash: string;
+          name: string | null;
+          avatarUrl: string | null;
+          provider: string | null;
           role: string;
           createdAt: string;
           updatedAt: string;
@@ -1637,6 +1734,9 @@ export class RuntimeStore {
       id: row.id,
       email: row.email,
       passwordHash: row.passwordHash,
+      name: row.name ?? undefined,
+      avatarUrl: row.avatarUrl ?? undefined,
+      provider: this.parseAuthProvider(row.provider),
       role: this.parseAuthRole(row.role),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt
@@ -1644,10 +1744,13 @@ export class RuntimeStore {
   }
 
   getUserById(id: string): AuthUser | null {
-    const row = this.db.prepare("SELECT id, email, role, createdAt, updatedAt FROM users WHERE id = ?").get(id) as
+    const row = this.db.prepare("SELECT id, email, name, avatarUrl, provider, role, createdAt, updatedAt FROM users WHERE id = ?").get(id) as
       | {
           id: string;
           email: string;
+          name: string | null;
+          avatarUrl: string | null;
+          provider: string | null;
           role: string;
           createdAt: string;
           updatedAt: string;
@@ -1661,10 +1764,82 @@ export class RuntimeStore {
     return {
       id: row.id,
       email: row.email,
+      name: row.name ?? undefined,
+      avatarUrl: row.avatarUrl ?? undefined,
+      provider: this.parseAuthProvider(row.provider),
       role: this.parseAuthRole(row.role),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt
     };
+  }
+
+  // ── User Connections ──
+
+  upsertUserConnection(input: {
+    userId: string;
+    service: ConnectorService;
+    credentials: string;
+    displayLabel?: string;
+  }): UserConnection {
+    const now = nowIso();
+    const id = makeId("conn");
+
+    this.db.prepare(`
+      INSERT INTO user_connections (id, userId, service, credentials, displayLabel, connectedAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(userId, service) DO UPDATE SET
+        credentials = excluded.credentials,
+        displayLabel = COALESCE(excluded.displayLabel, user_connections.displayLabel),
+        updatedAt = excluded.updatedAt
+    `).run(id, input.userId, input.service, input.credentials, input.displayLabel ?? null, now, now);
+
+    return this.getUserConnection(input.userId, input.service)!;
+  }
+
+  getUserConnection(userId: string, service: ConnectorService): UserConnection | null {
+    const row = this.db.prepare(
+      "SELECT id, userId, service, credentials, displayLabel, connectedAt, updatedAt FROM user_connections WHERE userId = ? AND service = ?"
+    ).get(userId, service) as {
+      id: string; userId: string; service: string; credentials: string;
+      displayLabel: string | null; connectedAt: string; updatedAt: string;
+    } | undefined;
+
+    if (!row) return null;
+    return {
+      id: row.id,
+      userId: row.userId,
+      service: row.service as ConnectorService,
+      credentials: row.credentials,
+      displayLabel: row.displayLabel ?? undefined,
+      connectedAt: row.connectedAt,
+      updatedAt: row.updatedAt
+    };
+  }
+
+  getUserConnections(userId: string): UserConnection[] {
+    const rows = this.db.prepare(
+      "SELECT id, userId, service, credentials, displayLabel, connectedAt, updatedAt FROM user_connections WHERE userId = ? ORDER BY connectedAt"
+    ).all(userId) as Array<{
+      id: string; userId: string; service: string; credentials: string;
+      displayLabel: string | null; connectedAt: string; updatedAt: string;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      userId: row.userId,
+      service: row.service as ConnectorService,
+      credentials: row.credentials,
+      displayLabel: row.displayLabel ?? undefined,
+      connectedAt: row.connectedAt,
+      updatedAt: row.updatedAt
+    }));
+  }
+
+  deleteUserConnection(userId: string, service: ConnectorService): boolean {
+    const result = this.db.prepare(
+      "DELETE FROM user_connections WHERE userId = ? AND service = ?"
+    ).run(userId, service);
+    return result.changes > 0;
   }
 
   createAuthSession(input: {

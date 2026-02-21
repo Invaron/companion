@@ -167,9 +167,14 @@ export interface ReflectionEntry {
 
 export type AuthRole = "admin" | "user";
 
+export type AuthProvider = "local" | "google" | "github";
+
 export interface AuthUser {
   id: string;
   email: string;
+  name?: string;
+  avatarUrl?: string;
+  provider: AuthProvider;
   role: AuthRole;
   createdAt: string;
   updatedAt: string;
@@ -186,6 +191,19 @@ export interface AuthSession {
   expiresAt: string;
   createdAt: string;
   lastSeenAt: string;
+}
+
+export type ConnectorService = "canvas" | "gmail" | "github_course" | "withings" | "tp_schedule";
+
+export interface UserConnection {
+  id: string;
+  userId: string;
+  service: ConnectorService;
+  /** Encrypted JSON blob with tokens / config */
+  credentials: string;
+  displayLabel?: string;
+  connectedAt: string;
+  updatedAt: string;
 }
 
 export type EmailDigestType = "daily" | "weekly";

@@ -2,10 +2,18 @@ import cors from "cors";
 import express from "express";
 import { resolve } from "path";
 import { z } from "zod";
-import { AuthService, parseBearerToken } from "./auth.js";
+import { AuthService, parseBearerToken, generateSessionToken, hashSessionToken } from "./auth.js";
 import { BackgroundSyncService } from "./background-sync.js";
 import { buildCalendarImportPreview, parseICS } from "./calendar-import.js";
 import { config } from "./config.js";
+import {
+  googleOAuthEnabled,
+  getGoogleOAuthUrl,
+  exchangeGoogleCode,
+  githubOAuthEnabled,
+  getGitHubOAuthUrl,
+  exchangeGitHubCode
+} from "./oauth-login.js";
 import { buildDeadlineDedupResult } from "./deadline-dedup.js";
 import { isAssignmentOrExamDeadline } from "./deadline-eligibility.js";
 import { generateDeadlineSuggestions } from "./deadline-suggestions.js";
@@ -43,7 +51,9 @@ import type { PostgresPersistenceDiagnostics } from "./postgres-persistence.js";
 import { Notification, NotificationPreferencesPatch } from "./types.js";
 import type {
   AnalyticsCoachInsight,
+  AuthProvider,
   AuthUser,
+  ConnectorService,
   Goal,
   Habit,
   NutritionCustomFood,
@@ -434,6 +444,10 @@ function isPublicApiRoute(method: string, path: string): boolean {
     (method === "GET" && path === "/api/health") ||
     (method === "POST" && path === "/api/auth/login") ||
     (method === "GET" && path === "/api/auth/status") ||
+    (method === "GET" && path === "/api/auth/google") ||
+    (method === "GET" && path === "/api/auth/google/callback") ||
+    (method === "GET" && path === "/api/auth/github") ||
+    (method === "GET" && path === "/api/auth/github/callback") ||
     (method === "GET" && path === "/api/auth/gmail") ||
     (method === "GET" && path === "/api/auth/gmail/callback") ||
     (method === "GET" && path === "/api/auth/withings") ||
@@ -493,7 +507,12 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/auth/status", (_req, res) => {
   return res.json({
-    required: authService.isRequired()
+    required: authService.isRequired(),
+    providers: {
+      google: googleOAuthEnabled(),
+      github: githubOAuthEnabled(),
+      local: Boolean(config.AUTH_ADMIN_EMAIL)
+    }
   });
 });
 
@@ -533,6 +552,173 @@ app.post("/api/auth/logout", (req, res) => {
   authService.logout(token);
   return res.status(204).send();
 });
+
+// ── OAuth Login Routes ──
+
+function createOAuthSession(user: AuthUser): { token: string; expiresAt: string } {
+  const token = generateSessionToken();
+  const tokenHash = hashSessionToken(token);
+  const expiresAt = new Date(Date.now() + config.AUTH_SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
+  store.createAuthSession({ userId: user.id, tokenHash, expiresAt });
+  return { token, expiresAt };
+}
+
+function getOAuthFrontendRedirect(token: string): string {
+  // Redirect to frontend with token in URL fragment (never sent to server in Referer)
+  const base = config.OAUTH_REDIRECT_BASE_URL ?? `http://localhost:${config.PORT}`;
+  const frontendPath = base.includes("github.io") ? "/companion/" : "/";
+  return `${base}${frontendPath}#auth_token=${encodeURIComponent(token)}`;
+}
+
+app.get("/api/auth/google", (_req, res) => {
+  if (!googleOAuthEnabled()) {
+    return res.status(404).json({ error: "Google OAuth not configured" });
+  }
+  const state = Math.random().toString(36).slice(2);
+  return res.redirect(getGoogleOAuthUrl(state));
+});
+
+app.get("/api/auth/google/callback", async (req, res) => {
+  try {
+    const code = req.query.code as string;
+    if (!code) return res.status(400).send("Missing OAuth code");
+
+    const profile = await exchangeGoogleCode(code);
+    const user = store.upsertOAuthUser({
+      email: profile.email,
+      name: profile.name,
+      avatarUrl: profile.avatarUrl,
+      provider: "google"
+    });
+    const session = createOAuthSession(user);
+    return res.redirect(getOAuthFrontendRedirect(session.token));
+  } catch (error) {
+    console.error("Google OAuth callback failed:", error);
+    return res.status(500).send("OAuth login failed. Please try again.");
+  }
+});
+
+app.get("/api/auth/github", (_req, res) => {
+  if (!githubOAuthEnabled()) {
+    return res.status(404).json({ error: "GitHub OAuth not configured" });
+  }
+  const state = Math.random().toString(36).slice(2);
+  return res.redirect(getGitHubOAuthUrl(state));
+});
+
+app.get("/api/auth/github/callback", async (req, res) => {
+  try {
+    const code = req.query.code as string;
+    if (!code) return res.status(400).send("Missing OAuth code");
+
+    const profile = await exchangeGitHubCode(code);
+    const user = store.upsertOAuthUser({
+      email: profile.email,
+      name: profile.name,
+      avatarUrl: profile.avatarUrl,
+      provider: "github"
+    });
+    const session = createOAuthSession(user);
+    return res.redirect(getOAuthFrontendRedirect(session.token));
+  } catch (error) {
+    console.error("GitHub OAuth callback failed:", error);
+    return res.status(500).send("OAuth login failed. Please try again.");
+  }
+});
+
+// ── User Connections / Connectors ──
+
+const connectorServiceSchema = z.enum(["canvas", "gmail", "github_course", "withings", "tp_schedule"]);
+
+app.get("/api/connectors", (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.authUser) return res.status(401).json({ error: "Unauthorized" });
+
+  const connections = store.getUserConnections(authReq.authUser.id);
+  // Strip credentials from response — only send service + status
+  const result = connections.map((c) => ({
+    service: c.service,
+    displayLabel: c.displayLabel,
+    connectedAt: c.connectedAt,
+    updatedAt: c.updatedAt
+  }));
+  return res.json({ connections: result });
+});
+
+app.post("/api/connectors/:service/connect", (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.authUser) return res.status(401).json({ error: "Unauthorized" });
+
+  const parsed = connectorServiceSchema.safeParse(req.params.service);
+  if (!parsed.success) return res.status(400).json({ error: "Unknown service" });
+  const service = parsed.data;
+
+  // For token-paste connectors (canvas, github_course), expect { token: string }
+  // For URL-config connectors (tp_schedule), expect { courseIds: string[] }
+  if (service === "canvas") {
+    const { token } = req.body as { token?: string };
+    if (!token || typeof token !== "string" || token.trim().length === 0) {
+      return res.status(400).json({ error: "Canvas API token is required" });
+    }
+    store.upsertUserConnection({
+      userId: authReq.authUser.id,
+      service: "canvas",
+      credentials: JSON.stringify({ token: token.trim() }),
+      displayLabel: "Canvas LMS"
+    });
+    return res.json({ ok: true, service: "canvas" });
+  }
+
+  if (service === "github_course") {
+    const { token } = req.body as { token?: string };
+    if (!token || typeof token !== "string" || token.trim().length === 0) {
+      return res.status(400).json({ error: "GitHub PAT is required" });
+    }
+    store.upsertUserConnection({
+      userId: authReq.authUser.id,
+      service: "github_course",
+      credentials: JSON.stringify({ token: token.trim() }),
+      displayLabel: "GitHub Course"
+    });
+    return res.json({ ok: true, service: "github_course" });
+  }
+
+  if (service === "tp_schedule") {
+    const { courseIds } = req.body as { courseIds?: string[] };
+    if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0) {
+      return res.status(400).json({ error: "At least one course ID is required" });
+    }
+    store.upsertUserConnection({
+      userId: authReq.authUser.id,
+      service: "tp_schedule",
+      credentials: JSON.stringify({ courseIds }),
+      displayLabel: `TP (${courseIds.length} courses)`
+    });
+    return res.json({ ok: true, service: "tp_schedule" });
+  }
+
+  // For OAuth connectors (gmail, withings), redirect to their OAuth flow
+  if (service === "gmail") {
+    return res.json({ redirectUrl: "/api/auth/gmail" });
+  }
+  if (service === "withings") {
+    return res.json({ redirectUrl: "/api/auth/withings" });
+  }
+
+  return res.status(400).json({ error: "Unknown connector service" });
+});
+
+app.delete("/api/connectors/:service", (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.authUser) return res.status(401).json({ error: "Unauthorized" });
+
+  const parsed = connectorServiceSchema.safeParse(req.params.service);
+  if (!parsed.success) return res.status(400).json({ error: "Unknown service" });
+
+  store.deleteUserConnection(authReq.authUser.id, parsed.data);
+  return res.json({ ok: true });
+});
+
 
 app.get("/api/dashboard", (_req, res) => {
   res.json(store.getSnapshot());
