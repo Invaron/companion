@@ -43,6 +43,11 @@ export class GitHubCourseClient {
     return Boolean(this.token);
   }
 
+  /** Expose token for lightweight HEAD ref checks (watcher). */
+  getToken(): string | undefined {
+    return this.token;
+  }
+
   private decodeContent(data: GitHubFileContent): string {
     if (data.encoding === "base64") {
       // GitHub often inserts newlines in base64 payloads.

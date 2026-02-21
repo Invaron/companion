@@ -726,6 +726,15 @@ export class RuntimeStore {
         lastSyncedAt TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS github_tracked_repos (
+        owner TEXT NOT NULL,
+        repo TEXT NOT NULL,
+        courseCode TEXT,
+        label TEXT,
+        addedAt TEXT NOT NULL,
+        PRIMARY KEY (owner, repo)
+      );
+
       CREATE TABLE IF NOT EXISTS gmail_data (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         refreshToken TEXT,
@@ -7622,8 +7631,8 @@ export class RuntimeStore {
   setGitHubCourseData(data: import("./types.js").GitHubCourseData): void {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO github_course_data (
-        id, repositories, documents, deadlinesSynced, lastSyncedAt, blobIndex, studentProgress
-      ) VALUES (1, ?, ?, ?, ?, ?, ?)
+        id, repositories, documents, deadlinesSynced, lastSyncedAt, blobIndex
+      ) VALUES (1, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -7631,8 +7640,7 @@ export class RuntimeStore {
       JSON.stringify(data.documents),
       data.deadlinesSynced,
       data.lastSyncedAt,
-      JSON.stringify(data.blobIndex ?? {}),
-      JSON.stringify(data.studentProgress ?? [])
+      JSON.stringify(data.blobIndex ?? {})
     );
   }
 
@@ -7641,7 +7649,7 @@ export class RuntimeStore {
    */
   getGitHubCourseData(): import("./types.js").GitHubCourseData | null {
     const stmt = this.db.prepare(`
-      SELECT repositories, documents, deadlinesSynced, lastSyncedAt, blobIndex, studentProgress
+      SELECT repositories, documents, deadlinesSynced, lastSyncedAt, blobIndex
       FROM github_course_data WHERE id = 1
     `);
 
@@ -7651,7 +7659,6 @@ export class RuntimeStore {
       deadlinesSynced: number;
       lastSyncedAt: string | null;
       blobIndex: string | null;
-      studentProgress: string | null;
     } | undefined;
 
     if (!row) {
@@ -7664,8 +7671,53 @@ export class RuntimeStore {
       deadlinesSynced: row.deadlinesSynced ?? 0,
       lastSyncedAt: row.lastSyncedAt,
       blobIndex: row.blobIndex ? JSON.parse(row.blobIndex) : {},
-      studentProgress: row.studentProgress ? JSON.parse(row.studentProgress) : []
     };
+  }
+
+  // ── GitHub Tracked Repos (user-configured) ─────────────────────
+
+  /** Get all user-configured tracked repos */
+  getGitHubTrackedRepos(): import("./types.js").GitHubTrackedRepo[] {
+    const rows = this.db.prepare(
+      "SELECT owner, repo, courseCode, label, addedAt FROM github_tracked_repos ORDER BY addedAt ASC"
+    ).all() as Array<{ owner: string; repo: string; courseCode: string | null; label: string | null; addedAt: string }>;
+    return rows.map((r) => ({
+      owner: r.owner,
+      repo: r.repo,
+      courseCode: r.courseCode ?? undefined,
+      label: r.label ?? undefined,
+      addedAt: r.addedAt,
+    }));
+  }
+
+  /** Add a tracked repo. Returns true if inserted, false if already exists. */
+  addGitHubTrackedRepo(repo: { owner: string; repo: string; courseCode?: string; label?: string }): boolean {
+    const result = this.db.prepare(
+      "INSERT OR IGNORE INTO github_tracked_repos (owner, repo, courseCode, label, addedAt) VALUES (?, ?, ?, ?, ?)"
+    ).run(repo.owner, repo.repo, repo.courseCode ?? null, repo.label ?? null, new Date().toISOString());
+    return result.changes > 0;
+  }
+
+  /** Remove a tracked repo. Returns true if deleted. */
+  removeGitHubTrackedRepo(owner: string, repo: string): boolean {
+    const result = this.db.prepare(
+      "DELETE FROM github_tracked_repos WHERE owner = ? AND repo = ?"
+    ).run(owner, repo);
+    return result.changes > 0;
+  }
+
+  /** Update a tracked repo's course code or label */
+  updateGitHubTrackedRepo(owner: string, repo: string, patch: { courseCode?: string; label?: string }): boolean {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    if (patch.courseCode !== undefined) { fields.push("courseCode = ?"); values.push(patch.courseCode); }
+    if (patch.label !== undefined) { fields.push("label = ?"); values.push(patch.label); }
+    if (fields.length === 0) return false;
+    values.push(owner, repo);
+    const result = this.db.prepare(
+      `UPDATE github_tracked_repos SET ${fields.join(", ")} WHERE owner = ? AND repo = ?`
+    ).run(...values);
+    return result.changes > 0;
   }
 
   /**

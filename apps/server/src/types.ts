@@ -1010,6 +1010,17 @@ export interface GitHubCourseRepository {
   courseCode: string;
 }
 
+/** A user-configured GitHub repo to track for deadlines and course content */
+export interface GitHubTrackedRepo {
+  owner: string;
+  repo: string;
+  /** Optional course code to associate deadlines with (e.g. "DAT520") */
+  courseCode?: string;
+  /** Optional human label (e.g. "Distributed Systems labs") */
+  label?: string;
+  addedAt: string;
+}
+
 export interface GitHubCourseDocument {
   id: string;
   courseCode: string;
@@ -1029,10 +1040,8 @@ export interface GitHubCourseData {
   documents: GitHubCourseDocument[];
   deadlinesSynced: number;
   lastSyncedAt: string | null;
-  /** Blob SHA index for change detection — maps "owner/repo/path" → blobSha */
+  /** HEAD SHA index for change detection — maps "owner/repo" → headSha */
   blobIndex?: Record<string, string>;
-  /** Student work progress */
-  studentProgress?: import("./github-student-tracker.js").StudentRepoProgress[];
 }
 
 // Gmail types

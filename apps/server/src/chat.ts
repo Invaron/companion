@@ -245,36 +245,6 @@ function buildNutritionContextSummary(store: RuntimeStore, now: Date = new Date(
   return parts.join("\n");
 }
 
-function buildGitHubCourseContextSummary(store: RuntimeStore): string {
-  const githubData = store.getGitHubCourseData();
-
-  if (!githubData || githubData.documents.length === 0) {
-    return "GitHub course materials: no syllabus/course-info docs synced yet.";
-  }
-
-  const parts = ["**GitHub Course Materials:**"];
-  githubData.documents.slice(0, 4).forEach((doc) => {
-    const label = `${doc.courseCode} ${doc.title}`.trim();
-    const summary = doc.summary.length > 140 ? `${doc.summary.slice(0, 140)}...` : doc.summary;
-    parts.push(`- ${label} (${doc.owner}/${doc.repo}/${doc.path}): ${summary}`);
-  });
-
-  if (githubData.documents.length > 4) {
-    parts.push(`- +${githubData.documents.length - 4} more course docs`);
-  }
-
-  // Include student work progress if available
-  if (githubData.studentProgress && githubData.studentProgress.length > 0) {
-    parts.push("");
-    parts.push("**Student Work Progress:**");
-    for (const p of githubData.studentProgress) {
-      parts.push(`- ${p.progressSummary}`);
-    }
-  }
-
-  return parts.join("\n");
-}
-
 export function buildChatContext(store: RuntimeStore, now: Date = new Date(), historyLimit = 10): ChatContextResult {
   const todaySchedule = store
     .getScheduleEvents()
@@ -295,7 +265,6 @@ export function buildChatContext(store: RuntimeStore, now: Date = new Date(), hi
   const userState: UserContext = store.getUserContext();
   const canvasContext = buildCanvasContextSummary(store, now);
   const gmailContext = buildGmailContextSummary(store, now);
-  const githubCourseContext = buildGitHubCourseContextSummary(store);
   const nutritionContext = buildNutritionContextSummary(store, now);
   const withingsContext = buildWithingsContextSummary(store, now);
 
@@ -306,7 +275,6 @@ export function buildChatContext(store: RuntimeStore, now: Date = new Date(), hi
     customContext: [
       canvasContext,
       gmailContext,
-      githubCourseContext,
       nutritionContext,
       withingsContext
     ]

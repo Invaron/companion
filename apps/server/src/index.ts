@@ -32,7 +32,7 @@ import { RuntimeStore } from "./store.js";
 import { fetchTPSchedule, diffScheduleEvents } from "./tp-sync.js";
 import { TPSyncService } from "./tp-sync-service.js";
 import { CanvasSyncService } from "./canvas-sync.js";
-import { GitHubCourseSyncService } from "./github-course-sync.js";
+import { GitHubWatcher } from "./github-watcher.js";
 import { GmailOAuthService } from "./gmail-oauth.js";
 import { GmailSyncService } from "./gmail-sync.js";
 import { WithingsOAuthService } from "./withings-oauth.js";
@@ -173,7 +173,7 @@ const syncService = new BackgroundSyncService(store);
 const digestService = new EmailDigestService(store);
 const tpSyncService = new TPSyncService(store);
 const canvasSyncService = new CanvasSyncService(store);
-const githubCourseSyncService = new GitHubCourseSyncService(store);
+const githubWatcher = new GitHubWatcher(store, getGeminiClient());
 const gmailOAuthService = new GmailOAuthService(store);
 const gmailSyncService = new GmailSyncService(store, gmailOAuthService);
 const withingsOAuthService = new WithingsOAuthService(store);
@@ -181,10 +181,7 @@ const withingsSyncService = new WithingsSyncService(store, withingsOAuthService)
 const syncFailureRecovery = new SyncFailureRecoveryTracker();
 const CANVAS_ON_DEMAND_SYNC_MIN_INTERVAL_MS = 5 * 60 * 1000;
 const CANVAS_ON_DEMAND_SYNC_STALE_MS = 25 * 60 * 1000;
-const GITHUB_ON_DEMAND_SYNC_MIN_INTERVAL_MS = 10 * 60 * 1000;
-const GITHUB_ON_DEMAND_SYNC_STALE_MS = 6 * 60 * 60 * 1000;
-let githubOnDemandSyncInFlight: Promise<void> | null = null;
-let lastGithubOnDemandSyncAt = 0;
+
 const MAX_ANALYTICS_CACHE_ITEMS = 15;
 const ANALYTICS_COACH_MIN_REFRESH_MS = config.GROWTH_ANALYTICS_MIN_REFRESH_MINUTES * 60 * 1000;
 const DAILY_SUMMARY_MIN_REFRESH_MS = 15 * 60 * 1000;
@@ -323,7 +320,7 @@ syncService.start();
 digestService.start();
 tpSyncService.start();
 canvasSyncService.start();
-githubCourseSyncService.start();
+githubWatcher.start();
 gmailSyncService.start();
 withingsSyncService.start();
 
@@ -351,43 +348,6 @@ async function maybeAutoSyncCanvasData(): Promise<void> {
   } catch {
     // Keep reads resilient when Canvas is temporarily unavailable.
   }
-}
-
-async function maybeAutoSyncGitHubDeadlines(): Promise<void> {
-  if (!githubCourseSyncService.isConfigured()) {
-    return;
-  }
-
-  const githubData = store.getGitHubCourseData();
-  const now = Date.now();
-  const lastSyncedAtMs = githubData?.lastSyncedAt ? Date.parse(githubData.lastSyncedAt) : Number.NaN;
-  const isStale = !Number.isFinite(lastSyncedAtMs) || now - lastSyncedAtMs >= GITHUB_ON_DEMAND_SYNC_STALE_MS;
-
-  if (!isStale) {
-    return;
-  }
-
-  if (githubOnDemandSyncInFlight) {
-    await githubOnDemandSyncInFlight;
-    return;
-  }
-
-  if (now - lastGithubOnDemandSyncAt < GITHUB_ON_DEMAND_SYNC_MIN_INTERVAL_MS) {
-    return;
-  }
-
-  lastGithubOnDemandSyncAt = now;
-  githubOnDemandSyncInFlight = (async () => {
-    try {
-      await githubCourseSyncService.sync();
-    } catch {
-      // Keep deadline responses resilient even if upstream sync fails.
-    } finally {
-      githubOnDemandSyncInFlight = null;
-    }
-  })();
-
-  await githubOnDemandSyncInFlight;
 }
 
 function hasUpcomingScheduleEvents(reference: Date, lookAheadHours = 36): boolean {
@@ -1459,7 +1419,7 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
-    await Promise.all([maybeAutoSyncCanvasData(), maybeAutoSyncGitHubDeadlines()]);
+    await Promise.all([maybeAutoSyncCanvasData()]);
     const result = await sendChatMessage(store, parsed.data.message.trim(), {
       attachments: parsed.data.attachments
     });
@@ -1529,7 +1489,7 @@ app.post("/api/chat/stream", async (req, res) => {
   };
 
   try {
-    await Promise.all([maybeAutoSyncCanvasData(), maybeAutoSyncGitHubDeadlines()]);
+    await Promise.all([maybeAutoSyncCanvasData()]);
     const result = await sendChatMessage(store, parsed.data.message.trim(), {
       attachments: parsed.data.attachments,
       onTextChunk: (chunk) => sendSse("token", { delta: chunk })
@@ -2515,7 +2475,6 @@ app.post("/api/deadlines", (req, res) => {
 
 app.get("/api/deadlines", async (_req, res) => {
   await maybeAutoSyncCanvasData();
-  await maybeAutoSyncGitHubDeadlines();
   return res.json({ deadlines: store.getAcademicDeadlines() });
 });
 
@@ -2525,7 +2484,6 @@ app.get("/api/deadlines/duplicates", (_req, res) => {
 
 app.get("/api/deadlines/suggestions", async (_req, res) => {
   await maybeAutoSyncCanvasData();
-  await maybeAutoSyncGitHubDeadlines();
   const deadlines = store.getAcademicDeadlines();
   const scheduleEvents = store.getScheduleEvents();
   const userContext = store.getUserContext();
@@ -3319,7 +3277,7 @@ app.get("/api/sync/status", (_req, res) => {
   const gmailData = store.getGmailData();
   const withingsData = store.getWithingsData();
   const geminiClient = getGeminiClient();
-  const githubConfigured = githubCourseSyncService.isConfigured();
+  const githubConfigured = githubWatcher.isConfigured();
   const gmailConnection = gmailOAuthService.getConnectionInfo();
   const withingsConnection = withingsOAuthService.getConnectionInfo();
   const gmailConnectionSource = gmailConnection.connected ? gmailConnection.source : null;
@@ -3346,8 +3304,7 @@ app.get("/api/sync/status", (_req, res) => {
       status: githubConfigured ? (githubData ? "ok" : "not_synced") : "not_configured",
       reposTracked: githubData?.repositories.length ?? 0,
       courseDocsSynced: githubData?.documents.length ?? 0,
-      deadlinesFound: githubData?.deadlinesSynced ?? 0,
-      studentReposTracked: githubData?.studentProgress?.length ?? 0
+      deadlinesFound: githubData?.deadlinesSynced ?? 0
     },
     gemini: {
       status: geminiClient.isConfigured() ? "ok" : "not_configured",
@@ -3379,7 +3336,7 @@ app.get("/api/sync/status", (_req, res) => {
     autoHealing: {
       tp: tpSyncService.getAutoHealingStatus(),
       canvas: canvasSyncService.getAutoHealingStatus(),
-      github: githubCourseSyncService.getAutoHealingStatus(),
+      github: null,
       gmail: gmailSyncService.getAutoHealingStatus(),
       withings: withingsSyncService.getAutoHealingStatus()
     }
@@ -3524,11 +3481,62 @@ app.post("/api/sync/tp", async (req, res) => {
 });
 
 app.post("/api/sync/github", async (_req, res) => {
-  const result = await githubCourseSyncService.triggerSync();
-  if (result.success) {
+  try {
+    const result = await githubWatcher.forceRescan();
     return res.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "GitHub agent scan failed";
+    return res.status(500).json({ success: false, error: message });
   }
-  return res.status(500).json(result);
+});
+
+// ── GitHub Tracked Repos CRUD ─────────────────────────────────────
+
+app.get("/api/github/repos", (_req, res) => {
+  const repos = store.getGitHubTrackedRepos();
+  return res.json({ repos });
+});
+
+app.post("/api/github/repos", (req, res) => {
+  const body = req.body as { url?: string; owner?: string; repo?: string; courseCode?: string; label?: string } | undefined;
+  if (!body) return res.status(400).json({ error: "Missing body" });
+
+  let owner: string | undefined;
+  let repo: string | undefined;
+
+  // Accept a full GitHub URL or owner/repo string
+  if (body.url) {
+    const match = body.url.match(/(?:github\.com\/)?([^/]+)\/([^/\s?#]+)/);
+    if (!match) return res.status(400).json({ error: "Cannot parse GitHub URL. Use format: https://github.com/owner/repo or owner/repo" });
+    owner = match[1];
+    repo = match[2].replace(/\.git$/, "");
+  } else if (body.owner && body.repo) {
+    owner = body.owner;
+    repo = body.repo;
+  } else {
+    return res.status(400).json({ error: "Provide either 'url' or 'owner' + 'repo'" });
+  }
+
+  const inserted = store.addGitHubTrackedRepo({ owner, repo, courseCode: body.courseCode, label: body.label });
+  if (!inserted) return res.status(409).json({ error: "Repository already tracked", owner, repo });
+
+  return res.json({ success: true, owner, repo, courseCode: body.courseCode ?? null, label: body.label ?? null });
+});
+
+app.delete("/api/github/repos/:owner/:repo", (req, res) => {
+  const { owner, repo } = req.params;
+  const deleted = store.removeGitHubTrackedRepo(owner, repo);
+  if (!deleted) return res.status(404).json({ error: "Repository not tracked" });
+  return res.json({ success: true });
+});
+
+app.patch("/api/github/repos/:owner/:repo", (req, res) => {
+  const { owner, repo } = req.params;
+  const body = req.body as { courseCode?: string; label?: string } | undefined;
+  if (!body) return res.status(400).json({ error: "Missing body" });
+  const updated = store.updateGitHubTrackedRepo(owner, repo, body);
+  if (!updated) return res.status(404).json({ error: "Repository not found" });
+  return res.json({ success: true });
 });
 
 app.get("/api/tp/status", (_req, res) => {
@@ -3551,14 +3559,18 @@ app.get("/api/canvas/status", (_req, res) => {
 
 app.get("/api/github/status", (_req, res) => {
   const githubData = store.getGitHubCourseData();
+  const watcherState = githubWatcher.getState();
+  const trackedRepos = store.getGitHubTrackedRepos();
   return res.json({
-    configured: githubCourseSyncService.isConfigured(),
+    configured: githubWatcher.isConfigured(),
     lastSyncedAt: githubData?.lastSyncedAt ?? null,
+    lastCheckedAt: watcherState.lastCheckedAt,
+    lastAgentRunAt: watcherState.lastAgentRunAt,
+    trackedRepos,
     repositories: githubData?.repositories ?? [],
     courseDocsSynced: githubData?.documents.length ?? 0,
     deadlinesFound: githubData?.deadlinesSynced ?? 0,
-    studentProgress: githubData?.studentProgress ?? [],
-    blobIndexSize: githubData?.blobIndex ? Object.keys(githubData.blobIndex).length : 0
+    lastAgentResult: watcherState.lastAgentResult
   });
 });
 
@@ -3575,7 +3587,7 @@ app.get("/api/github/course-content", (req, res) => {
   const documents = matchingDocuments.slice(0, parsed.data.limit);
 
   return res.json({
-    configured: githubCourseSyncService.isConfigured(),
+    configured: githubWatcher.isConfigured(),
     lastSyncedAt: githubData?.lastSyncedAt ?? null,
     repositories: githubData?.repositories ?? [],
     total: matchingDocuments.length,
@@ -3951,7 +3963,7 @@ const shutdown = (): void => {
   digestService.stop();
   tpSyncService.stop();
   canvasSyncService.stop();
-  githubCourseSyncService.stop();
+  githubWatcher.stop();
   gmailSyncService.stop();
   withingsSyncService.stop();
 
