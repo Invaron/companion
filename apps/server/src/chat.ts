@@ -3867,7 +3867,8 @@ export async function sendChatMessage(
     usage: assistantMetadata.usage,
     citations: assistantMetadata.citations ?? [],
     mood: resolvedMood,
-    history: historyPage
+    history: historyPage,
+    executedTools: executedFunctionResponses.map((r) => r.name)
   };
 }
 

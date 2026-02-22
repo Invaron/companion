@@ -367,9 +367,10 @@ function renderMessageAttachments(attachments: ChatImageAttachment[]): ReactNode
 interface ChatViewProps {
   mood: ChatMood;
   onMoodChange: (mood: ChatMood) => void;
+  onDataMutated?: (tools: string[]) => void;
 }
 
-export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
+export function ChatView({ mood, onMoodChange, onDataMutated }: ChatViewProps): JSX.Element {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<ChatImageAttachment[]>([]);
@@ -658,14 +659,17 @@ export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
         streamRafRef.current = null;
       }
       streamBubbleRef.current = null;
-      if (response.metadata?.mood) {
-        onMoodChange(response.metadata.mood);
+      if (response.message.metadata?.mood) {
+        onMoodChange(response.message.metadata.mood);
       }
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === assistantPlaceholder.id ? { ...response, streaming: false } : msg
+          msg.id === assistantPlaceholder.id ? { ...response.message, streaming: false } : msg
         )
       );
+      if (response.executedTools?.length) {
+        onDataMutated?.(response.executedTools);
+      }
     } catch (err) {
       const errorMessage =
         err instanceof Error && err.message.trim().length > 0 ? err.message : "Failed to send message. Please try again.";

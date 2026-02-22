@@ -1564,7 +1564,8 @@ app.post("/api/chat/stream", async (req, res) => {
       usage: result.usage,
       citations: result.citations,
       mood: result.mood,
-      history: result.history
+      history: result.history,
+      executedTools: result.executedTools
     });
     if (!res.writableEnded && !res.destroyed) {
       res.end();

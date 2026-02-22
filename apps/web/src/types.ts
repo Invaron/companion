@@ -520,6 +520,7 @@ export interface SendChatMessageStreamDoneResponse {
   };
   citations?: ChatCitation[];
   mood?: ChatMood;
+  executedTools?: string[];
 }
 
 export type AuthRole = "admin" | "user";

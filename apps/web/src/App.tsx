@@ -422,6 +422,13 @@ export default function App(): JSX.Element {
     saveChatMood(mood);
   }, []);
 
+  const handleDataMutated = useCallback((tools: string[]): void => {
+    const SCHEDULE_TOOLS = ["createScheduleBlock", "updateScheduleBlock", "deleteScheduleBlock", "clearScheduleWindow"];
+    if (tools.some((t) => SCHEDULE_TOOLS.includes(t))) {
+      setScheduleRevision((r) => r + 1);
+    }
+  }, []);
+
   const handleLogout = async (): Promise<void> => {
     setAuthSubmitting(true);
     try {
@@ -483,7 +490,7 @@ export default function App(): JSX.Element {
           <div className="tab-content-area">
             {/* Chat panel — full tab mode */}
             <div className={`tab-panel ${isChatTab ? "tab-panel-active" : "tab-panel-hidden"}`}>
-              {isChatTab && <ChatTab mood={chatMood} onMoodChange={handleMoodChange} />}
+              {isChatTab && <ChatTab mood={chatMood} onMoodChange={handleMoodChange} onDataMutated={handleDataMutated} />}
             </div>
             {activeTab === "schedule" && (
               isTabLocked("schedule")
@@ -558,7 +565,7 @@ export default function App(): JSX.Element {
                     </svg>
                   </button>
                 </div>
-                <ChatTab mood={chatMood} onMoodChange={handleMoodChange} />
+                <ChatTab mood={chatMood} onMoodChange={handleMoodChange} onDataMutated={handleDataMutated} />
               </div>
             </>
           )}

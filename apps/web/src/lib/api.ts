@@ -1323,7 +1323,7 @@ export async function sendChatMessageStream(
   message: string,
   handlers: ChatStreamHandlers,
   attachments?: SendChatMessageRequest["attachments"]
-): Promise<ChatMessage> {
+): Promise<{ message: ChatMessage; executedTools?: string[] }> {
   const response = await fetch(apiUrl("/api/chat/stream"), {
     method: "POST",
     headers: buildRequestHeaders(),
@@ -1427,7 +1427,7 @@ export async function sendChatMessageStream(
     throw new Error("Stream completed without final message payload.");
   }
 
-  return finalPayload.message;
+  return { message: finalPayload.message, executedTools: finalPayload.executedTools };
 }
 
 export async function getChatHistory(page = 1, pageSize = 50): Promise<GetChatHistoryResponse> {

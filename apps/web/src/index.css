@@ -4915,7 +4915,9 @@ body.keyboard-open .chat-view {
   height: 100%;
   max-height: var(--app-viewport-height);
   border-radius: 0;
-  background: #091019;
+  background: transparent;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 1;
 }
 
@@ -4931,13 +4933,13 @@ body.keyboard-open .chat-input-container {
   bottom: var(--keyboard-gap);
   z-index: 6;
   padding: 4px 6px 4px;
-  border-top: 1px solid var(--border-soft);
-  background: rgba(7, 14, 20, 0.96);
+  border-top: none;
+  background: transparent;
 }
 
 body.keyboard-open .chat-messages {
   padding: 8px 8px calc(72px + var(--keyboard-gap));
-  background: #091019;
+  background: transparent;
 }
 
 /* Override: overlay input + messages stay transparent when keyboard open */
