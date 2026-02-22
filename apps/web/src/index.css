@@ -3773,7 +3773,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   min-height: 100dvh;
-  padding: 24px 16px;
+  padding: 16px;
 }
 
 .consent-card {
@@ -3787,91 +3787,68 @@ button:disabled {
   padding: 28px 24px;
 }
 
-.consent-card-document {
-  max-width: 600px;
-  max-height: 85dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
 .consent-loading {
   text-align: center;
   color: var(--muted);
   font-size: 0.92rem;
 }
 
-.consent-brand {
+/* Sequential flow card — full-height scrollable document */
+.consent-flow-card {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  text-align: center;
-  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.consent-brand h2 {
+.consent-flow-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.consent-step-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.consent-flow-title {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--text);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
-.consent-intro {
-  font-size: 0.88rem;
-  color: var(--muted);
-  line-height: 1.5;
-  text-align: center;
-  margin: 0;
+.consent-flow-body {
+  padding: 20px 24px;
+  flex: 1;
 }
 
-.consent-links {
+.consent-flow-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--surface);
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border-soft);
   display: grid;
-  gap: 10px;
-}
-
-.consent-link-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 14px 16px;
-  background: var(--card-bg);
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  color: var(--text);
-  font-size: 0.92rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.consent-link-btn:hover {
-  background: var(--surface-hover);
-  border-color: var(--accent-border);
-}
-
-.consent-link-read {
-  border-color: var(--accent-border);
-  background: var(--accent-surface);
-}
-
-.consent-link-icon {
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.consent-link-arrow {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 1rem;
-}
-
-.consent-hint {
-  font-size: 0.82rem;
-  color: var(--muted);
-  text-align: center;
-  margin: 0;
+  gap: 8px;
 }
 
 .consent-error {
@@ -3886,7 +3863,7 @@ button:disabled {
   padding: 14px;
   border: none;
   border-radius: 14px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   background: var(--accent);
@@ -3901,21 +3878,6 @@ button:disabled {
 
 .consent-accept-btn:not(:disabled):hover {
   opacity: 0.9;
-}
-
-.consent-back-btn {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 0.92rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 4px 0;
-  margin-bottom: 8px;
-}
-
-.consent-back-btn:hover {
-  text-decoration: underline;
 }
 
 /* Legal document content */

@@ -1,20 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { acceptConsent, getConsentStatus, type ConsentStatusResponse } from "../lib/api";
 
 interface ConsentGateProps {
   onAccepted: () => void;
 }
 
-type ViewMode = "overview" | "tos" | "privacy";
+type Step = "loading" | "tos" | "privacy" | "done";
 
 export function ConsentGate({ onAccepted }: ConsentGateProps): JSX.Element {
   const [consent, setConsent] = useState<ConsentStatusResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [step, setStep] = useState<Step>("loading");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<ViewMode>("overview");
-  const [readTos, setReadTos] = useState(false);
-  const [readPrivacy, setReadPrivacy] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -25,18 +23,22 @@ export function ConsentGate({ onAccepted }: ConsentGateProps): JSX.Element {
         setConsent(status);
         if (!status.needsConsent) {
           onAccepted();
+        } else {
+          setStep("tos");
         }
       } catch {
-        // If consent endpoint fails (e.g., older server), let user through
         if (!disposed) onAccepted();
-      } finally {
-        if (!disposed) setLoading(false);
       }
     })();
     return () => { disposed = true; };
   }, [onAccepted]);
 
-  const handleAccept = useCallback(async () => {
+  // Scroll to top when moving to next step
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [step]);
+
+  const handleAcceptPrivacy = useCallback(async () => {
     if (!consent) return;
     setSubmitting(true);
     setError(null);
@@ -50,7 +52,7 @@ export function ConsentGate({ onAccepted }: ConsentGateProps): JSX.Element {
     }
   }, [consent, onAccepted]);
 
-  if (loading) {
+  if (step === "loading") {
     return (
       <main className="app-shell">
         <section className="consent-gate">
@@ -62,97 +64,63 @@ export function ConsentGate({ onAccepted }: ConsentGateProps): JSX.Element {
     );
   }
 
-  if (!consent || !consent.needsConsent) {
-    return <></>;
-  }
-
-  if (view === "tos") {
+  if (step === "tos") {
     return (
       <main className="app-shell">
         <section className="consent-gate">
-          <div className="consent-card consent-card-document">
-            <button type="button" className="consent-back-btn" onClick={() => { setReadTos(true); setView("overview"); }}>
-              ← Back
-            </button>
-            <TermsOfService />
+          <div className="consent-flow-card" ref={scrollRef}>
+            <div className="consent-flow-header">
+              <span className="consent-step-badge">Step 1 of 2</span>
+              <h2 className="consent-flow-title">Terms of Service</h2>
+            </div>
+            <div className="consent-flow-body">
+              <TermsOfService />
+            </div>
+            <div className="consent-flow-footer">
+              <button
+                type="button"
+                className="consent-accept-btn"
+                onClick={() => setStep("privacy")}
+              >
+                I agree to the Terms of Service
+              </button>
+            </div>
           </div>
         </section>
       </main>
     );
   }
 
-  if (view === "privacy") {
+  if (step === "privacy") {
     return (
       <main className="app-shell">
         <section className="consent-gate">
-          <div className="consent-card consent-card-document">
-            <button type="button" className="consent-back-btn" onClick={() => { setReadPrivacy(true); setView("overview"); }}>
-              ← Back
-            </button>
-            <PrivacyPolicy />
+          <div className="consent-flow-card" ref={scrollRef}>
+            <div className="consent-flow-header">
+              <span className="consent-step-badge">Step 2 of 2</span>
+              <h2 className="consent-flow-title">Privacy Policy</h2>
+            </div>
+            <div className="consent-flow-body">
+              <PrivacyPolicy />
+            </div>
+            <div className="consent-flow-footer">
+              {error && <p className="consent-error">{error}</p>}
+              <button
+                type="button"
+                className="consent-accept-btn"
+                onClick={() => void handleAcceptPrivacy()}
+                disabled={submitting}
+              >
+                {submitting ? "Accepting…" : "I agree to the Privacy Policy"}
+              </button>
+            </div>
           </div>
         </section>
       </main>
     );
   }
 
-  const canAccept = readTos && readPrivacy;
-
-  return (
-    <main className="app-shell">
-      <section className="consent-gate">
-        <div className="consent-card">
-          <div className="consent-brand">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-            </svg>
-            <h2>Welcome to Companion</h2>
-          </div>
-
-          <p className="consent-intro">
-            Before you continue, please review and accept our Terms of Service and Privacy Policy.
-            We take your privacy seriously — your data is processed in accordance with the GDPR (EEA).
-          </p>
-
-          <div className="consent-links">
-            <button
-              type="button"
-              className={`consent-link-btn ${readTos ? "consent-link-read" : ""}`}
-              onClick={() => setView("tos")}
-            >
-              <span className="consent-link-icon">{readTos ? "✓" : "📄"}</span>
-              <span>Terms of Service</span>
-              <span className="consent-link-arrow">→</span>
-            </button>
-            <button
-              type="button"
-              className={`consent-link-btn ${readPrivacy ? "consent-link-read" : ""}`}
-              onClick={() => setView("privacy")}
-            >
-              <span className="consent-link-icon">{readPrivacy ? "✓" : "🔒"}</span>
-              <span>Privacy Policy</span>
-              <span className="consent-link-arrow">→</span>
-            </button>
-          </div>
-
-          {!canAccept && (
-            <p className="consent-hint">Please read both documents before accepting.</p>
-          )}
-
-          {error && <p className="consent-error">{error}</p>}
-
-          <button
-            type="button"
-            className="consent-accept-btn"
-            onClick={() => void handleAccept()}
-            disabled={!canAccept || submitting}
-          >
-            {submitting ? "Accepting…" : "I Accept"}
-          </button>
-        </div>
-      </section>
-    </main>
-  );
+  return <></>;
 }
 
 // ── Legal Documents ──
