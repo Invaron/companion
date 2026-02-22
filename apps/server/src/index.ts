@@ -275,6 +275,19 @@ function normalizeHttpUrl(
   }
 }
 
+function normalizeCanvasBaseUrl(value: string | undefined): string | undefined {
+  const normalized = normalizeHttpUrl(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  try {
+    return new URL(normalized).origin;
+  } catch {
+    return undefined;
+  }
+}
+
 function getCanvasConnectorCredentials(userId: string): CanvasConnectorCredentials | null {
   const connection = store.getUserConnection(userId, "canvas");
   const parsed = parseConnectionCredentials(connection?.credentials);
@@ -284,7 +297,7 @@ function getCanvasConnectorCredentials(userId: string): CanvasConnectorCredentia
 
   const token = typeof parsed.token === "string" ? parsed.token.trim() : "";
   const baseUrlRaw = typeof parsed.baseUrl === "string" ? parsed.baseUrl.trim() : "";
-  const baseUrl = normalizeHttpUrl(baseUrlRaw, { stripTrailingSlash: true });
+  const baseUrl = normalizeCanvasBaseUrl(baseUrlRaw);
 
   return {
     ...(token ? { token } : {}),
@@ -344,10 +357,7 @@ function resolveCanvasSyncOptions(userId: string, requested: Partial<CanvasSyncO
   const requestedToken = typeof requested.token === "string" ? requested.token.trim() : "";
   const requestedBaseUrlRaw = typeof requested.baseUrl === "string" ? requested.baseUrl.trim() : "";
   const token = requestedToken || connected?.token || config.CANVAS_API_TOKEN;
-  const baseUrl = normalizeHttpUrl(
-    requestedBaseUrlRaw || connected?.baseUrl || config.CANVAS_BASE_URL,
-    { stripTrailingSlash: true }
-  );
+  const baseUrl = normalizeCanvasBaseUrl(requestedBaseUrlRaw || connected?.baseUrl || config.CANVAS_BASE_URL);
 
   return {
     ...(token ? { token } : {}),
@@ -1200,7 +1210,7 @@ app.post("/api/connectors/:service/connect", (req, res) => {
       });
     }
 
-    const normalizedBaseUrl = normalizeHttpUrl(parsedCanvasCredentials.data.baseUrl, { stripTrailingSlash: true });
+    const normalizedBaseUrl = normalizeCanvasBaseUrl(parsedCanvasCredentials.data.baseUrl);
 
     store.upsertUserConnection({
       userId: authReq.authUser.id,
@@ -4139,7 +4149,7 @@ app.get("/api/canvas/status", (req, res) => {
   const connectedCanvasCredentials = getCanvasConnectorCredentials(userId);
   const envFallbackCanvasBaseUrl =
     config.CANVAS_API_TOKEN
-      ? normalizeHttpUrl(config.CANVAS_BASE_URL, { stripTrailingSlash: true }) ?? ""
+      ? normalizeCanvasBaseUrl(config.CANVAS_BASE_URL) ?? ""
       : "";
   const canvasBaseUrl = connectedCanvasCredentials?.baseUrl ?? envFallbackCanvasBaseUrl;
   return res.json({

@@ -53,17 +53,28 @@ function normalizeCanvasBaseUrl(value: unknown): string {
     return "";
   }
 
-  const trimmed = value.trim().replace(/\/+$/, "");
+  const trimmed = value.trim();
   if (!trimmed) {
     return "";
   }
 
-  // Generic Canvas root isn't a tenant URL and confuses users in the connector form.
-  if (trimmed.toLowerCase() === "https://canvas.instructure.com") {
+  let origin = "";
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return "";
+    }
+    origin = parsed.origin;
+  } catch {
     return "";
   }
 
-  return trimmed;
+  // Generic Canvas root isn't a tenant URL and confuses users in the connector form.
+  if (origin.toLowerCase() === "https://canvas.instructure.com") {
+    return "";
+  }
+
+  return origin;
 }
 
 const defaultCanvasSettings: CanvasSettings = {

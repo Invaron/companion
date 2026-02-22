@@ -25,15 +25,24 @@ export class CanvasClient {
     }
 
     const url = `${this.baseUrl}${endpoint}`;
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        Accept: "application/json"
-      }
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: "application/json"
+        }
+      });
+    } catch (error) {
+      const reason = error instanceof Error && error.message ? `: ${error.message}` : "";
+      throw new Error(`Canvas request failed for ${url}${reason}`);
+    }
 
     if (!response.ok) {
-      throw new Error(`Canvas API error: ${response.status} ${response.statusText}`);
+      const responseBody = await response.text();
+      const compactBody = responseBody.trim().slice(0, 200);
+      const details = compactBody ? ` — ${compactBody}` : "";
+      throw new Error(`Canvas API error for ${url}: ${response.status} ${response.statusText}${details}`);
     }
 
     return response.json() as Promise<T>;
