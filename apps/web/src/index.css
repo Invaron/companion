@@ -2450,10 +2450,10 @@ button:disabled {
   position: fixed !important;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--tab-bar-safe-space);
   top: auto;
   height: 50dvh;
-  max-height: calc(100dvh - 60px);
+  max-height: calc(100dvh - var(--tab-bar-safe-space) - 40px);
   z-index: 102;
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
@@ -2530,11 +2530,11 @@ button:disabled {
   bottom: auto;
   border-radius: 0;
   flex-shrink: 0;
-  padding-bottom: max(6px, env(safe-area-inset-bottom));
 }
 
 /* When keyboard is open, expand overlay to full screen like regular chat */
 body.keyboard-open .chat-overlay-panel {
+  bottom: 0;
   height: 100dvh;
   max-height: 100dvh;
   border-radius: 0;
