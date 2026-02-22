@@ -56,8 +56,10 @@ This file documents all environment variables required to run the Companion serv
 - `AUTH_SESSION_TTL_HOURS` (default: 720) — Session expiration window in hours
 
 ### Canvas LMS Integration
+- `CONNECTOR_CREDENTIALS_SECRET` (recommended) — Secret used to encrypt connector credentials at rest in `user_connections` (set a long random value in production)
 - `CANVAS_API_TOKEN` (optional) — Canvas personal access token
-- `CANVAS_BASE_URL` (default: "https://stavanger.instructure.com") — Canvas instance URL
+- `CANVAS_BASE_URL` (default: "https://canvas.instructure.com") — Canvas instance URL fallback when a user has not configured a per-connector base URL
+- `TP_EDUCLOUD_BASE_URL` (default: "https://tp.educloud.no/timeplan/ical.php") — TP iCal endpoint fallback when no user iCal URL is connected
 - `INTEGRATION_WINDOW_PAST_DAYS` (default: 30) — Keep synced TP/Canvas items this many days in the past
 - `INTEGRATION_WINDOW_FUTURE_DAYS` (default: 180) — Keep synced TP/Canvas items this many days in the future
 - `NOTIFICATION_DIGEST_MORNING_HOUR` (default: 8) — Hour (0-23) for morning non-urgent notification digest
@@ -154,8 +156,10 @@ AUTH_ADMIN_PASSWORD=choose-a-long-random-password
 AUTH_SESSION_TTL_HOURS=720
 
 # Canvas LMS
+CONNECTOR_CREDENTIALS_SECRET=change-this-to-a-long-random-value
 CANVAS_API_TOKEN=your-canvas-token
-CANVAS_BASE_URL=https://stavanger.instructure.com
+CANVAS_BASE_URL=https://canvas.instructure.com
+TP_EDUCLOUD_BASE_URL=https://tp.educloud.no/timeplan/ical.php
 INTEGRATION_WINDOW_PAST_DAYS=30
 INTEGRATION_WINDOW_FUTURE_DAYS=180
 NOTIFICATION_DIGEST_MORNING_HOUR=8

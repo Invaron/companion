@@ -31,6 +31,7 @@ import { RuntimeStore } from "./store.js";
 import { fetchTPSchedule, diffScheduleEvents } from "./tp-sync.js";
 import { TPSyncService } from "./tp-sync-service.js";
 import { CanvasSyncService } from "./canvas-sync.js";
+import type { CanvasSyncOptions } from "./canvas-sync.js";
 import { GitHubWatcher } from "./github-watcher.js";
 import { GmailOAuthService } from "./gmail-oauth.js";
 import { GmailSyncService } from "./gmail-sync.js";
@@ -187,6 +188,185 @@ const analyticsCoachCache = new Map<string, AnalyticsCoachCacheEntry>();
 
 import type { DailyGrowthSummary } from "./types.js";
 const dailySummaryCache = new Map<string, DailyGrowthSummary>();
+const canvasSyncServicesByUser = new Map<string, CanvasSyncService>();
+const tpSyncInFlightUsers = new Set<string>();
+
+interface CanvasConnectorCredentials {
+  token?: string;
+  baseUrl?: string;
+}
+
+interface TPUserSyncOptions {
+  icalUrl?: string;
+  semester?: string;
+  courseIds?: string[];
+  pastDays?: number;
+  futureDays?: number;
+}
+
+interface TPUserSyncResult {
+  success: boolean;
+  eventsProcessed: number;
+  lecturesCreated: number;
+  lecturesUpdated: number;
+  lecturesDeleted: number;
+  appliedScope?: {
+    semester: string;
+    courseIds: string[];
+    pastDays: number;
+    futureDays: number;
+    icalUrl?: string;
+  };
+  error?: string;
+}
+
+function parseConnectionCredentials(credentials: string | undefined): Record<string, unknown> | null {
+  if (!credentials) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(credentials);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return null;
+    }
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeHttpUrl(
+  value: string | undefined,
+  options: { stripTrailingSlash?: boolean } = {}
+): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return undefined;
+    }
+    let normalized = url.toString();
+    if (options.stripTrailingSlash) {
+      normalized = normalized.replace(/\/+$/, "");
+    }
+    return normalized;
+  } catch {
+    return undefined;
+  }
+}
+
+function getCanvasConnectorCredentials(userId: string): CanvasConnectorCredentials | null {
+  const connection = store.getUserConnection(userId, "canvas");
+  const parsed = parseConnectionCredentials(connection?.credentials);
+  if (!parsed) {
+    return null;
+  }
+
+  const token = typeof parsed.token === "string" ? parsed.token.trim() : "";
+  const baseUrlRaw = typeof parsed.baseUrl === "string" ? parsed.baseUrl.trim() : "";
+  const baseUrl = normalizeHttpUrl(baseUrlRaw, { stripTrailingSlash: true });
+
+  return {
+    ...(token ? { token } : {}),
+    ...(baseUrl ? { baseUrl } : {})
+  };
+}
+
+function resolveCanvasSyncOptions(userId: string, requested: Partial<CanvasSyncOptions> = {}): CanvasSyncOptions {
+  const connected = getCanvasConnectorCredentials(userId);
+  const requestedToken = typeof requested.token === "string" ? requested.token.trim() : "";
+  const requestedBaseUrlRaw = typeof requested.baseUrl === "string" ? requested.baseUrl.trim() : "";
+  const token = requestedToken || connected?.token || config.CANVAS_API_TOKEN;
+  const baseUrl = normalizeHttpUrl(
+    requestedBaseUrlRaw || connected?.baseUrl || config.CANVAS_BASE_URL,
+    { stripTrailingSlash: true }
+  );
+
+  return {
+    ...(token ? { token } : {}),
+    ...(baseUrl ? { baseUrl } : {}),
+    ...(requested.courseIds ? { courseIds: requested.courseIds } : {}),
+    ...(typeof requested.pastDays === "number" ? { pastDays: requested.pastDays } : {}),
+    ...(typeof requested.futureDays === "number" ? { futureDays: requested.futureDays } : {})
+  };
+}
+
+function getConnectedTPIcalUrl(userId: string): string | undefined {
+  const connection = store.getUserConnection(userId, "tp_schedule");
+  const parsed = parseConnectionCredentials(connection?.credentials);
+  if (!parsed) {
+    return undefined;
+  }
+
+  const raw = typeof parsed.icalUrl === "string" ? parsed.icalUrl.trim() : "";
+  return normalizeHttpUrl(raw);
+}
+
+function getCanvasSyncServiceForUser(userId: string): CanvasSyncService {
+  const existing = canvasSyncServicesByUser.get(userId);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new CanvasSyncService(store, userId);
+  canvasSyncServicesByUser.set(userId, created);
+  return created;
+}
+
+async function runTPSyncForUser(userId: string, options: TPUserSyncOptions = {}): Promise<TPUserSyncResult> {
+  const requestedIcalUrl = normalizeHttpUrl(options.icalUrl);
+  const connectedIcalUrl = getConnectedTPIcalUrl(userId);
+  const appliedIcalUrl = requestedIcalUrl ?? connectedIcalUrl;
+  const appliedTpCourseIds =
+    options.courseIds && options.courseIds.length > 0
+      ? options.courseIds.map((value) => value.trim()).filter(Boolean)
+      : [...DEFAULT_TP_SCOPE_COURSE_IDS];
+
+  tpSyncInFlightUsers.add(userId);
+
+  try {
+    const tpEvents = await fetchTPSchedule({
+      ...(appliedIcalUrl
+        ? { icalUrl: appliedIcalUrl }
+        : { semester: options.semester, courseIds: appliedTpCourseIds }),
+      pastDays: options.pastDays,
+      futureDays: options.futureDays
+    });
+    const existingEvents = store.getScheduleEvents(userId);
+    const diff = diffScheduleEvents(existingEvents, tpEvents);
+    const result = store.upsertScheduleEvents(userId, diff.toCreate, diff.toUpdate, diff.toDelete);
+
+    return {
+      success: true,
+      eventsProcessed: tpEvents.length,
+      lecturesCreated: result.created,
+      lecturesUpdated: result.updated,
+      lecturesDeleted: result.deleted,
+      appliedScope: {
+        semester: options.semester ?? "26v",
+        courseIds: appliedIcalUrl ? [] : appliedTpCourseIds,
+        pastDays: options.pastDays ?? config.INTEGRATION_WINDOW_PAST_DAYS,
+        futureDays: options.futureDays ?? config.INTEGRATION_WINDOW_FUTURE_DAYS,
+        ...(appliedIcalUrl ? { icalUrl: appliedIcalUrl } : {})
+      }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+      eventsProcessed: 0,
+      lecturesCreated: 0,
+      lecturesUpdated: 0,
+      lecturesDeleted: 0
+    };
+  } finally {
+    tpSyncInFlightUsers.delete(userId);
+  }
+}
 
 function toDateKey(value: Date): string {
   return value.toISOString().slice(0, 10);
@@ -317,12 +497,19 @@ githubWatcher.start();
 gmailSyncService.start();
 withingsSyncService.start();
 
-async function maybeAutoSyncCanvasData(): Promise<void> {
+async function maybeAutoSyncCanvasData(userId: string): Promise<void> {
   try {
+    const syncOptions = resolveCanvasSyncOptions(userId);
+    if (!syncOptions.token) {
+      return;
+    }
+
+    const canvasService = getCanvasSyncServiceForUser(userId);
     const syncStartedAt = Date.now();
-    const result = await canvasSyncService.syncIfStale({
+    const result = await canvasService.syncIfStale({
       staleMs: CANVAS_ON_DEMAND_SYNC_STALE_MS,
-      minIntervalMs: CANVAS_ON_DEMAND_SYNC_MIN_INTERVAL_MS
+      minIntervalMs: CANVAS_ON_DEMAND_SYNC_MIN_INTERVAL_MS,
+      syncOptions
     });
 
     if (!result) {
@@ -723,6 +910,10 @@ app.delete("/api/user/data", (req, res) => {
 // ── User Connections / Connectors ──
 
 const connectorServiceSchema = z.enum(["canvas", "gmail", "github_course", "withings", "tp_schedule"]);
+const canvasConnectorCredentialsSchema = z.object({
+  token: z.string().trim().min(1),
+  baseUrl: z.string().url().optional()
+});
 
 app.get("/api/connectors", (req, res) => {
   const authReq = req as AuthenticatedRequest;
@@ -759,14 +950,23 @@ app.post("/api/connectors/:service/connect", (req, res) => {
 
   // For token-paste connectors (canvas, github_course), expect { token: string }
   if (service === "canvas") {
-    const { token } = req.body as { token?: string };
-    if (!token || typeof token !== "string" || token.trim().length === 0) {
-      return res.status(400).json({ error: "Canvas API token is required" });
+    const parsedCanvasCredentials = canvasConnectorCredentialsSchema.safeParse(req.body ?? {});
+    if (!parsedCanvasCredentials.success) {
+      return res.status(400).json({
+        error: "Canvas API token is required and Canvas base URL must be a valid URL if provided",
+        issues: parsedCanvasCredentials.error.issues
+      });
     }
+
+    const normalizedBaseUrl = normalizeHttpUrl(parsedCanvasCredentials.data.baseUrl, { stripTrailingSlash: true });
+
     store.upsertUserConnection({
       userId: authReq.authUser.id,
       service: "canvas",
-      credentials: JSON.stringify({ token: token.trim() }),
+      credentials: JSON.stringify({
+        token: parsedCanvasCredentials.data.token.trim(),
+        ...(normalizedBaseUrl ? { baseUrl: normalizedBaseUrl } : {})
+      }),
       displayLabel: "Canvas LMS"
     });
     return res.json({ ok: true, service: "canvas" });
@@ -1470,8 +1670,8 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
-    await Promise.all([maybeAutoSyncCanvasData()]);
     const userId = (req as AuthenticatedRequest).authUser?.id ?? "";
+    await Promise.all([maybeAutoSyncCanvasData(userId)]);
     const result = await sendChatMessage(store, userId, parsed.data.message.trim(), {
       attachments: parsed.data.attachments
     });
@@ -1541,8 +1741,8 @@ app.post("/api/chat/stream", async (req, res) => {
   };
 
   try {
-    await Promise.all([maybeAutoSyncCanvasData()]);
     const userId = (req as AuthenticatedRequest).authUser?.id ?? "";
+    await Promise.all([maybeAutoSyncCanvasData(userId)]);
     const result = await sendChatMessage(store, userId, parsed.data.message.trim(), {
       attachments: parsed.data.attachments,
       onTextChunk: (chunk: string) => sendSse("token", { delta: chunk })
@@ -2088,6 +2288,7 @@ const canvasSyncSchema = z.object({
 });
 
 const tpSyncSchema = z.object({
+  icalUrl: z.string().url().optional(),
   semester: z.string().trim().min(1).max(16).optional(),
   courseIds: z.array(z.string().trim().min(1).max(32)).max(100).optional(),
   pastDays: z.coerce.number().int().min(0).max(365).optional(),
@@ -2480,7 +2681,7 @@ app.post("/api/schedule", (req, res) => {
 
 app.get("/api/schedule", async (req, res) => {
   const userId = (req as AuthenticatedRequest).authUser?.id ?? "";
-  await maybeAutoSyncCanvasData();
+  await maybeAutoSyncCanvasData(userId);
   return res.json({ schedule: store.getScheduleEvents(userId) });
 });
 
@@ -2553,7 +2754,7 @@ app.post("/api/deadlines", (req, res) => {
 
 app.get("/api/deadlines", async (req, res) => {
   const userId = (req as AuthenticatedRequest).authUser?.id ?? "";
-  await maybeAutoSyncCanvasData();
+  await maybeAutoSyncCanvasData(userId);
   return res.json({ deadlines: store.getDeadlines(userId) });
 });
 
@@ -2564,7 +2765,7 @@ app.get("/api/deadlines/duplicates", (req, res) => {
 
 app.get("/api/deadlines/suggestions", async (req, res) => {
   const userId = (req as AuthenticatedRequest).authUser?.id ?? "";
-  await maybeAutoSyncCanvasData();
+  await maybeAutoSyncCanvasData(userId);
   const deadlines = store.getDeadlines(userId);
   const scheduleEvents = store.getScheduleEvents(userId);
   const userContext = store.getUserContext(userId);
@@ -3558,53 +3759,32 @@ app.post("/api/sync/tp", async (req, res) => {
     return res.status(400).json({ error: "Invalid TP sync payload", issues: parsed.error.issues });
   }
 
-  try {
-    const appliedTpCourseIds =
-      parsed.data.courseIds && parsed.data.courseIds.length > 0
-        ? parsed.data.courseIds
-        : [...DEFAULT_TP_SCOPE_COURSE_IDS];
+  const result = await runTPSyncForUser(userId, {
+    icalUrl: parsed.data.icalUrl,
+    semester: parsed.data.semester,
+    courseIds: parsed.data.courseIds,
+    pastDays: parsed.data.pastDays,
+    futureDays: parsed.data.futureDays
+  });
 
-    const tpEvents = await fetchTPSchedule({
-      semester: parsed.data.semester,
-      courseIds: appliedTpCourseIds,
-      pastDays: parsed.data.pastDays,
-      futureDays: parsed.data.futureDays
-    });
-    const existingEvents = store.getScheduleEvents(userId);
-    const diff = diffScheduleEvents(existingEvents, tpEvents);
-    const result = store.upsertScheduleEvents(userId, diff.toCreate, diff.toUpdate, diff.toDelete);
+  if (result.success) {
     syncFailureRecovery.recordSuccess("tp");
     recordIntegrationAttempt("tp", syncStartedAt, true);
 
     return res.json({
-      success: true,
-      eventsProcessed: tpEvents.length,
-      lecturesCreated: result.created,
-      lecturesUpdated: result.updated,
-      lecturesDeleted: result.deleted,
-      appliedScope: {
-        semester: parsed.data.semester ?? "26v",
-        courseIds: appliedTpCourseIds,
-        pastDays: parsed.data.pastDays ?? config.INTEGRATION_WINDOW_PAST_DAYS,
-        futureDays: parsed.data.futureDays ?? config.INTEGRATION_WINDOW_FUTURE_DAYS
-      }
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    const recoveryPrompt = syncFailureRecovery.recordFailure("tp", message);
-    publishSyncRecoveryPrompt(recoveryPrompt);
-    recordIntegrationAttempt("tp", syncStartedAt, false, message);
-
-    return res.status(500).json({
-      success: false,
-      error: message,
-      eventsProcessed: 0,
-      lecturesCreated: 0,
-      lecturesUpdated: 0,
-      lecturesDeleted: 0,
-      recoveryPrompt
+      ...result
     });
   }
+
+  const message = result.error ?? "TP sync failed";
+  const recoveryPrompt = syncFailureRecovery.recordFailure("tp", message);
+  publishSyncRecoveryPrompt(recoveryPrompt);
+  recordIntegrationAttempt("tp", syncStartedAt, false, message);
+
+  return res.status(500).json({
+    ...result,
+    recoveryPrompt
+  });
 });
 
 app.post("/api/sync/github", async (_req, res) => {
@@ -3676,15 +3856,16 @@ app.get("/api/tp/status", (req, res) => {
   return res.json({
     lastSyncedAt: events.length > 0 ? new Date().toISOString() : null,
     eventsCount: events.length,
-    isSyncing: tpSyncService.isCurrentlySyncing()
+    isSyncing: tpSyncInFlightUsers.has(userId) || tpSyncService.isCurrentlySyncing()
   });
 });
 
 app.get("/api/canvas/status", (req, res) => {
   const userId = (req as AuthenticatedRequest).authUser?.id ?? "";
   const canvasData = store.getCanvasData(userId);
+  const resolvedCanvasOptions = resolveCanvasSyncOptions(userId);
   return res.json({
-    baseUrl: config.CANVAS_BASE_URL,
+    baseUrl: resolvedCanvasOptions.baseUrl ?? config.CANVAS_BASE_URL,
     lastSyncedAt: canvasData?.lastSyncedAt ?? null,
     courses: canvasData?.courses ?? []
   });
@@ -3740,13 +3921,15 @@ app.post("/api/canvas/sync", async (req, res) => {
     return res.status(400).json({ error: "Invalid Canvas sync payload", issues: parsed.error.issues });
   }
 
-  const result = await canvasSyncService.triggerSync({
+  const canvasService = getCanvasSyncServiceForUser(userId);
+  const syncOptions = resolveCanvasSyncOptions(userId, {
     baseUrl: parsed.data.baseUrl,
     token: parsed.data.token,
     courseIds: parsed.data.courseIds,
     pastDays: parsed.data.pastDays,
     futureDays: parsed.data.futureDays
   });
+  const result = await canvasService.triggerSync(syncOptions);
 
   if (result.success) {
     syncFailureRecovery.recordSuccess("canvas");
@@ -3757,7 +3940,7 @@ app.post("/api/canvas/sync", async (req, res) => {
 
     if (!hadUpcomingScheduleBeforeSync && !hasUpcomingScheduleEvents(new Date(), 36, userId)) {
       scheduleRecoveryAttempted = true;
-      const tpResult = await tpSyncService.sync();
+      const tpResult = await runTPSyncForUser(userId);
       scheduleRecovered = tpResult.success && hasUpcomingScheduleEvents(new Date(), 36, userId);
     }
 
@@ -4100,6 +4283,10 @@ const shutdown = (): void => {
   digestService.stop();
   tpSyncService.stop();
   canvasSyncService.stop();
+  for (const service of canvasSyncServicesByUser.values()) {
+    service.stop();
+  }
+  canvasSyncServicesByUser.clear();
   githubWatcher.stop();
   gmailSyncService.stop();
   withingsSyncService.stop();

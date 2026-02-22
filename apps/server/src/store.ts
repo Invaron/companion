@@ -1,4 +1,6 @@
 import Database from "better-sqlite3";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
+import { config } from "./config.js";
 import {
   AgentEvent,
   AgentName,
@@ -153,6 +155,8 @@ const journalMemoryEntryTypes: JournalMemoryEntryType[] = [
   "habit-goal"
 ];
 const NUTRITION_MEAL_DONE_TOKEN = "[done]";
+const CONNECTION_CREDENTIALS_ENCRYPTION_PREFIX = "enc:v1:";
+const CONNECTION_CREDENTIALS_IV_BYTES = 12;
 
 export class RuntimeStore {
   private readonly maxEvents = 100;
@@ -187,6 +191,7 @@ export class RuntimeStore {
     this.db.pragma("foreign_keys = ON");
     this.migrateToMultiTenant();
     this.initializeSchema();
+    this.migrateUserConnectionCredentialsEncryption();
     this.loadOrInitializeDefaults();
   }
 
@@ -2177,6 +2182,85 @@ export class RuntimeStore {
     this.db.prepare("DELETE FROM daily_usage WHERE dateKey < ?").run(cutoff);
   }
 
+  private getConnectionCredentialsEncryptionKey(): Buffer {
+    return createHash("sha256").update(config.CONNECTOR_CREDENTIALS_SECRET, "utf8").digest();
+  }
+
+  private encryptConnectionCredentials(credentials: string): string {
+    if (credentials.startsWith(CONNECTION_CREDENTIALS_ENCRYPTION_PREFIX)) {
+      return credentials;
+    }
+
+    const key = this.getConnectionCredentialsEncryptionKey();
+    const iv = randomBytes(CONNECTION_CREDENTIALS_IV_BYTES);
+    const cipher = createCipheriv("aes-256-gcm", key, iv);
+    const encrypted = Buffer.concat([cipher.update(credentials, "utf8"), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+
+    return `${CONNECTION_CREDENTIALS_ENCRYPTION_PREFIX}${iv.toString("base64url")}:${authTag.toString("base64url")}:${encrypted.toString("base64url")}`;
+  }
+
+  private decryptConnectionCredentials(credentials: string): string {
+    if (!credentials.startsWith(CONNECTION_CREDENTIALS_ENCRYPTION_PREFIX)) {
+      return credentials;
+    }
+
+    const encodedPayload = credentials.slice(CONNECTION_CREDENTIALS_ENCRYPTION_PREFIX.length);
+    const [ivEncoded, authTagEncoded, encryptedEncoded] = encodedPayload.split(":");
+
+    if (!ivEncoded || !authTagEncoded || !encryptedEncoded) {
+      console.warn("[store] Invalid connector credential payload format");
+      return "{}";
+    }
+
+    try {
+      const key = this.getConnectionCredentialsEncryptionKey();
+      const iv = Buffer.from(ivEncoded, "base64url");
+      const authTag = Buffer.from(authTagEncoded, "base64url");
+      const encrypted = Buffer.from(encryptedEncoded, "base64url");
+      const decipher = createDecipheriv("aes-256-gcm", key, iv);
+      decipher.setAuthTag(authTag);
+      const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+      return decrypted.toString("utf8");
+    } catch (error) {
+      console.warn("[store] Failed to decrypt connector credentials:", error);
+      return "{}";
+    }
+  }
+
+  private migrateUserConnectionCredentialsEncryption(): void {
+    const rows = this.db
+      .prepare("SELECT id, credentials FROM user_connections")
+      .all() as Array<{ id: string; credentials: string }>;
+
+    if (rows.length === 0) {
+      return;
+    }
+
+    const updateStatement = this.db.prepare(
+      "UPDATE user_connections SET credentials = ?, updatedAt = ? WHERE id = ?"
+    );
+
+    let migrated = 0;
+    const updatedAt = nowIso();
+
+    for (const row of rows) {
+      if (!row.credentials || row.credentials.startsWith(CONNECTION_CREDENTIALS_ENCRYPTION_PREFIX)) {
+        continue;
+      }
+
+      const encrypted = this.encryptConnectionCredentials(row.credentials);
+      if (encrypted !== row.credentials) {
+        updateStatement.run(encrypted, updatedAt, row.id);
+        migrated += 1;
+      }
+    }
+
+    if (migrated > 0) {
+      console.info(`[migration] Encrypted ${migrated} user connection credential record(s) at rest.`);
+    }
+  }
+
   // ── User Connections ──
 
   upsertUserConnection(input: {
@@ -2187,6 +2271,7 @@ export class RuntimeStore {
   }): UserConnection {
     const now = nowIso();
     const id = makeId("conn");
+    const encryptedCredentials = this.encryptConnectionCredentials(input.credentials);
 
     this.db.prepare(`
       INSERT INTO user_connections (id, userId, service, credentials, displayLabel, connectedAt, updatedAt)
@@ -2195,7 +2280,7 @@ export class RuntimeStore {
         credentials = excluded.credentials,
         displayLabel = COALESCE(excluded.displayLabel, user_connections.displayLabel),
         updatedAt = excluded.updatedAt
-    `).run(id, input.userId, input.service, input.credentials, input.displayLabel ?? null, now, now);
+    `).run(id, input.userId, input.service, encryptedCredentials, input.displayLabel ?? null, now, now);
 
     return this.getUserConnection(input.userId, input.service)!;
   }
@@ -2213,7 +2298,7 @@ export class RuntimeStore {
       id: row.id,
       userId: row.userId,
       service: row.service as ConnectorService,
-      credentials: row.credentials,
+      credentials: this.decryptConnectionCredentials(row.credentials),
       displayLabel: row.displayLabel ?? undefined,
       connectedAt: row.connectedAt,
       updatedAt: row.updatedAt
@@ -2232,7 +2317,7 @@ export class RuntimeStore {
       id: row.id,
       userId: row.userId,
       service: row.service as ConnectorService,
-      credentials: row.credentials,
+      credentials: this.decryptConnectionCredentials(row.credentials),
       displayLabel: row.displayLabel ?? undefined,
       connectedAt: row.connectedAt,
       updatedAt: row.updatedAt

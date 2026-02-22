@@ -87,7 +87,7 @@ export function IntegrationStatusView(): JSX.Element {
       status: canvasSyncing ? "syncing" : canvasStatus.lastSyncedAt ? "connected" : "not-configured",
       detail: canvasStatus.lastSyncedAt
         ? `${canvasStatus.courses.length} courses · Synced ${formatRelative(canvasStatus.lastSyncedAt)}`
-        : "Add CANVAS_API_TOKEN to connect",
+        : "Connect Canvas in Integrations to start syncing",
       action: {
         label: canvasSyncing ? "Syncing…" : "Sync",
         handler: () => void handleCanvasSync(),

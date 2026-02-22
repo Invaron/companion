@@ -17,6 +17,7 @@ const DEFAULT_TP_SEMESTER = "26v";
 const DEFAULT_TP_COURSE_IDS = ["DAT520,1", "DAT560,1", "DAT600,1"] as const;
 
 export interface TPScheduleFetchOptions {
+  icalUrl?: string;
   semester?: string;
   courseIds?: string[];
   pastDays?: number;
@@ -32,7 +33,11 @@ function normalizeCourseIds(courseIds?: string[]): string[] {
   return [...DEFAULT_TP_COURSE_IDS];
 }
 
-export function buildTPScheduleUrl(options: Pick<TPScheduleFetchOptions, "semester" | "courseIds"> = {}): string {
+export function buildTPScheduleUrl(options: Pick<TPScheduleFetchOptions, "icalUrl" | "semester" | "courseIds"> = {}): string {
+  if (options.icalUrl?.trim()) {
+    return options.icalUrl.trim();
+  }
+
   const params = new URLSearchParams();
   params.set("type", "courseact");
   params.set("sem", options.semester?.trim() || DEFAULT_TP_SEMESTER);
@@ -82,7 +87,8 @@ export function convertTPEventToLecture(event: ImportedCalendarEvent): Omit<Lect
     ...(event.location ? { location: event.location } : {}),
     startTime: event.startTime,
     durationMinutes,
-    workload
+    workload,
+    recurrenceParentId: "tp-import"
   };
 }
 
@@ -102,8 +108,8 @@ export function diffScheduleEvents(
   // Build a map of existing TP events by their key
   const existingMap = new Map<string, LectureEvent>();
   for (const event of existingEvents) {
-    // Only process events that look like TP events (contain course codes)
-    if (event.title.match(/DAT\d{3}/)) {
+    // Only process events created by TP sync.
+    if (event.recurrenceParentId === "tp-import" || event.title.match(/DAT\d{3}/)) {
       const key = `tp-${event.title}-${event.startTime}`;
       existingMap.set(key, event);
     }

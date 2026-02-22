@@ -26,6 +26,32 @@ export class TPSyncService {
     this.userId = userId;
   }
 
+  private resolveConnectedIcalUrl(): string | undefined {
+    if (!this.userId) {
+      return undefined;
+    }
+
+    const connection = this.store.getUserConnection(this.userId, "tp_schedule");
+    if (!connection?.credentials) {
+      return undefined;
+    }
+
+    try {
+      const parsed = JSON.parse(connection.credentials) as { icalUrl?: unknown };
+      const candidate = typeof parsed.icalUrl === "string" ? parsed.icalUrl.trim() : "";
+      if (!candidate) {
+        return undefined;
+      }
+      const normalized = new URL(candidate);
+      if (normalized.protocol !== "http:" && normalized.protocol !== "https:") {
+        return undefined;
+      }
+      return normalized.toString();
+    } catch {
+      return undefined;
+    }
+  }
+
   /**
    * Start the TP sync service with weekly automatic sync
    */
@@ -77,7 +103,8 @@ export class TPSyncService {
     this.isSyncing = true;
 
     try {
-      const tpEvents = await fetchTPSchedule();
+      const connectedIcalUrl = this.resolveConnectedIcalUrl();
+      const tpEvents = await fetchTPSchedule(connectedIcalUrl ? { icalUrl: connectedIcalUrl } : undefined);
       const existingEvents = this.store.getScheduleEvents(this.userId);
       const diff = diffScheduleEvents(existingEvents, tpEvents);
       const result = this.store.upsertScheduleEvents(this.userId, diff.toCreate, diff.toUpdate, diff.toDelete);

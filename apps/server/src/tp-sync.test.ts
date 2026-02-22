@@ -26,6 +26,11 @@ describe("TP EduCloud sync", () => {
     expect(url.searchParams.getAll("id[]")).toEqual(["DAT530,1", "DAT540,1"]);
   });
 
+  it("uses a connected iCal URL directly when provided", () => {
+    const icalUrl = "https://tp.educloud.no/custom/timeplan/ical.php?type=courseact&sem=26v&id[]=ABC101,1";
+    expect(buildTPScheduleUrl({ icalUrl })).toBe(icalUrl);
+  });
+
   it("falls back to default course IDs when scoped IDs are empty", () => {
     const url = new URL(
       buildTPScheduleUrl({

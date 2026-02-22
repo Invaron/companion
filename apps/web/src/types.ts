@@ -701,6 +701,7 @@ export interface TPSyncResult {
     courseIds: string[];
     pastDays: number;
     futureDays: number;
+    icalUrl?: string;
   };
   error?: string;
 }

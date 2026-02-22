@@ -66,6 +66,7 @@ const schema = z.object({
   GEMINI_LIVE_TIMEOUT_MS: z.coerce.number().int().min(3000).max(120000).default(60000),
   GROWTH_DAILY_SUMMARY_MIN_REFRESH_MINUTES: z.coerce.number().int().min(30).max(24 * 24).default(180),
   GROWTH_ANALYTICS_MIN_REFRESH_MINUTES: z.coerce.number().int().min(60).max(24 * 60 * 14).default(480),
+  CONNECTOR_CREDENTIALS_SECRET: z.string().min(16).default("dev-only-change-this-connector-secret"),
   CANVAS_API_TOKEN: z.string().optional(),
   CANVAS_BASE_URL: z.string().default("https://canvas.instructure.com"),
   TP_EDUCLOUD_BASE_URL: z.string().url().default("https://tp.educloud.no/timeplan/ical.php"),

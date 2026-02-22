@@ -27,6 +27,7 @@ export interface CanvasSyncOptions {
 export interface CanvasSyncIfStaleOptions {
   staleMs?: number;
   minIntervalMs?: number;
+  syncOptions?: CanvasSyncOptions;
 }
 
 function filterAnnouncementsByCourseScope(
@@ -206,7 +207,8 @@ export class CanvasSyncService {
   }
 
   async syncIfStale(options: CanvasSyncIfStaleOptions = {}): Promise<CanvasSyncResult | null> {
-    if (!this.isConfigured()) {
+    const hasOverrideCredentials = Boolean(options.syncOptions?.token || options.syncOptions?.baseUrl);
+    if (!hasOverrideCredentials && !this.isConfigured()) {
       return null;
     }
 
@@ -226,7 +228,7 @@ export class CanvasSyncService {
     }
 
     this.lastOnDemandSyncAt = now;
-    return this.runSync();
+    return this.runSync(options.syncOptions);
   }
 
   getAutoHealingStatus(): SyncAutoHealingState {

@@ -8,7 +8,7 @@ import {
   getGeminiStatus,
   triggerCanvasSync
 } from "../lib/api";
-import { saveCanvasStatus } from "../lib/storage";
+import { loadCanvasSettings, saveCanvasSettings, saveCanvasStatus } from "../lib/storage";
 
 interface ConnectorMeta {
   service: ConnectorService;
@@ -94,7 +94,9 @@ export function ConnectorsView(): JSX.Element {
   const [connections, setConnections] = useState<UserConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedService, setExpandedService] = useState<ConnectorService | null>(null);
-  const [inputValues, setInputValues] = useState<Record<string, string>>({});
+  const [inputValues, setInputValues] = useState<Record<string, string>>(() => ({
+    canvas_baseUrl: loadCanvasSettings().baseUrl
+  }));
   const [submitting, setSubmitting] = useState<ConnectorService | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -184,7 +186,19 @@ export function ConnectorsView(): JSX.Element {
           setSubmitting(null);
           return;
         }
-        await connectService(connector.service, { token });
+        if (connector.service === "canvas") {
+          const baseUrl = inputValues.canvas_baseUrl?.trim();
+          if (!baseUrl || !baseUrl.startsWith("http")) {
+            setError("Please enter a valid Canvas base URL");
+            setSubmitting(null);
+            return;
+          }
+          await connectService(connector.service, { token, baseUrl });
+          const current = loadCanvasSettings();
+          saveCanvasSettings({ ...current, baseUrl });
+        } else {
+          await connectService(connector.service, { token });
+        }
       } else if (connector.type === "config") {
         const body: Record<string, string> = {};
         for (const field of connector.configFields ?? []) {
@@ -347,6 +361,15 @@ export function ConnectorsView(): JSX.Element {
               <div className="connector-setup">
                 {connector.type === "token" && (
                   <div className="connector-token-input">
+                    {connector.service === "canvas" && (
+                      <input
+                        type="url"
+                        placeholder="https://your-school.instructure.com"
+                        value={inputValues.canvas_baseUrl ?? ""}
+                        onChange={(e) => handleInputChange("canvas_baseUrl", e.target.value)}
+                        disabled={busy}
+                      />
+                    )}
                     <input
                       type="password"
                       placeholder={connector.placeholder}

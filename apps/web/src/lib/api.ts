@@ -1080,7 +1080,7 @@ export async function getCanvasStatus(): Promise<CanvasStatus> {
     saveCanvasStatus(status);
 
     const currentSettings = loadCanvasSettings();
-    if (!currentSettings.baseUrl) {
+    if (status.baseUrl && status.baseUrl !== currentSettings.baseUrl) {
       saveCanvasSettings({ ...currentSettings, baseUrl: status.baseUrl });
     }
 
@@ -1144,6 +1144,7 @@ export async function triggerCanvasSync(
 }
 
 export interface TriggerTPSyncOptions {
+  icalUrl?: string;
   semester?: string;
   courseIds?: string[];
   pastDays?: number;
@@ -1153,6 +1154,7 @@ export interface TriggerTPSyncOptions {
 export async function triggerTPSync(options?: TriggerTPSyncOptions): Promise<TPSyncResult> {
   const payload = options
     ? {
+        icalUrl: options.icalUrl?.trim() ? options.icalUrl : undefined,
         semester: options.semester?.trim() ? options.semester : undefined,
         courseIds: options.courseIds?.map((value) => value.trim()).filter(Boolean),
         pastDays: options.pastDays,
