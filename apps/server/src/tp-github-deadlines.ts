@@ -1,50 +1,87 @@
+import { FunctionDeclaration, FunctionCall, Part } from "@google/generative-ai";
 import type { ImportedCalendarEvent } from "./calendar-import.js";
-import { executeMcpToolCall, getMcpServers, type McpServerConfig, type McpToolBinding } from "./mcp.js";
+import { config } from "./config.js";
+import { functionDeclarations, executeFunctionCall } from "./gemini-tools.js";
+import type { GeminiChatResponse, GeminiMessage } from "./gemini.js";
+import { getGeminiClient } from "./gemini.js";
+import {
+  buildMcpToolContext,
+  executeMcpToolCall,
+  type McpServerConfig,
+  type McpToolBinding,
+  type McpToolContext
+} from "./mcp.js";
 import { RuntimeStore } from "./store.js";
-import type { Deadline, Priority } from "./types.js";
+import { fetchTPSchedule } from "./tp-sync.js";
 
-export interface TpGithubDeadlineImportResult {
+const COURSE_CODE_REGEX = /\b[A-Z]{3}\d{3}\b/g;
+const MAX_FUNCTION_ROUNDS = 10;
+const MAX_IDENTICAL_TOOL_CALLS_PER_TURN = 2;
+const MAX_LOCAL_TOOL_CALLS_PER_NAME = 12;
+
+const LOCAL_DEADLINE_TOOL_NAMES = new Set<string>([
+  "getDeadlines",
+  "createDeadline",
+  "queueDeadlineAction"
+]);
+
+const inFlightTpGithubJobs = new Set<string>();
+
+interface LoggerLike {
+  info: (message: string) => void;
+  warn: (message: string) => void;
+  error: (message: string) => void;
+}
+
+interface ToolResponseEntry {
+  name: string;
+  response: unknown;
+}
+
+interface DeadlineMutationCounters {
+  imported: number;
+  updated: number;
+  skipped: number;
+}
+
+export interface TpGithubDeadlineSubAgentJob {
+  store: RuntimeStore;
+  userId: string;
+  tpIcalUrl: string;
+  githubServerId: string;
+}
+
+export interface TpGithubDeadlineSubAgentRunResult {
   attempted: boolean;
   imported: number;
   updated: number;
   skipped: number;
   errors: string[];
   courseCodes: string[];
-  repositoriesScanned: string[];
+  executedTools: string[];
+  finalText?: string;
 }
 
-interface ParsedReadmeDeadline {
-  course: string;
-  task: string;
-  dueDate: string;
-  sourceDueDate: string;
-  priority: Priority;
+interface TpGithubDeadlineSubAgentModelClient {
+  isConfigured?: () => boolean;
+  generateChatResponse: (request: {
+    messages: GeminiMessage[];
+    systemInstruction?: string;
+    tools?: FunctionDeclaration[];
+    googleSearchGrounding?: boolean;
+  }) => Promise<GeminiChatResponse>;
 }
 
-interface GitHubRepositoryRef {
-  owner: string;
-  repo: string;
-  fullName: string;
-}
-
-interface GitHubSearchRepositoryItem {
-  name?: string;
-  full_name?: string;
-  owner?: {
-    login?: string;
-  };
-}
-
-interface AutoImportOptions {
+export interface TpGithubDeadlineSubAgentDependencies {
   now?: Date;
-  executeToolCall?: (binding: McpToolBinding, args: Record<string, unknown>) => Promise<unknown>;
+  logger?: LoggerLike;
+  tpEvents?: ImportedCalendarEvent[];
+  geminiClient?: TpGithubDeadlineSubAgentModelClient;
+  buildMcpToolContext?: (store: RuntimeStore, userId: string) => Promise<McpToolContext>;
+  executeMcpToolCall?: (binding: McpToolBinding, args: Record<string, unknown>) => Promise<unknown>;
+  executeFunctionCall?: typeof executeFunctionCall;
+  fetchTpSchedule?: typeof fetchTPSchedule;
 }
-
-const COURSE_CODE_REGEX = /\b[A-Z]{3}\d{3}\b/g;
-const DOTTED_DATE_REGEX = /(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{1,2})[.:](\d{2}))?/g;
-const BOLD_SECTION_REGEX = /\*\*([^*]+)\*\*/g;
-const DEADLINE_TASK_REGEX = /(assignment\s*\d+\s*(?:deadline)?|project\s*\+?\s*report(?:\s*due)?|project|exam|lab\s*\d+)/i;
-const DEADLINE_SIGNAL_REGEX = /\b(deadline|due|assignment|project|report|exam|lab)\b/i;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -52,7 +89,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function asNonEmptyString(value: unknown): string | null {
+function asTrimmedString(value: unknown): string | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -60,196 +97,172 @@ function asNonEmptyString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function normalizeTextKey(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+function canonicalizeForToolSignature(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => canonicalizeForToolSignature(entry));
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const sortedKeys = Object.keys(record).sort();
+    const normalized: Record<string, unknown> = {};
+    sortedKeys.forEach((key) => {
+      normalized[key] = canonicalizeForToolSignature(record[key]);
+    });
+    return normalized;
+  }
+  return value;
 }
 
-function normalizeCourseKey(value: string): string {
-  const match = value.toUpperCase().match(COURSE_CODE_REGEX);
-  return match?.[0] ?? value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-}
-
-function normalizeTaskLabel(value: string): string {
-  const compact = value
-    .replace(/[_*`]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/[.:,;]+$/g, "");
-  if (!compact) {
-    return "";
-  }
-  return compact.charAt(0).toUpperCase() + compact.slice(1);
-}
-
-function toIsoFromDottedDateMatch(match: RegExpMatchArray): string | null {
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  const year = Number(match[3]);
-  const hour = match[4] !== undefined ? Number(match[4]) : 23;
-  const minute = match[5] !== undefined ? Number(match[5]) : 59;
-  if (
-    !Number.isInteger(day) ||
-    !Number.isInteger(month) ||
-    !Number.isInteger(year) ||
-    !Number.isInteger(hour) ||
-    !Number.isInteger(minute)
-  ) {
-    return null;
-  }
-  if (month < 1 || month > 12 || day < 1 || day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-    return null;
-  }
-  const utc = new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0));
-  if (Number.isNaN(utc.getTime())) {
-    return null;
-  }
-  return utc.toISOString();
-}
-
-function inferPriorityFromDueDate(dueDate: string, now: Date): Priority {
-  const dueMs = Date.parse(dueDate);
-  if (!Number.isFinite(dueMs)) {
-    return "medium";
-  }
-  const diffHours = (dueMs - now.getTime()) / (60 * 60 * 1000);
-  if (diffHours <= 24) {
-    return "critical";
-  }
-  if (diffHours <= 96) {
-    return "high";
-  }
-  return "medium";
-}
-
-function parseFirstJsonObject(text: string): unknown {
-  const trimmed = text.trim();
-  if (!trimmed) {
-    return null;
-  }
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    // Continue with a fallback extraction.
-  }
-
-  const objectStart = trimmed.indexOf("{");
-  const objectEnd = trimmed.lastIndexOf("}");
-  if (objectStart >= 0 && objectEnd > objectStart) {
-    const candidate = trimmed.slice(objectStart, objectEnd + 1);
-    try {
-      return JSON.parse(candidate);
-    } catch {
-      // Ignore and return null.
-    }
-  }
-
-  const arrayStart = trimmed.indexOf("[");
-  const arrayEnd = trimmed.lastIndexOf("]");
-  if (arrayStart >= 0 && arrayEnd > arrayStart) {
-    const candidate = trimmed.slice(arrayStart, arrayEnd + 1);
-    try {
-      return JSON.parse(candidate);
-    } catch {
-      // Ignore and return null.
-    }
-  }
-
-  return null;
-}
-
-function isGithubMcpServer(server: McpServerConfig): boolean {
-  return /github/i.test(server.label) || /github/i.test(server.serverUrl);
-}
-
-function serverAllowsTool(server: McpServerConfig, toolName: string): boolean {
-  return server.toolAllowlist.length === 0 || server.toolAllowlist.includes(toolName);
-}
-
-function getMcpResultEnvelope(response: unknown): Record<string, unknown> | null {
+function isMcpRateLimitedResponse(response: unknown): boolean {
   const payload = asRecord(response);
   if (!payload) {
-    return null;
+    return false;
   }
-  return asRecord(payload.result);
-}
-
-function getMcpResultText(response: unknown): string | null {
-  const result = getMcpResultEnvelope(response);
-  if (!result) {
-    return null;
-  }
-  const resourceText = asNonEmptyString(result.resourceText);
-  if (resourceText) {
-    return resourceText;
-  }
-  const text = asNonEmptyString(result.text);
-  return text ?? null;
-}
-
-function getMcpErrorMessage(response: unknown): string | null {
-  const result = getMcpResultEnvelope(response);
+  const result = asRecord(payload.result);
   if (!result || result.isError !== true) {
-    return null;
+    return false;
   }
-  return asNonEmptyString(result.text) ?? "MCP tool call failed";
+  const text = asTrimmedString(result.text);
+  if (!text) {
+    return false;
+  }
+  return /rate limit exceeded|secondary rate limit|too many requests|retry after/i.test(text);
 }
 
-function selectRepository(courseCode: string, items: GitHubSearchRepositoryItem[]): GitHubRepositoryRef | null {
-  const code = courseCode.toLowerCase();
-  const scored = items
-    .map((item) => {
-      const repo = asNonEmptyString(item.name);
-      const fullName = asNonEmptyString(item.full_name);
-      const owner = asNonEmptyString(item.owner?.login);
-      if (!repo || !owner || !fullName) {
-        return null;
-      }
-      const fullNameLower = fullName.toLowerCase();
-      const ownerLower = owner.toLowerCase();
-
-      let score = 0;
-      if (repo.toLowerCase() === "info") score += 10;
-      if (fullNameLower.includes(`/${repo.toLowerCase()}`)) score += 1;
-      if (fullNameLower.includes(`${code}-`)) score += 8;
-      if (ownerLower.includes(code)) score += 6;
-      if (fullNameLower.includes(code)) score += 4;
-      if (/-(20\d{2})/.test(ownerLower)) score += 2;
-
-      return {
-        score,
-        value: {
-          owner,
-          repo,
-          fullName
-        } satisfies GitHubRepositoryRef
-      };
-    })
-    .filter((entry): entry is { score: number; value: GitHubRepositoryRef } => entry !== null)
-    .sort((left, right) => right.score - left.score || left.value.fullName.localeCompare(right.value.fullName));
-
-  return scored[0]?.value ?? null;
+function maxCallsPerToolInTurn(toolName: string, binding: McpToolBinding | undefined): number {
+  if (binding?.remoteToolName === "search_code") {
+    return 2;
+  }
+  if (binding?.remoteToolName === "search_repositories") {
+    return 4;
+  }
+  if (binding?.remoteToolName === "get_file_contents") {
+    return 8;
+  }
+  if (binding?.remoteToolName === "list_repositories" || binding?.remoteToolName === "list_repository") {
+    return 4;
+  }
+  if (LOCAL_DEADLINE_TOOL_NAMES.has(toolName)) {
+    return MAX_LOCAL_TOOL_CALLS_PER_NAME;
+  }
+  return 6;
 }
 
-function upsertReadmeDeadline(
-  byTaskKey: Map<string, ParsedReadmeDeadline>,
-  next: ParsedReadmeDeadline
+function parseFunctionCallArgs(call: FunctionCall): Record<string, unknown> {
+  return call.args && typeof call.args === "object" && !Array.isArray(call.args)
+    ? (call.args as Record<string, unknown>)
+    : {};
+}
+
+function selectGithubBindingsForServer(
+  context: McpToolContext,
+  githubServerId: string
+): { declarations: FunctionDeclaration[]; bindings: Map<string, McpToolBinding> } {
+  const declarations: FunctionDeclaration[] = [];
+  const bindings = new Map<string, McpToolBinding>();
+
+  context.declarations.forEach((declaration) => {
+    const binding = context.bindings.get(declaration.name);
+    if (!binding) {
+      return;
+    }
+    if (binding.server.id !== githubServerId) {
+      return;
+    }
+    if (!isGithubMcpServer(binding.server)) {
+      return;
+    }
+    declarations.push(declaration);
+    bindings.set(declaration.name, binding);
+  });
+
+  return { declarations, bindings };
+}
+
+function buildSubAgentSystemInstruction(now: Date): string {
+  return [
+    "You are a background GitHub deadline importer sub-agent.",
+    "Goal: discover explicit future deadlines in GitHub course repositories and apply them to local deadlines via tools.",
+    "Do not ask the user questions.",
+    "Use MCP GitHub tools to find candidate repositories and read files; do not invent repositories or deadlines.",
+    "Use local tools getDeadlines/createDeadline/queueDeadlineAction to apply changes.",
+    "If the same course/task already exists with a different due date, use queueDeadlineAction action=reschedule.",
+    "Only import future deadlines with explicit date/time evidence from repository content.",
+    "Avoid tool-call loops; keep calls minimal and stop once all course codes are checked.",
+    `Current timestamp (UTC): ${now.toISOString()}`
+  ].join("\n");
+}
+
+function buildSubAgentPrompt(courseCodes: string[], githubServerId: string, tpIcalUrl: string): string {
+  return [
+    `Connected TP iCal source: ${tpIcalUrl}`,
+    `Detected course codes from TP schedule: ${courseCodes.join(", ")}`,
+    `Use MCP tools from connected GitHub server ID: ${githubServerId}.`,
+    "Workflow:",
+    "1) Search repositories whose names include each course code.",
+    "2) Inspect repository tree/root files to find documents with deadline information (for example README/schedule/assignments docs).",
+    "3) Read candidate files and extract explicit future due dates.",
+    "4) Apply results with local deadline tools.",
+    "Return a short completion summary after tool calls finish."
+  ].join("\n");
+}
+
+function updateDeadlineCountersFromToolResponse(
+  counters: DeadlineMutationCounters,
+  toolName: string,
+  response: unknown
 ): void {
-  const key = normalizeTextKey(next.task);
-  if (!key) {
+  if (!LOCAL_DEADLINE_TOOL_NAMES.has(toolName)) {
     return;
   }
-  const existing = byTaskKey.get(key);
-  if (!existing) {
-    byTaskKey.set(key, next);
+
+  const payload = asRecord(response);
+  if (!payload) {
+    counters.skipped += 1;
     return;
   }
-  if (Date.parse(next.dueDate) >= Date.parse(existing.dueDate)) {
-    byTaskKey.set(key, next);
+
+  if (toolName === "createDeadline") {
+    if (payload.success === true && payload.created === true) {
+      counters.imported += 1;
+      return;
+    }
+    if (payload.success === true && payload.created === false) {
+      counters.skipped += 1;
+      return;
+    }
+    if (payload.error) {
+      counters.skipped += 1;
+    }
+    return;
   }
+
+  if (toolName === "queueDeadlineAction") {
+    if (payload.success === true && payload.action === "reschedule") {
+      counters.updated += 1;
+      return;
+    }
+    if (payload.success === true && payload.action === "complete") {
+      counters.skipped += 1;
+      return;
+    }
+    if (payload.error) {
+      counters.skipped += 1;
+    }
+    return;
+  }
+}
+
+function toToolCallSignature(toolName: string, args: Record<string, unknown>): string {
+  try {
+    return `${toolName}:${JSON.stringify(canonicalizeForToolSignature(args))}`;
+  } catch {
+    return `${toolName}:${String(args)}`;
+  }
+}
+
+function buildLocalDeadlineToolDeclarations(): FunctionDeclaration[] {
+  return functionDeclarations.filter((declaration) => LOCAL_DEADLINE_TOOL_NAMES.has(declaration.name));
 }
 
 export function extractTPCourseCodes(events: ImportedCalendarEvent[]): string[] {
@@ -261,304 +274,228 @@ export function extractTPCourseCodes(events: ImportedCalendarEvent[]): string[] 
   return Array.from(codes).sort();
 }
 
-export function parseGitHubCourseDeadlinesFromReadme(
-  markdown: string,
-  courseCode: string,
-  now: Date = new Date()
-): ParsedReadmeDeadline[] {
-  const byTaskKey = new Map<string, ParsedReadmeDeadline>();
-  const lines = markdown.split(/\r?\n/);
-  const nowMs = now.getTime();
-
-  const pushCandidate = (rawTask: string | null, dueDateIso: string | null): void => {
-    if (!rawTask || !dueDateIso) {
-      return;
-    }
-    if (!DEADLINE_SIGNAL_REGEX.test(rawTask)) {
-      return;
-    }
-    const normalizedTask = normalizeTaskLabel(rawTask);
-    if (!normalizedTask) {
-      return;
-    }
-    const dueMs = Date.parse(dueDateIso);
-    if (!Number.isFinite(dueMs) || dueMs < nowMs) {
-      return;
-    }
-
-    upsertReadmeDeadline(byTaskKey, {
-      course: courseCode,
-      task: normalizedTask,
-      dueDate: dueDateIso,
-      sourceDueDate: dueDateIso,
-      priority: inferPriorityFromDueDate(dueDateIso, now)
-    });
-  };
-
-  for (const line of lines) {
-    if (/^\|.*\|$/.test(line) && line.includes("**")) {
-      const dateMatches = Array.from(line.matchAll(DOTTED_DATE_REGEX));
-      if (dateMatches.length > 0) {
-        const dueDateIso = toIsoFromDottedDateMatch(dateMatches[0]);
-        const boldMatches = Array.from(line.matchAll(BOLD_SECTION_REGEX));
-        for (const bold of boldMatches) {
-          pushCandidate(asNonEmptyString(bold[1]), dueDateIso);
-        }
-      }
-      continue;
-    }
-
-    if (!/(deadline|due)/i.test(line)) {
-      continue;
-    }
-
-    const dateMatches = Array.from(line.matchAll(DOTTED_DATE_REGEX));
-    if (dateMatches.length === 0) {
-      continue;
-    }
-
-    const dueDateIso = toIsoFromDottedDateMatch(dateMatches[dateMatches.length - 1]);
-    const explicitTask = line.match(DEADLINE_TASK_REGEX)?.[0] ?? null;
-    const boldTask = line.match(BOLD_SECTION_REGEX)?.[1] ?? null;
-    pushCandidate(explicitTask ?? boldTask, dueDateIso);
-  }
-
-  return Array.from(byTaskKey.values()).sort((left, right) => Date.parse(left.dueDate) - Date.parse(right.dueDate));
+export function isGithubMcpServer(server: Pick<McpServerConfig, "label" | "serverUrl">): boolean {
+  return /github/i.test(server.label) || /github/i.test(server.serverUrl);
 }
 
-function upsertImportedDeadline(
-  store: RuntimeStore,
-  userId: string,
-  existingDeadlines: Deadline[],
-  next: ParsedReadmeDeadline
-): "imported" | "updated" | "skipped" {
-  const nextCourse = normalizeCourseKey(next.course);
-  const nextTask = normalizeTextKey(next.task);
+export async function runTpGithubDeadlineSubAgent(
+  job: TpGithubDeadlineSubAgentJob,
+  deps: TpGithubDeadlineSubAgentDependencies = {}
+): Promise<TpGithubDeadlineSubAgentRunResult> {
+  const logger = deps.logger ?? console;
+  const now = deps.now ?? new Date();
+  const model = deps.geminiClient ?? getGeminiClient();
+  const buildToolContext = deps.buildMcpToolContext ?? buildMcpToolContext;
+  const callMcpTool = deps.executeMcpToolCall ?? executeMcpToolCall;
+  const callLocalTool = deps.executeFunctionCall ?? executeFunctionCall;
+  const fetchTp = deps.fetchTpSchedule ?? fetchTPSchedule;
 
-  const exact = existingDeadlines.find(
-    (deadline) =>
-      normalizeCourseKey(deadline.course) === nextCourse &&
-      normalizeTextKey(deadline.task) === nextTask &&
-      deadline.dueDate === next.dueDate
-  );
-  if (exact) {
-    return "skipped";
-  }
-
-  const sameTask = existingDeadlines.find(
-    (deadline) =>
-      normalizeCourseKey(deadline.course) === nextCourse &&
-      normalizeTextKey(deadline.task) === nextTask
-  );
-
-  if (sameTask) {
-    const managedBySource = Boolean(sameTask.sourceDueDate);
-    const userOverrodeDueDate = managedBySource && sameTask.sourceDueDate !== sameTask.dueDate;
-
-    if (!managedBySource || userOverrodeDueDate) {
-      return "skipped";
-    }
-
-    const updated = store.updateDeadline(userId, sameTask.id, {
-      dueDate: next.dueDate,
-      sourceDueDate: next.sourceDueDate,
-      priority: next.priority
-    });
-    if (!updated) {
-      return "skipped";
-    }
-
-    const index = existingDeadlines.findIndex((deadline) => deadline.id === sameTask.id);
-    if (index >= 0) {
-      existingDeadlines[index] = updated;
-    }
-    return "updated";
-  }
-
-  const created = store.createDeadline(userId, {
-    course: next.course,
-    task: next.task,
-    dueDate: next.dueDate,
-    sourceDueDate: next.sourceDueDate,
-    priority: next.priority,
-    completed: false
-  });
-  existingDeadlines.push(created);
-  return "imported";
-}
-
-async function findCourseRepository(
-  server: McpServerConfig,
-  courseCode: string,
-  executeToolCall: (binding: McpToolBinding, args: Record<string, unknown>) => Promise<unknown>
-): Promise<GitHubRepositoryRef | null> {
-  if (!serverAllowsTool(server, "search_repositories")) {
-    return null;
-  }
-
-  const binding: McpToolBinding = {
-    server,
-    remoteToolName: "search_repositories"
+  const result: TpGithubDeadlineSubAgentRunResult = {
+    attempted: false,
+    imported: 0,
+    updated: 0,
+    skipped: 0,
+    errors: [],
+    courseCodes: [],
+    executedTools: []
   };
 
-  const collected = new Map<string, GitHubSearchRepositoryItem>();
-  const queries = [`${courseCode.toLowerCase()} in:name`, `${courseCode} in:name`];
+  if (typeof model.isConfigured === "function" && !model.isConfigured()) {
+    result.errors.push("Gemini is not configured on this server.");
+    return result;
+  }
 
-  for (const query of queries) {
-    const response = await executeToolCall(binding, { query, sort: "updated" });
-    const error = getMcpErrorMessage(response);
-    if (error) {
-      continue;
-    }
-
-    const text = getMcpResultText(response);
-    if (!text) {
-      continue;
-    }
-
-    const parsed = parseFirstJsonObject(text);
-    const payload = asRecord(parsed);
-    const items = Array.isArray(payload?.items) ? payload?.items : [];
-    items.forEach((item) => {
-      const record = asRecord(item);
-      if (!record) {
-        return;
-      }
-      const fullName = asNonEmptyString(record.full_name);
-      if (!fullName) {
-        return;
-      }
-      collected.set(fullName, {
-        name: asNonEmptyString(record.name) ?? undefined,
-        full_name: fullName,
-        owner: asRecord(record.owner)
-          ? {
-              login: asNonEmptyString(asRecord(record.owner)?.login) ?? undefined
-            }
-          : undefined
+  try {
+    const tpEvents = deps.tpEvents
+      ?? await fetchTp({
+        icalUrl: job.tpIcalUrl,
+        pastDays: config.INTEGRATION_WINDOW_PAST_DAYS,
+        futureDays: config.INTEGRATION_WINDOW_FUTURE_DAYS
       });
-    });
-  }
 
-  return selectRepository(courseCode, Array.from(collected.values()));
-}
+    const courseCodes = extractTPCourseCodes(tpEvents);
+    result.courseCodes = courseCodes;
 
-async function fetchRepositoryReadme(
-  server: McpServerConfig,
-  repository: GitHubRepositoryRef,
-  executeToolCall: (binding: McpToolBinding, args: Record<string, unknown>) => Promise<unknown>
-): Promise<string | null> {
-  if (!serverAllowsTool(server, "get_file_contents")) {
-    return null;
-  }
+    if (courseCodes.length === 0) {
+      result.errors.push("No TP course codes found for GitHub deadline import.");
+      return result;
+    }
 
-  const binding: McpToolBinding = {
-    server,
-    remoteToolName: "get_file_contents"
-  };
+    const context = await buildToolContext(job.store, job.userId);
+    const githubContext = selectGithubBindingsForServer(context, job.githubServerId);
 
-  const response = await executeToolCall(binding, {
-    owner: repository.owner,
-    repo: repository.repo,
-    path: "README.md"
-  });
-  const error = getMcpErrorMessage(response);
-  if (error) {
-    return null;
-  }
-  return getMcpResultText(response);
-}
+    if (githubContext.declarations.length === 0) {
+      result.errors.push(`No GitHub MCP tools available for server ${job.githubServerId}.`);
+      return result;
+    }
 
-export async function autoImportTpGithubDeadlines(
-  store: RuntimeStore,
-  userId: string,
-  tpEvents: ImportedCalendarEvent[],
-  options: AutoImportOptions = {}
-): Promise<TpGithubDeadlineImportResult> {
-  const now = options.now ?? new Date();
-  const executeToolCall = options.executeToolCall ?? executeMcpToolCall;
-  const courseCodes = extractTPCourseCodes(tpEvents);
+    const localDeclarations = buildLocalDeadlineToolDeclarations();
+    const toolDeclarations = [...localDeclarations, ...githubContext.declarations];
 
-  if (courseCodes.length === 0) {
-    return {
-      attempted: false,
-      imported: 0,
-      updated: 0,
-      skipped: 0,
-      errors: [],
-      courseCodes: [],
-      repositoriesScanned: []
-    };
-  }
-
-  const githubServers = getMcpServers(store, userId).filter((server) => server.enabled && isGithubMcpServer(server));
-  if (githubServers.length === 0) {
-    return {
-      attempted: false,
-      imported: 0,
-      updated: 0,
-      skipped: 0,
-      errors: [],
-      courseCodes,
-      repositoriesScanned: []
-    };
-  }
-
-  const existingDeadlines = store.getDeadlines(userId, now, false);
-  const repositoriesScanned: string[] = [];
-  const errors: string[] = [];
-  let imported = 0;
-  let updated = 0;
-  let skipped = 0;
-
-  for (const courseCode of courseCodes) {
-    let courseHandled = false;
-
-    for (const server of githubServers) {
-      try {
-        const repository = await findCourseRepository(server, courseCode, executeToolCall);
-        if (!repository) {
-          continue;
-        }
-
-        repositoriesScanned.push(repository.fullName);
-        const readme = await fetchRepositoryReadme(server, repository, executeToolCall);
-        if (!readme) {
-          continue;
-        }
-
-        const parsedDeadlines = parseGitHubCourseDeadlinesFromReadme(readme, courseCode, now);
-        parsedDeadlines.forEach((deadline) => {
-          const outcome = upsertImportedDeadline(store, userId, existingDeadlines, deadline);
-          if (outcome === "imported") {
-            imported += 1;
-          } else if (outcome === "updated") {
-            updated += 1;
-          } else {
-            skipped += 1;
-          }
-        });
-
-        courseHandled = true;
-        break;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        errors.push(`${courseCode}: ${message}`);
+    const workingMessages: GeminiMessage[] = [
+      {
+        role: "user",
+        parts: [{ text: buildSubAgentPrompt(courseCodes, job.githubServerId, job.tpIcalUrl) }]
       }
+    ];
+
+    const systemInstruction = buildSubAgentSystemInstruction(now);
+    const counters: DeadlineMutationCounters = { imported: 0, updated: 0, skipped: 0 };
+    const toolCallSignatureCount = new Map<string, number>();
+    const toolCallNameCount = new Map<string, number>();
+    const blockedToolNames = new Set<string>();
+    let finalText = "";
+
+    for (let round = 0; round < MAX_FUNCTION_ROUNDS; round += 1) {
+      const response = await model.generateChatResponse({
+        messages: workingMessages,
+        systemInstruction,
+        tools: toolDeclarations
+      });
+
+      const functionCalls = response.functionCalls ?? [];
+      finalText = response.text?.trim() ?? finalText;
+      if (functionCalls.length === 0) {
+        break;
+      }
+
+      result.attempted = true;
+      const roundResponses: ToolResponseEntry[] = [];
+
+      for (const call of functionCalls) {
+        const args = parseFunctionCallArgs(call);
+        const mcpBinding = githubContext.bindings.get(call.name);
+        const toolLimitKey = mcpBinding
+          ? `mcp:${mcpBinding.server.id}:${mcpBinding.remoteToolName}`
+          : call.name;
+
+        const signature = toToolCallSignature(call.name, args);
+        const signatureCount = toolCallSignatureCount.get(signature) ?? 0;
+        if (signatureCount >= MAX_IDENTICAL_TOOL_CALLS_PER_TURN) {
+          roundResponses.push({
+            name: call.name,
+            response: {
+              error: "Skipped repeated identical tool call to prevent loop exhaustion."
+            }
+          });
+          continue;
+        }
+        toolCallSignatureCount.set(signature, signatureCount + 1);
+
+        if (blockedToolNames.has(toolLimitKey)) {
+          roundResponses.push({
+            name: call.name,
+            response: {
+              error: "Skipped tool call after earlier rate-limit response in this run."
+            }
+          });
+          continue;
+        }
+
+        const callCount = toolCallNameCount.get(toolLimitKey) ?? 0;
+        const maxCalls = maxCallsPerToolInTurn(call.name, mcpBinding);
+        if (callCount >= maxCalls) {
+          roundResponses.push({
+            name: call.name,
+            response: {
+              error: `Skipped repeated ${mcpBinding?.remoteToolName ?? call.name} calls to prevent tool-loop exhaustion.`
+            }
+          });
+          continue;
+        }
+        toolCallNameCount.set(toolLimitKey, callCount + 1);
+
+        try {
+          let responsePayload: unknown;
+          if (mcpBinding) {
+            responsePayload = await callMcpTool(mcpBinding, args);
+            if (isMcpRateLimitedResponse(responsePayload)) {
+              blockedToolNames.add(toolLimitKey);
+            }
+          } else if (LOCAL_DEADLINE_TOOL_NAMES.has(call.name)) {
+            responsePayload = callLocalTool(call.name, args, job.store, job.userId).response;
+            updateDeadlineCountersFromToolResponse(counters, call.name, responsePayload);
+          } else {
+            responsePayload = { error: `Unsupported tool for TP GitHub sub-agent: ${call.name}` };
+          }
+
+          roundResponses.push({
+            name: call.name,
+            response: responsePayload
+          });
+          result.executedTools.push(call.name);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Tool call failed";
+          if (/rate limit exceeded|secondary rate limit|too many requests|retry after/i.test(message)) {
+            blockedToolNames.add(toolLimitKey);
+          }
+          roundResponses.push({
+            name: call.name,
+            response: { error: message }
+          });
+          result.errors.push(`${call.name}: ${message}`);
+        }
+      }
+
+      workingMessages.push({
+        role: "model",
+        parts: functionCalls.map((call) => ({ functionCall: call })) as Part[]
+      });
+      workingMessages.push({
+        role: "function",
+        parts: roundResponses.map((entry) => ({
+          functionResponse: {
+            name: entry.name,
+            response: entry.response
+          }
+        })) as Part[]
+      });
     }
 
-    if (!courseHandled) {
-      errors.push(`${courseCode}: no matching GitHub repository/README found`);
+    result.attempted = true;
+    result.imported = counters.imported;
+    result.updated = counters.updated;
+    result.skipped = counters.skipped;
+    if (finalText.length > 0) {
+      result.finalText = finalText;
     }
+
+    logger.info(
+      `[tp-github-sub-agent] user=${job.userId} server=${job.githubServerId} imported=${result.imported} updated=${result.updated} skipped=${result.skipped}`
+    );
+
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "TP GitHub sub-agent failed";
+    result.errors.push(message);
+    result.attempted = true;
+    logger.error(`[tp-github-sub-agent] user=${job.userId} server=${job.githubServerId} failed: ${message}`);
+    return result;
+  }
+}
+
+export function scheduleTpGithubDeadlineSubAgent(
+  job: TpGithubDeadlineSubAgentJob,
+  deps: TpGithubDeadlineSubAgentDependencies = {}
+): boolean {
+  const key = `${job.userId}:${job.githubServerId}`;
+  if (inFlightTpGithubJobs.has(key)) {
+    return false;
   }
 
-  return {
-    attempted: true,
-    imported,
-    updated,
-    skipped,
-    errors,
-    courseCodes,
-    repositoriesScanned: Array.from(new Set(repositoriesScanned))
-  };
+  const logger = deps.logger ?? console;
+  inFlightTpGithubJobs.add(key);
+
+  setTimeout(() => {
+    void runTpGithubDeadlineSubAgent(job, deps)
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "Unknown TP GitHub sub-agent error";
+        logger.error(`[tp-github-sub-agent] job=${key} unhandled failure: ${message}`);
+      })
+      .finally(() => {
+        inFlightTpGithubJobs.delete(key);
+      });
+  }, 0);
+
+  return true;
 }

@@ -45,7 +45,7 @@ import {
 } from "./weekly-growth-review.js";
 import { maybeGenerateDailySummaryVisual } from "./growth-visuals.js";
 import { PostgresRuntimeSnapshotStore } from "./postgres-persistence.js";
-import { autoImportTpGithubDeadlines, type TpGithubDeadlineImportResult } from "./tp-github-deadlines.js";
+import { isGithubMcpServer, scheduleTpGithubDeadlineSubAgent } from "./tp-github-deadlines.js";
 import type { PostgresPersistenceDiagnostics } from "./postgres-persistence.js";
 import { Notification, NotificationPreferencesPatch } from "./types.js";
 import type {
@@ -233,7 +233,6 @@ interface TPUserSyncResult {
     futureDays: number;
     icalUrl?: string;
   };
-  deadlineImport?: TpGithubDeadlineImportResult;
   error?: string;
 }
 
@@ -487,10 +486,6 @@ async function runTPSyncForUser(userId: string, options: TPUserSyncOptions = {})
     const existingEvents = store.getScheduleEvents(userId);
     const diff = diffScheduleEvents(existingEvents, tpEvents);
     const result = store.upsertScheduleEvents(userId, diff.toCreate, diff.toUpdate, diff.toDelete);
-    const deadlineImport =
-      appliedIcalUrl
-        ? await autoImportTpGithubDeadlines(store, userId, tpEvents)
-        : undefined;
 
     return {
       success: true,
@@ -504,8 +499,7 @@ async function runTPSyncForUser(userId: string, options: TPUserSyncOptions = {})
         pastDays: options.pastDays ?? config.INTEGRATION_WINDOW_PAST_DAYS,
         futureDays: options.futureDays ?? config.INTEGRATION_WINDOW_FUTURE_DAYS,
         ...(appliedIcalUrl ? { icalUrl: appliedIcalUrl } : {})
-      },
-      ...(deadlineImport ? { deadlineImport } : {})
+      }
     };
   } catch (error) {
     return {
@@ -518,6 +512,26 @@ async function runTPSyncForUser(userId: string, options: TPUserSyncOptions = {})
     };
   } finally {
     tpSyncInFlightUsers.delete(userId);
+  }
+}
+
+function maybeTriggerTpGithubDeadlineSubAgent(userId: string, githubServerId: string): void {
+  const tpIcalUrl = getConnectedTPIcalUrl(userId);
+  if (!tpIcalUrl) {
+    return;
+  }
+
+  const scheduled = scheduleTpGithubDeadlineSubAgent({
+    store,
+    userId,
+    tpIcalUrl,
+    githubServerId
+  });
+
+  if (scheduled) {
+    console.info(
+      `[tp-github-sub-agent] scheduled background import for user=${userId} githubServer=${githubServerId}`
+    );
   }
 }
 
@@ -1037,7 +1051,14 @@ app.get("/api/auth/github/callback", async (req, res) => {
       }
 
       const exchange = await exchangeGitHubCodeWithToken(code);
-      await upsertMcpTemplateServerWithToken(pendingMcpOAuth.userId, template.id, exchange.accessToken);
+      const { server } = await upsertMcpTemplateServerWithToken(
+        pendingMcpOAuth.userId,
+        template.id,
+        exchange.accessToken
+      );
+      if (isGithubMcpServer(server)) {
+        maybeTriggerTpGithubDeadlineSubAgent(pendingMcpOAuth.userId, server.id);
+      }
       return res.redirect(getIntegrationFrontendRedirect("mcp", "connected", `${template.label} connected`));
     } catch (error) {
       const message = error instanceof Error ? error.message : "GitHub OAuth callback failed";
@@ -1250,6 +1271,9 @@ app.post("/api/mcp/templates/:templateId/connect", async (req, res) => {
   if (token && token.length > 0) {
     try {
       const { server, publicServers } = await upsertMcpTemplateServerWithToken(authReq.authUser.id, template.id, token);
+      if (isGithubMcpServer(server)) {
+        maybeTriggerTpGithubDeadlineSubAgent(authReq.authUser.id, server.id);
+      }
       return res.json({
         ok: true,
         service: "mcp",
@@ -1376,6 +1400,9 @@ app.post("/api/connectors/:service/connect", async (req, res) => {
 
     const server = upsertMcpServer(store, authReq.authUser.id, mcpInput);
     const publicServers = getMcpServersPublic(store, authReq.authUser.id);
+    if (isGithubMcpServer(server)) {
+      maybeTriggerTpGithubDeadlineSubAgent(authReq.authUser.id, server.id);
+    }
 
     return res.json({
       ok: true,
@@ -1404,8 +1431,7 @@ app.post("/api/connectors/:service/connect", async (req, res) => {
       displayLabel: "TP Schedule"
     });
 
-    // Kick off an immediate sync so connected users get schedule + auto-imported
-    // GitHub deadlines for detected TP courses without a manual chat request.
+    // Kick off an immediate schedule sync for TP iCal connection.
     const autoSync = await runTPSyncForUser(authReq.authUser.id, { icalUrl: icalUrl.trim() });
     return res.json({
       ok: true,

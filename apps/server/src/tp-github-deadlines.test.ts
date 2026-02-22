@@ -1,27 +1,99 @@
 import { describe, expect, it } from "vitest";
-import type { McpToolBinding } from "./mcp.js";
-import { upsertMcpServer } from "./mcp.js";
+import { SchemaType } from "@google/generative-ai";
 import { RuntimeStore } from "./store.js";
+import type { McpToolContext, McpToolBinding } from "./mcp.js";
 import {
-  autoImportTpGithubDeadlines,
   extractTPCourseCodes,
-  parseGitHubCourseDeadlinesFromReadme
+  isGithubMcpServer,
+  runTpGithubDeadlineSubAgent
 } from "./tp-github-deadlines.js";
+import type { GeminiChatResponse } from "./gemini.js";
 
-const SAMPLE_README = `
-# DAT560 Generative AI
+function makeStubModel(responses: GeminiChatResponse[]): {
+  isConfigured: () => boolean;
+  generateChatResponse: (request: {
+    messages: unknown[];
+    systemInstruction?: string;
+    tools?: unknown[];
+  }) => Promise<GeminiChatResponse>;
+} {
+  let index = 0;
 
-- [17.02.2026] Assignment 2 deadline is extended to **22.02.2026 23.59**
+  return {
+    isConfigured: () => true,
+    generateChatResponse: async () => {
+      const next = responses[Math.min(index, responses.length - 1)] ?? { text: "", functionCalls: [] };
+      index += 1;
+      return next;
+    }
+  };
+}
 
-| Week | Date       | Topic                               | Comments |
-|------|------------|--------------------------------------|----------|
-| 5    | 28.01.2026 | **Assignment 1 deadline**            |          |
-| 8    | 18.02.2026 | **Assignment 2 deadline**            |          |
-| 12   | 18.03.2026 | **Assignment 3 deadline**            |          |
-| 17   | 24.04.2026 | **Project + report due**             |          |
-`;
+function makeGithubMcpContext(serverId = "github-mcp-server"): McpToolContext {
+  const server = {
+    id: serverId,
+    label: "GitHub MCP (repos read-only)",
+    serverUrl: "https://api.githubcopilot.com/mcp/x/repos/readonly",
+    token: "token",
+    enabled: true,
+    toolAllowlist: []
+  };
 
-describe("tp github deadline auto import", () => {
+  const searchToolName = "mcp_github_mcp_server__search_repositories";
+  const readToolName = "mcp_github_mcp_server__get_file_contents";
+
+  const declarations = [
+    {
+      name: searchToolName,
+      description: "search repos",
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+          query: { type: SchemaType.STRING }
+        },
+        required: ["query"]
+      }
+    },
+    {
+      name: readToolName,
+      description: "read file",
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+          owner: { type: SchemaType.STRING },
+          repo: { type: SchemaType.STRING },
+          path: { type: SchemaType.STRING }
+        },
+        required: ["owner", "repo", "path"]
+      }
+    }
+  ] as unknown as McpToolContext["declarations"];
+
+  const bindings = new Map<string, McpToolBinding>([
+    [
+      searchToolName,
+      {
+        server,
+        remoteToolName: "search_repositories"
+      }
+    ],
+    [
+      readToolName,
+      {
+        server,
+        remoteToolName: "get_file_contents"
+      }
+    ]
+  ]);
+
+  return {
+    declarations,
+    bindings,
+    summary: "GitHub MCP tools"
+  };
+}
+
+describe("tp github deadline sub-agent", () => {
   it("extracts TP course codes from schedule events", () => {
     const courseCodes = extractTPCourseCodes([
       {
@@ -41,114 +113,192 @@ describe("tp github deadline auto import", () => {
     expect(courseCodes).toEqual(["DAT520", "DAT560"]);
   });
 
-  it("parses future deadlines from GitHub README and keeps extension updates", () => {
-    const parsed = parseGitHubCourseDeadlinesFromReadme(
-      SAMPLE_README,
-      "DAT560",
-      new Date("2026-02-20T00:00:00.000Z")
-    );
+  it("identifies GitHub MCP servers by label or URL", () => {
+    expect(
+      isGithubMcpServer({
+        label: "GitHub MCP",
+        serverUrl: "https://example.com/mcp"
+      })
+    ).toBe(true);
 
-    expect(parsed.map((entry) => `${entry.task}::${entry.dueDate}`)).toEqual([
-      "Assignment 2 deadline::2026-02-22T23:59:00.000Z",
-      "Assignment 3 deadline::2026-03-18T23:59:00.000Z",
-      "Project + report due::2026-04-24T23:59:00.000Z"
-    ]);
+    expect(
+      isGithubMcpServer({
+        label: "Custom MCP",
+        serverUrl: "https://api.githubcopilot.com/mcp/x/repos/readonly"
+      })
+    ).toBe(true);
+
+    expect(
+      isGithubMcpServer({
+        label: "Notion MCP",
+        serverUrl: "https://notion.example/mcp"
+      })
+    ).toBe(false);
   });
 
-  it("imports and updates deadlines automatically when TP and GitHub MCP are connected", async () => {
+  it("runs a non-chat background tool loop and imports deadlines", async () => {
     const store = new RuntimeStore(":memory:");
     const user = store.createUser({
       email: "tp-user@example.com",
       passwordHash: "",
       role: "user"
     });
-    const userId = user.id;
 
-    upsertMcpServer(store, userId, {
-      label: "GitHub MCP (repos read-only)",
-      serverUrl: "https://api.githubcopilot.com/mcp/x/repos/readonly",
-      token: "test-token",
-      toolAllowlist: ["search_repositories", "get_file_contents"]
-    });
-
-    // Seed one previously imported deadline so we verify update behavior.
-    store.createDeadline(userId, {
-      course: "DAT560",
-      task: "Assignment 2 deadline",
-      dueDate: "2026-02-18T23:59:00.000Z",
-      sourceDueDate: "2026-02-18T23:59:00.000Z",
-      priority: "high",
-      completed: false
-    });
-
-    const executeToolCall = async (binding: McpToolBinding): Promise<unknown> => {
-      if (binding.remoteToolName === "search_repositories") {
-        return {
-          serverId: binding.server.id,
-          serverLabel: binding.server.label,
-          tool: binding.remoteToolName,
-          result: {
-            text: JSON.stringify({
-              total_count: 1,
-              items: [
-                {
-                  name: "info",
-                  full_name: "dat560-2026/info",
-                  owner: {
-                    login: "dat560-2026"
-                  }
-                }
-              ]
-            })
-          }
-        };
-      }
-
-      if (binding.remoteToolName === "get_file_contents") {
-        return {
-          serverId: binding.server.id,
-          serverLabel: binding.server.label,
-          tool: binding.remoteToolName,
-          result: {
-            text: "successfully downloaded text file",
-            resourceText: SAMPLE_README
-          }
-        };
-      }
-
-      throw new Error(`Unexpected tool call: ${binding.remoteToolName}`);
-    };
-
-    const result = await autoImportTpGithubDeadlines(
-      store,
-      userId,
-      [
-        {
-          summary: "DAT560 Forelesning",
-          startTime: "2026-02-20T10:15:00.000Z"
-        }
-      ],
+    const model = makeStubModel([
       {
-        now: new Date("2026-02-20T00:00:00.000Z"),
-        executeToolCall
+        text: "",
+        functionCalls: [
+          {
+            name: "mcp_github_mcp_server__search_repositories",
+            args: {
+              query: "DAT560 in:name"
+            }
+          }
+        ]
+      },
+      {
+        text: "",
+        functionCalls: [
+          {
+            name: "mcp_github_mcp_server__get_file_contents",
+            args: {
+              owner: "dat560-2026",
+              repo: "info",
+              path: "README.md"
+            }
+          }
+        ]
+      },
+      {
+        text: "",
+        functionCalls: [
+          {
+            name: "createDeadline",
+            args: {
+              course: "DAT560",
+              task: "Assignment 3",
+              dueDate: "2026-03-18T23:59:00.000Z",
+              priority: "high"
+            }
+          }
+        ]
+      },
+      {
+        text: "import complete",
+        functionCalls: []
+      }
+    ]);
+
+    const result = await runTpGithubDeadlineSubAgent(
+      {
+        store,
+        userId: user.id,
+        tpIcalUrl: "https://tp.educloud.no/ical/abc",
+        githubServerId: "github-mcp-server"
+      },
+      {
+        geminiClient: model,
+        tpEvents: [
+          {
+            summary: "DAT560 Forelesning",
+            startTime: "2026-02-20T10:15:00.000Z"
+          }
+        ],
+        buildMcpToolContext: async () => makeGithubMcpContext(),
+        executeMcpToolCall: async (binding) => ({
+          serverId: binding.server.id,
+          serverLabel: binding.server.label,
+          tool: binding.remoteToolName,
+          result: {
+            text: "ok"
+          }
+        })
       }
     );
 
     expect(result.attempted).toBe(true);
-    expect(result.updated).toBe(1);
-    expect(result.imported).toBe(2);
+    expect(result.imported).toBe(1);
+    expect(result.updated).toBe(0);
     expect(result.errors).toEqual([]);
-    expect(result.repositoriesScanned).toEqual(["dat560-2026/info"]);
 
-    const deadlines = store
-      .getDeadlines(userId, new Date("2026-02-20T00:00:00.000Z"), false)
-      .filter((deadline) => deadline.course === "DAT560")
-      .sort((left, right) => left.task.localeCompare(right.task));
+    const deadlines = store.getDeadlines(user.id, new Date("2026-02-20T00:00:00.000Z"), false);
+    expect(deadlines.some((deadline) => deadline.course === "DAT560" && deadline.task === "Assignment 3")).toBe(true);
 
-    expect(deadlines.map((deadline) => `${deadline.task}::${deadline.dueDate}`)).toEqual([
-      "Assignment 2 deadline::2026-02-22T23:59:00.000Z",
-      "Assignment 3 deadline::2026-03-18T23:59:00.000Z",
-      "Project + report due::2026-04-24T23:59:00.000Z"
+    // Confirms this path does not go through chat history.
+    expect(store.getChatMessageCount(user.id)).toBe(0);
+  });
+
+  it("supports rescheduling existing deadlines via queueDeadlineAction in the sub-agent", async () => {
+    const store = new RuntimeStore(":memory:");
+    const user = store.createUser({
+      email: "tp-user2@example.com",
+      passwordHash: "",
+      role: "user"
+    });
+
+    const existing = store.createDeadline(user.id, {
+      course: "DAT560",
+      task: "Assignment 2",
+      dueDate: "2026-02-18T23:59:00.000Z",
+      priority: "high",
+      completed: false
+    });
+
+    const model = makeStubModel([
+      {
+        text: "",
+        functionCalls: [
+          {
+            name: "getDeadlines",
+            args: {
+              daysAhead: 120,
+              includeOverdue: true
+            }
+          }
+        ]
+      },
+      {
+        text: "",
+        functionCalls: [
+          {
+            name: "queueDeadlineAction",
+            args: {
+              deadlineId: existing.id,
+              action: "reschedule",
+              newDueDate: "2026-02-22T23:59:00.000Z"
+            }
+          }
+        ]
+      },
+      {
+        text: "done",
+        functionCalls: []
+      }
     ]);
+
+    const result = await runTpGithubDeadlineSubAgent(
+      {
+        store,
+        userId: user.id,
+        tpIcalUrl: "https://tp.educloud.no/ical/xyz",
+        githubServerId: "github-mcp-server"
+      },
+      {
+        geminiClient: model,
+        tpEvents: [
+          {
+            summary: "DAT560 Forelesning",
+            startTime: "2026-02-20T10:15:00.000Z"
+          }
+        ],
+        buildMcpToolContext: async () => makeGithubMcpContext(),
+        executeMcpToolCall: async () => ({ result: { text: "ok" } })
+      }
+    );
+
+    expect(result.updated).toBe(1);
+
+    const updated = store.getDeadlineById(user.id, existing.id, false);
+    expect(updated?.dueDate).toBe("2026-02-22T23:59:00.000Z");
   });
 });
