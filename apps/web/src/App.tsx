@@ -460,14 +460,10 @@ export default function App(): JSX.Element {
     return <ConsentGate onAccepted={() => setAuthState("ready")} />;
   }
 
-  const chatPanelClass = activeTab === "chat"
-    ? "tab-panel tab-panel-active"
-    : chatOverlayOpen
-      ? "tab-panel tab-panel-active chat-overlay-panel"
-      : "tab-panel tab-panel-hidden";
+  const isChatTab = activeTab === "chat";
 
   return (
-    <main className={`app-shell chat-mood-${chatMood} ${activeTab === "chat" ? "app-shell-chat-active" : ""}`}>
+    <main className={`app-shell chat-mood-${chatMood} ${isChatTab ? "app-shell-chat-active" : ""}`}>
       <InstallPrompt />
 
       {loading && <p>Loading...</p>}
@@ -477,8 +473,9 @@ export default function App(): JSX.Element {
         <>
           {/* Tab content area */}
           <div className="tab-content-area">
-            <div className={chatPanelClass}>
-              <ChatTab mood={chatMood} onMoodChange={handleMoodChange} />
+            {/* Chat panel — full tab mode */}
+            <div className={`tab-panel ${isChatTab ? "tab-panel-active" : "tab-panel-hidden"}`}>
+              {isChatTab && <ChatTab mood={chatMood} onMoodChange={handleMoodChange} />}
             </div>
             {activeTab === "schedule" && (
               isTabLocked("schedule")
@@ -517,14 +514,25 @@ export default function App(): JSX.Element {
             )}
           </div>
 
-          {/* Chat overlay backdrop — tap to dismiss */}
-          {chatOverlayOpen && activeTab !== "chat" && (
-            <div className="chat-overlay-backdrop" onClick={() => setChatOverlayOpen(false)} />
+          {/* Chat overlay — floating bottom sheet on non-chat tabs */}
+          {chatOverlayOpen && !isChatTab && (
+            <>
+              <div className="chat-overlay-backdrop" onClick={() => setChatOverlayOpen(false)} />
+              <div className="chat-overlay-panel">
+                <div className="chat-overlay-handle" onClick={() => setChatOverlayOpen(false)}>
+                  <span className="chat-overlay-handle-bar" />
+                  <button type="button" className="chat-overlay-close-btn" aria-label="Close chat overlay">
+                    Close
+                  </button>
+                </div>
+                <ChatTab mood={chatMood} onMoodChange={handleMoodChange} />
+              </div>
+            </>
           )}
 
           {/* Floating chat button — visible on non-chat tabs when overlay is closed */}
           <ChatFab
-            visible={activeTab !== "chat" && !chatOverlayOpen}
+            visible={!isChatTab && !chatOverlayOpen}
             onClick={() => setChatOverlayOpen(true)}
           />
 
