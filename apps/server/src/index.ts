@@ -46,6 +46,7 @@ import {
 import { maybeGenerateDailySummaryVisual } from "./growth-visuals.js";
 import { PostgresRuntimeSnapshotStore } from "./postgres-persistence.js";
 import { isGithubMcpServer, scheduleTpGithubDeadlineSubAgent } from "./tp-github-deadlines.js";
+import { TPExamDeadlineBridge, type TPExamDeadlineBridgeResult } from "./tp-exam-deadline-bridge.js";
 import type { PostgresPersistenceDiagnostics } from "./postgres-persistence.js";
 import { Notification, NotificationPreferencesPatch } from "./types.js";
 import type {
@@ -226,6 +227,7 @@ interface TPUserSyncResult {
   lecturesCreated: number;
   lecturesUpdated: number;
   lecturesDeleted: number;
+  examDeadlineBridge?: TPExamDeadlineBridgeResult;
   appliedScope?: {
     semester: string;
     courseIds: string[];
@@ -486,6 +488,7 @@ async function runTPSyncForUser(userId: string, options: TPUserSyncOptions = {})
     const existingEvents = store.getScheduleEvents(userId);
     const diff = diffScheduleEvents(existingEvents, tpEvents);
     const result = store.upsertScheduleEvents(userId, diff.toCreate, diff.toUpdate, diff.toDelete);
+    const examDeadlineBridge = new TPExamDeadlineBridge(store, userId).syncExamDeadlines(tpEvents);
 
     return {
       success: true,
@@ -493,6 +496,7 @@ async function runTPSyncForUser(userId: string, options: TPUserSyncOptions = {})
       lecturesCreated: result.created,
       lecturesUpdated: result.updated,
       lecturesDeleted: result.deleted,
+      ...(examDeadlineBridge.candidates > 0 ? { examDeadlineBridge } : {}),
       appliedScope: {
         semester: options.semester ?? "26v",
         courseIds: appliedIcalUrl ? [] : appliedTpCourseIds,
