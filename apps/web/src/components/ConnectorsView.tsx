@@ -394,6 +394,11 @@ export function ConnectorsView(): JSX.Element {
                         disabled={busy}
                       />
                     </div>
+                    {connector.service === "canvas" && (
+                      <p className="connector-help-text">
+                        In Canvas go to <strong>Account</strong> → <strong>Settings</strong> → <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>, then paste the token above.
+                      </p>
+                    )}
                     <button
                       className="connector-connect-btn"
                       onClick={() => void handleConnect(connector)}
@@ -472,11 +477,6 @@ export function ConnectorsView(): JSX.Element {
                   <p className="connector-error">{error}</p>
                 )}
 
-                {connector.service === "canvas" && (
-                  <p className="connector-help-text">
-                    In Canvas go to <strong>Account</strong> → <strong>Settings</strong> → <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>, then paste the token above.
-                  </p>
-                )}
                 {connector.service === "github_course" && (
                   <p className="connector-help-text">
                     Go to <strong>GitHub</strong> → <strong>Settings</strong> → <strong>Developer settings</strong> → <strong>Personal access tokens</strong> → <strong>Fine-grained tokens</strong>. Select the course organizations and grant read access to repositories.
