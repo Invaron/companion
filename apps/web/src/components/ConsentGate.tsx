@@ -221,7 +221,7 @@ function TermsOfService(): JSX.Element {
 
       <h3>13. Contact</h3>
       <p>
-        For questions about these Terms, contact us at: <strong>support@invaron.no</strong>
+        For questions about these Terms, contact us at: <strong>post@invaron.no</strong>
       </p>
     </div>
   );
@@ -235,7 +235,7 @@ function PrivacyPolicy(): JSX.Element {
 
       <h3>1. Data Controller</h3>
       <p>
-        Invaron AS (org.nr. pending), Stavanger, Norway, is the data controller for
+        Invaron AS (org.nr. 936 242 731), Mosvangen 7, 4021 Stavanger, Norway, is the data controller for
         personal data processed through Companion ("the Service"). This policy is
         governed by the General Data Protection Regulation (GDPR) as implemented in Norway
         through the EEA Agreement.
@@ -340,7 +340,7 @@ function PrivacyPolicy(): JSX.Element {
       </ul>
       <p>
         You can exercise your right to erasure directly in the app (Settings → Delete Account).
-        For other requests, contact us at <strong>privacy@invaron.no</strong>.
+        For other requests, contact us at <strong>post@invaron.no</strong>.
       </p>
 
       <h3>7. Data Security</h3>
@@ -386,9 +386,11 @@ function PrivacyPolicy(): JSX.Element {
 
       <h3>13. Contact</h3>
       <p>
-        For privacy inquiries: <strong>privacy@invaron.no</strong>
+        For privacy inquiries: <strong>post@invaron.no</strong>
         <br />
-        Invaron AS · Stavanger, Norway
+        Invaron AS · Mosvangen 7, 4021 Stavanger, Norway
+        <br />
+        Org.nr. 936 242 731
       </p>
     </div>
   );
