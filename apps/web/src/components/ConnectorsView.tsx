@@ -49,6 +49,11 @@ interface ConnectorsViewProps {
   onUpgrade: () => void;
 }
 
+function iconPath(path: string): string {
+  const base = import.meta.env.BASE_URL ?? "/";
+  return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+}
+
 function getDefaultInputValues(): Record<string, string> {
   return {
     canvas_baseUrl: loadCanvasSettings().baseUrl,
@@ -60,7 +65,7 @@ const CONNECTORS: ConnectorMeta[] = [
   {
     service: "canvas",
     label: "Canvas LMS",
-    icon: { src: "/icons/integrations/canvas.svg", alt: "Canvas" },
+    icon: { src: iconPath("icons/integrations/canvas.svg"), alt: "Canvas" },
     description: "Courses, assignments, deadlines, and grades from your Canvas instance.",
     type: "token",
     placeholder: "Paste your Canvas access token"
@@ -68,21 +73,21 @@ const CONNECTORS: ConnectorMeta[] = [
   {
     service: "mcp",
     label: "Connected Apps",
-    icon: { src: "/icons/integrations/connected-apps.svg", alt: "Connected apps" },
+    icon: { src: iconPath("icons/integrations/connected-apps.svg"), alt: "Connected apps" },
     description: "Connect trusted external apps like GitHub.",
     type: "config"
   },
   {
     service: "withings",
     label: "Withings Health",
-    icon: { src: "/icons/integrations/withings.jpg", alt: "Withings" },
+    icon: { src: iconPath("icons/integrations/withings.jpg"), alt: "Withings" },
     description: "Sleep, weight, and health data from Withings devices.",
     type: "oauth"
   },
   {
     service: "tp_schedule",
     label: "TP EduCloud Schedule",
-    icon: { src: "/icons/integrations/tp.svg", alt: "TP EduCloud" },
+    icon: { src: iconPath("icons/integrations/tp.svg"), alt: "TP EduCloud" },
     description: "Lecture schedule via iCal subscription from TP.",
     type: "url",
     placeholder: "Paste your TP iCal URL here"
@@ -92,7 +97,7 @@ const CONNECTORS: ConnectorMeta[] = [
 const GEMINI_CARD: GeminiCard = {
   service: "gemini",
   label: "Gemini AI",
-  icon: { src: "/icons/integrations/gemini.svg", alt: "Gemini" },
+  icon: { src: iconPath("icons/integrations/gemini.svg"), alt: "Gemini" },
   description: "Conversational AI, summaries, coaching"
 };
 
@@ -703,10 +708,6 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
   return (
     <div className="connectors-list">
       <section className="connector-section">
-        <div className="connector-section-head">
-          <h4 className="connector-section-title">Free Tier</h4>
-          <p className="connector-section-desc">Included for every account.</p>
-        </div>
         <div className={`connector-card ${geminiStatus.apiConfigured ? "connector-connected" : ""}`}>
           <div className="connector-header connector-header-static">
             <span className="connector-icon">
@@ -737,7 +738,6 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
       <section className="connector-section">
         <div className="connector-section-head">
           <h4 className="connector-section-title">Connected Apps</h4>
-          <p className="connector-section-desc">Available on paid plans.</p>
         </div>
         {isPaidPlan ? (
           connectedAppConnectors.map(renderConnectorCard)
@@ -754,7 +754,6 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
               </div>
             </div>
             <div className="connector-actions">
-              <span className="connector-connected-since">Free tier includes Gemini, Canvas, and TP.</span>
               <button className="connector-sync-btn" onClick={onUpgrade}>
                 Upgrade
               </button>
