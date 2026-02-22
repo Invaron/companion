@@ -526,11 +526,36 @@ export default function App(): JSX.Element {
           {chatOverlayOpen && !isChatTab && (
             <>
               <div className="chat-overlay-backdrop" onClick={() => setChatOverlayOpen(false)} />
-              <div className="chat-overlay-panel">
-                <div className="chat-overlay-handle" onClick={() => setChatOverlayOpen(false)}>
-                  <span className="chat-overlay-handle-bar" />
-                  <button type="button" className="chat-overlay-close-btn" aria-label="Close chat overlay">
-                    Close
+              <div
+                className="chat-overlay-panel"
+                onFocus={() => {
+                  // When the input inside the overlay gets focus, scroll messages
+                  // to the bottom so the input stays visible above the keyboard.
+                  const scrollOverlayMessages = (): void => {
+                    const panel = document.querySelector(".chat-overlay-panel");
+                    const msgs = panel?.querySelector(".chat-messages");
+                    if (msgs) {
+                      msgs.scrollTo({ top: msgs.scrollHeight, behavior: "auto" });
+                    }
+                  };
+                  // Immediate + delayed — keyboard animation on iOS takes ~300ms
+                  requestAnimationFrame(scrollOverlayMessages);
+                  setTimeout(scrollOverlayMessages, 150);
+                  setTimeout(scrollOverlayMessages, 400);
+                }}
+              >
+                <div className="chat-overlay-header">
+                  <span className="chat-overlay-title">Chat</span>
+                  <button
+                    type="button"
+                    className="chat-overlay-close-btn"
+                    onClick={() => setChatOverlayOpen(false)}
+                    aria-label="Close chat overlay"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                   </button>
                 </div>
                 <ChatTab mood={chatMood} onMoodChange={handleMoodChange} />

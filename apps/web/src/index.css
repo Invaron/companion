@@ -2464,46 +2464,44 @@ button:disabled {
   background: var(--surface);
 }
 
-/* Drag handle / close bar at top of overlay */
-.chat-overlay-handle {
+/* Header bar at top of overlay with close button */
+.chat-overlay-header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 16px 4px;
+  justify-content: space-between;
+  padding: 8px 8px 8px 16px;
   background: var(--surface);
   border-bottom: 1px solid var(--border-soft);
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  gap: 8px;
+  min-height: 40px;
 }
 
-.chat-overlay-handle-bar {
-  width: 36px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--muted);
-  opacity: 0.4;
-  flex-shrink: 0;
+.chat-overlay-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
 }
 
 .chat-overlay-close-btn {
-  position: absolute;
-  right: 12px;
-  top: 6px;
-  background: none;
-  border: none;
-  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  opacity: 0.7;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s;
 }
 
 .chat-overlay-close-btn:active {
-  opacity: 1;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .chat-overlay-panel .chat-tab {
@@ -2539,6 +2537,10 @@ body.keyboard-open .chat-overlay-panel {
   max-height: 100dvh;
   border-radius: 0;
   animation: none;
+}
+
+body.keyboard-open .chat-overlay-header {
+  display: none;
 }
 
 body.keyboard-open .chat-overlay-panel .chat-input-container {
