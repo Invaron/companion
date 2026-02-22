@@ -212,7 +212,8 @@ export default function App(): JSX.Element {
 
       const editableFocused = hasEditableFocus();
       const chatTabActive = document.body.classList.contains("chat-tab-active");
-      const mobileChatInputFocused = editableFocused && chatTabActive && (isIOS || isCoarsePointer);
+      const chatOverlayActive = document.body.classList.contains("chat-overlay-active");
+      const mobileChatInputFocused = editableFocused && (chatTabActive || chatOverlayActive) && (isIOS || isCoarsePointer);
       if (!mobileChatInputFocused) {
         baselineViewportHeight = Math.max(baselineViewportHeight, viewportHeight);
       }
@@ -331,6 +332,13 @@ export default function App(): JSX.Element {
       document.body.classList.remove("chat-tab-active");
     };
   }, [activeTab]);
+
+  useEffect(() => {
+    document.body.classList.toggle("chat-overlay-active", chatOverlayOpen);
+    return () => {
+      document.body.classList.remove("chat-overlay-active");
+    };
+  }, [chatOverlayOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
