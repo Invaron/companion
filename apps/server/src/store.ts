@@ -1864,16 +1864,18 @@ export class RuntimeStore {
     const existing = this.getUserByEmail(input.email);
     if (existing) {
       const updatedAt = nowIso();
+      // Promote to admin if explicitly requested, otherwise keep existing role
+      const effectiveRole = input.role === "admin" ? "admin" : existing.role;
       this.db
-        .prepare("UPDATE users SET name = COALESCE(?, name), avatarUrl = COALESCE(?, avatarUrl), provider = ?, updatedAt = ? WHERE id = ?")
-        .run(input.name ?? null, input.avatarUrl ?? null, input.provider, updatedAt, existing.id);
+        .prepare("UPDATE users SET name = COALESCE(?, name), avatarUrl = COALESCE(?, avatarUrl), provider = ?, role = ?, updatedAt = ? WHERE id = ?")
+        .run(input.name ?? null, input.avatarUrl ?? null, input.provider, effectiveRole, updatedAt, existing.id);
       return {
         id: existing.id,
         email: existing.email,
         name: input.name ?? existing.name,
         avatarUrl: input.avatarUrl ?? existing.avatarUrl,
         provider: input.provider,
-        role: existing.role,
+        role: effectiveRole,
         plan: existing.plan,
         trialEndsAt: existing.trialEndsAt,
         createdAt: existing.createdAt,

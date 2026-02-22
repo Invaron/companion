@@ -89,20 +89,36 @@ export class AuthService {
     return this.options.required;
   }
 
+  /**
+   * Returns the normalized admin email if AUTH_ADMIN_EMAIL is set, or null.
+   * Used by OAuth callbacks to auto-promote the admin user.
+   */
+  getAdminEmail(): string | null {
+    return this.options.adminEmail ? normalizeEmail(this.options.adminEmail) : null;
+  }
+
   bootstrapAdminUser(): AuthUser | null {
     const adminEmail = this.options.adminEmail ? normalizeEmail(this.options.adminEmail) : "";
     const adminPassword = this.options.adminPassword ?? "";
 
-    if (!adminEmail || !adminPassword) {
+    if (!adminEmail) {
       if (this.options.required) {
         console.warn(
-          "[auth] Authentication is enabled but AUTH_ADMIN_EMAIL / AUTH_ADMIN_PASSWORD are not set. " +
-            "Admin user will not be created — users can still log in via OAuth providers."
+          "[auth] AUTH_ADMIN_EMAIL is not set. Set it to your Google/GitHub email " +
+            "to auto-promote yourself to admin on OAuth login."
         );
       }
       return null;
     }
 
+    // If only email is set (no password), skip pre-creating the user.
+    // The user will be created as admin on first OAuth login instead.
+    if (!adminPassword) {
+      console.info(`[auth] Admin email configured (${adminEmail}) — will be promoted to admin on OAuth login.`);
+      return null;
+    }
+
+    // Legacy: email + password both set — pre-create admin for password login
     const passwordHash = createPasswordHash(adminPassword);
     return this.store.upsertUserByEmail({
       email: adminEmail,

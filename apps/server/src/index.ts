@@ -635,11 +635,14 @@ app.get("/api/auth/google/callback", async (req, res) => {
     if (!code) return res.status(400).send("Missing OAuth code");
 
     const profile = await exchangeGoogleCode(code);
+    const adminEmail = authService.getAdminEmail();
+    const isAdmin = adminEmail !== null && profile.email.toLowerCase() === adminEmail;
     const user = store.upsertOAuthUser({
       email: profile.email,
       name: profile.name,
       avatarUrl: profile.avatarUrl,
-      provider: "google"
+      provider: "google",
+      role: isAdmin ? "admin" : undefined
     });
     const session = createOAuthSession(user);
     return res.redirect(getOAuthFrontendRedirect(session.token));
@@ -663,11 +666,14 @@ app.get("/api/auth/github/callback", async (req, res) => {
     if (!code) return res.status(400).send("Missing OAuth code");
 
     const profile = await exchangeGitHubCode(code);
+    const adminEmail = authService.getAdminEmail();
+    const isAdmin = adminEmail !== null && profile.email.toLowerCase() === adminEmail;
     const user = store.upsertOAuthUser({
       email: profile.email,
       name: profile.name,
       avatarUrl: profile.avatarUrl,
-      provider: "github"
+      provider: "github",
+      role: isAdmin ? "admin" : undefined
     });
     const session = createOAuthSession(user);
     return res.redirect(getOAuthFrontendRedirect(session.token));
