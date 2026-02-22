@@ -296,6 +296,8 @@ interface ExecutedFunctionResponse {
   modelResponse: unknown;
 }
 
+const MAX_IDENTICAL_TOOL_CALLS_PER_TURN = 2;
+
 const ACTION_ID_REGEX = /\baction-[a-zA-Z0-9_-]+\b/i;
 const AFFIRMATIVE_ACTION_REGEX = /^(yes|yep|yeah|sure|ok|okay|go ahead|do it|please do|save it|sounds good)\b/i;
 const NEGATIVE_ACTION_REGEX = /^(no|nope|cancel|stop|do not|don't|never mind|not now)\b/i;
@@ -1207,6 +1209,7 @@ Core behavior:
 - Do not log image-based meals as a single generic meal item unless the image clearly contains only one food item.
 - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
 - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
+- If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
 - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
 - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
 - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
@@ -1605,6 +1608,37 @@ function buildRoutinePresetsFallbackSection(response: unknown): string | null {
   return lines.join("\n");
 }
 
+function buildMcpToolFallbackSection(response: unknown): string | null {
+  const payload = asRecord(response);
+  if (!payload) {
+    return null;
+  }
+
+  const serverLabel = asNonEmptyString(payload.serverLabel) ?? "MCP server";
+  const toolName = asNonEmptyString(payload.tool) ?? "tool";
+  const result = asRecord(payload.result);
+  if (!result) {
+    return `${serverLabel} ${toolName}: completed.`;
+  }
+
+  const resultText = asNonEmptyString(result.text);
+  const isError = result.isError === true;
+  if (resultText) {
+    const prefix = `${serverLabel} ${toolName}${isError ? " error" : ""}:`;
+    return `${prefix} ${textSnippet(resultText, 320)}`;
+  }
+
+  if (result.structuredContent) {
+    return `${serverLabel} ${toolName}: structured result available.`;
+  }
+
+  if (isError) {
+    return `${serverLabel} ${toolName}: returned an error.`;
+  }
+
+  return `${serverLabel} ${toolName}: completed.`;
+}
+
 function buildGenericToolFallbackSection(name: string, response: unknown): string | null {
   const payload = asRecord(response);
   if (payload) {
@@ -1651,78 +1685,84 @@ function buildToolDataFallbackReply(
   }
 
   const sections: string[] = [];
+  const seenSections = new Set<string>();
   functionResponses.forEach((result) => {
     let section: string | null = null;
-    switch (result.name) {
-      case "getSchedule":
-        section = buildScheduleFallbackSection(result.rawResponse);
-        break;
-      case "getDeadlines":
-        section = buildDeadlinesFallbackSection(result.rawResponse);
-        break;
-      case "getWithingsHealthSummary":
-        section = buildWithingsFallbackSection(result.rawResponse);
-        break;
-      case "getHabitsGoalsStatus":
-        section = buildHabitsGoalsFallbackSection(result.rawResponse);
-        break;
-      case "updateHabitCheckIn":
-        section = buildHabitUpdateFallbackSection(result.rawResponse);
-        break;
-      case "updateGoalCheckIn":
-        section = buildGoalUpdateFallbackSection(result.rawResponse);
-        break;
-      case "createHabit":
-      case "deleteHabit":
-        section = buildHabitUpdateFallbackSection(result.rawResponse);
-        break;
-      case "createGoal":
-      case "deleteGoal":
-        section = buildGoalUpdateFallbackSection(result.rawResponse);
-        break;
-      case "getNutritionSummary":
-        section = buildNutritionSummaryFallbackSection(result.rawResponse);
-        break;
-      case "getNutritionTargets":
-      case "updateNutritionTargets":
-        section = buildNutritionTargetsFallbackSection(result.rawResponse);
-        break;
-      case "getNutritionMeals":
-        section = buildNutritionMealsFallbackSection(result.rawResponse);
-        break;
-      case "getNutritionCustomFoods":
-        section = buildNutritionCustomFoodsFallbackSection(result.rawResponse);
-        break;
-      case "createNutritionMeal":
-      case "updateNutritionMeal":
-      case "addNutritionMealItem":
-      case "updateNutritionMealItem":
-      case "removeNutritionMealItem":
-      case "moveNutritionMeal":
-      case "logMeal":
-      case "deleteMeal":
-      case "createNutritionCustomFood":
-      case "updateNutritionCustomFood":
-      case "deleteNutritionCustomFood":
-        section = buildNutritionMutationFallbackSection(result.rawResponse);
-        break;
-      case "getRoutinePresets":
-        section = buildRoutinePresetsFallbackSection(result.rawResponse);
-        break;
-      case "createScheduleBlock":
-      case "updateScheduleBlock":
-      case "deleteScheduleBlock":
-      case "clearScheduleWindow":
-      case "queueCreateRoutinePreset":
-      case "queueUpdateRoutinePreset":
-        section = buildGenericToolFallbackSection(result.name, result.rawResponse);
-        break;
-      default:
-        section = buildGenericToolFallbackSection(result.name, result.rawResponse);
-        break;
+    if (result.name.startsWith("mcp_")) {
+      section = buildMcpToolFallbackSection(result.rawResponse);
+    } else {
+      switch (result.name) {
+        case "getSchedule":
+          section = buildScheduleFallbackSection(result.rawResponse);
+          break;
+        case "getDeadlines":
+          section = buildDeadlinesFallbackSection(result.rawResponse);
+          break;
+        case "getWithingsHealthSummary":
+          section = buildWithingsFallbackSection(result.rawResponse);
+          break;
+        case "getHabitsGoalsStatus":
+          section = buildHabitsGoalsFallbackSection(result.rawResponse);
+          break;
+        case "updateHabitCheckIn":
+          section = buildHabitUpdateFallbackSection(result.rawResponse);
+          break;
+        case "updateGoalCheckIn":
+          section = buildGoalUpdateFallbackSection(result.rawResponse);
+          break;
+        case "createHabit":
+        case "deleteHabit":
+          section = buildHabitUpdateFallbackSection(result.rawResponse);
+          break;
+        case "createGoal":
+        case "deleteGoal":
+          section = buildGoalUpdateFallbackSection(result.rawResponse);
+          break;
+        case "getNutritionSummary":
+          section = buildNutritionSummaryFallbackSection(result.rawResponse);
+          break;
+        case "getNutritionTargets":
+        case "updateNutritionTargets":
+          section = buildNutritionTargetsFallbackSection(result.rawResponse);
+          break;
+        case "getNutritionMeals":
+          section = buildNutritionMealsFallbackSection(result.rawResponse);
+          break;
+        case "getNutritionCustomFoods":
+          section = buildNutritionCustomFoodsFallbackSection(result.rawResponse);
+          break;
+        case "createNutritionMeal":
+        case "updateNutritionMeal":
+        case "addNutritionMealItem":
+        case "updateNutritionMealItem":
+        case "removeNutritionMealItem":
+        case "moveNutritionMeal":
+        case "logMeal":
+        case "deleteMeal":
+        case "createNutritionCustomFood":
+        case "updateNutritionCustomFood":
+        case "deleteNutritionCustomFood":
+          section = buildNutritionMutationFallbackSection(result.rawResponse);
+          break;
+        case "getRoutinePresets":
+          section = buildRoutinePresetsFallbackSection(result.rawResponse);
+          break;
+        case "createScheduleBlock":
+        case "updateScheduleBlock":
+        case "deleteScheduleBlock":
+        case "clearScheduleWindow":
+        case "queueCreateRoutinePreset":
+        case "queueUpdateRoutinePreset":
+          section = buildGenericToolFallbackSection(result.name, result.rawResponse);
+          break;
+        default:
+          section = buildGenericToolFallbackSection(result.name, result.rawResponse);
+          break;
+      }
     }
 
-    if (section) {
+    if (section && !seenSections.has(section)) {
+      seenSections.add(section);
       sections.push(section);
     }
   });
@@ -1781,6 +1821,22 @@ function asNonEmptyString(value: unknown): string | null {
 
 function textSnippet(value: string, maxLength = 80): string {
   return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+}
+
+function canonicalizeForToolSignature(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => canonicalizeForToolSignature(entry));
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const sortedKeys = Object.keys(record).sort();
+    const normalized: Record<string, unknown> = {};
+    sortedKeys.forEach((key) => {
+      normalized[key] = canonicalizeForToolSignature(record[key]);
+    });
+    return normalized;
+  }
+  return value;
 }
 
 function citationKey(citation: ChatCitation): string {
@@ -3362,6 +3418,7 @@ export async function sendChatMessage(
   const citations = new Map<string, ChatCitation>();
   const maxFunctionRounds = 8;
   const workingMessages: GeminiMessage[] = [...messages];
+  const toolCallSignatureCount = new Map<string, number>();
 
   const requiresThoughtSignatureReplay = /gemini-3/i.test(config.GEMINI_LIVE_MODEL);
   const getThoughtSignature = (call: { thought_signature?: unknown; thoughtSignature?: unknown }): string | undefined => {
@@ -3420,6 +3477,26 @@ export async function sendChatMessage(
             ? (call.args as Record<string, unknown>)
             : {};
         const args = hydrateFunctionArgsForRequest(call.name, callArgs, userInput);
+        let toolCallSignature = call.name;
+        try {
+          toolCallSignature = `${call.name}:${JSON.stringify(canonicalizeForToolSignature(args))}`;
+        } catch {
+          toolCallSignature = `${call.name}:${String(args)}`;
+        }
+        const seenCount = toolCallSignatureCount.get(toolCallSignature) ?? 0;
+        if (seenCount >= MAX_IDENTICAL_TOOL_CALLS_PER_TURN) {
+          roundResponses.push({
+            name: call.name,
+            rawResponse: {
+              error: "Skipped repeated identical tool call to prevent loop. Please continue with available results."
+            },
+            modelResponse: {
+              error: "Skipped repeated identical tool call to prevent loop. Please continue with available results."
+            }
+          });
+          continue;
+        }
+        toolCallSignatureCount.set(toolCallSignature, seenCount + 1);
         console.log(`[tool] Round ${round + 1}/${callIndex + 1}: ${call.name}(${JSON.stringify(args).slice(0, 200)})`);
         let result: { name: string; response: unknown };
         try {
@@ -3490,32 +3567,39 @@ export async function sendChatMessage(
       });
     }
 
-    if (useNativeStreaming && (!response || response.text.trim().length === 0) && executedFunctionResponses.length > 0) {
+    if ((!response || response.text.trim().length === 0) && executedFunctionResponses.length > 0) {
       const synthesisResponse = await (async (): Promise<Awaited<ReturnType<GeminiClient["generateChatResponse"]>>> => {
-        try {
-          return await streamCapableGemini.generateChatResponseStream!({
-            messages: workingMessages,
-            systemInstruction,
-            onTextChunk: (chunk: string) => {
-              if (chunk.length === 0) {
-                return;
-              }
-              streamedTokenChars += chunk.length;
-              options.onTextChunk?.(chunk);
-            }
-          });
-        } catch (error) {
-          if (
-            error instanceof GeminiError &&
-            /stream timed out|timed out waiting for a response|streaming error/i.test(error.message)
-          ) {
-            return gemini.generateChatResponse({
+        if (useNativeStreaming) {
+          try {
+            return await streamCapableGemini.generateChatResponseStream!({
               messages: workingMessages,
-              systemInstruction
+              systemInstruction,
+              onTextChunk: (chunk: string) => {
+                if (chunk.length === 0) {
+                  return;
+                }
+                streamedTokenChars += chunk.length;
+                options.onTextChunk?.(chunk);
+              }
             });
+          } catch (error) {
+            if (
+              error instanceof GeminiError &&
+              /stream timed out|timed out waiting for a response|streaming error/i.test(error.message)
+            ) {
+              return gemini.generateChatResponse({
+                messages: workingMessages,
+                systemInstruction
+              });
+            }
+            throw error;
           }
-          throw error;
         }
+
+        return gemini.generateChatResponse({
+          messages: workingMessages,
+          systemInstruction
+        });
       })();
       totalUsage = addGeminiUsage(totalUsage, synthesisResponse.usageMetadata);
       if (synthesisResponse.text.trim().length > 0) {
@@ -3561,7 +3645,7 @@ export async function sendChatMessage(
       ? buildToolDataFallbackReply(
           executedFunctionResponses,
           pendingActionsFromTooling,
-          "I fetched your data:"
+          "I pulled this from your connected tools:"
         )
       : buildPendingActionFallbackReply(pendingActionsFromTooling);
 

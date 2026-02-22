@@ -347,6 +347,10 @@ describe("chat service", () => {
       .mockResolvedValueOnce({
         text: "",
         finishReason: "stop"
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        finishReason: "stop"
       });
     fakeGemini = {
       generateChatResponse,
@@ -357,8 +361,8 @@ describe("chat service", () => {
       geminiClient: fakeGemini,
     });
 
-    expect(generateChatResponse).toHaveBeenCalledTimes(2);
-    expect(result.reply).toContain("I fetched your data");
+    expect(generateChatResponse).toHaveBeenCalledTimes(3);
+    expect(result.reply).toContain("I pulled this from your connected tools");
     expect(result.reply).toContain("Schedule (");
   });
 
@@ -387,6 +391,10 @@ describe("chat service", () => {
       .mockResolvedValueOnce({
         text: "",
         finishReason: "stop"
+      })
+      .mockResolvedValueOnce({
+        text: "",
+        finishReason: "stop"
       });
     fakeGemini = {
       generateChatResponse,
@@ -397,8 +405,8 @@ describe("chat service", () => {
       geminiClient: fakeGemini,
     });
 
-    expect(generateChatResponse).toHaveBeenCalledTimes(2);
-    expect(result.reply).toContain("I fetched your data");
+    expect(generateChatResponse).toHaveBeenCalledTimes(3);
+    expect(result.reply).toContain("I pulled this from your connected tools");
     expect(result.reply).toContain("Routine presets");
     expect(result.reply).toContain("Morning gym");
     expect(result.reply).not.toContain("I couldn't finish the response from tool data right now");
