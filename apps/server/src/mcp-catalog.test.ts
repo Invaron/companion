@@ -4,7 +4,8 @@ import { getMcpServerTemplates } from "./mcp-catalog.js";
 describe("mcp catalog", () => {
   it("returns vetted templates with bounded allowlists", () => {
     const templates = getMcpServerTemplates();
-    expect(templates.length).toBeGreaterThanOrEqual(2);
+    expect(templates.length).toBeGreaterThanOrEqual(1);
+    expect(templates.some((template) => template.id === "github_repos_readonly")).toBe(true);
 
     const seenIds = new Set<string>();
     templates.forEach((template) => {

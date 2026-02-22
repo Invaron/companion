@@ -45,6 +45,7 @@ import {
 } from "./weekly-growth-review.js";
 import { maybeGenerateDailySummaryVisual } from "./growth-visuals.js";
 import { PostgresRuntimeSnapshotStore } from "./postgres-persistence.js";
+import { autoImportTpGithubDeadlines, type TpGithubDeadlineImportResult } from "./tp-github-deadlines.js";
 import type { PostgresPersistenceDiagnostics } from "./postgres-persistence.js";
 import { Notification, NotificationPreferencesPatch } from "./types.js";
 import type {
@@ -232,6 +233,7 @@ interface TPUserSyncResult {
     futureDays: number;
     icalUrl?: string;
   };
+  deadlineImport?: TpGithubDeadlineImportResult;
   error?: string;
 }
 
@@ -485,6 +487,10 @@ async function runTPSyncForUser(userId: string, options: TPUserSyncOptions = {})
     const existingEvents = store.getScheduleEvents(userId);
     const diff = diffScheduleEvents(existingEvents, tpEvents);
     const result = store.upsertScheduleEvents(userId, diff.toCreate, diff.toUpdate, diff.toDelete);
+    const deadlineImport =
+      appliedIcalUrl
+        ? await autoImportTpGithubDeadlines(store, userId, tpEvents)
+        : undefined;
 
     return {
       success: true,
@@ -498,7 +504,8 @@ async function runTPSyncForUser(userId: string, options: TPUserSyncOptions = {})
         pastDays: options.pastDays ?? config.INTEGRATION_WINDOW_PAST_DAYS,
         futureDays: options.futureDays ?? config.INTEGRATION_WINDOW_FUTURE_DAYS,
         ...(appliedIcalUrl ? { icalUrl: appliedIcalUrl } : {})
-      }
+      },
+      ...(deadlineImport ? { deadlineImport } : {})
     };
   } catch (error) {
     return {
@@ -1396,7 +1403,15 @@ app.post("/api/connectors/:service/connect", async (req, res) => {
       credentials: JSON.stringify({ icalUrl: icalUrl.trim() }),
       displayLabel: "TP Schedule"
     });
-    return res.json({ ok: true, service: "tp_schedule" });
+
+    // Kick off an immediate sync so connected users get schedule + auto-imported
+    // GitHub deadlines for detected TP courses without a manual chat request.
+    const autoSync = await runTPSyncForUser(authReq.authUser.id, { icalUrl: icalUrl.trim() });
+    return res.json({
+      ok: true,
+      service: "tp_schedule",
+      autoSync
+    });
   }
 
   // For OAuth connectors, redirect to their OAuth flow
