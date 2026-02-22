@@ -1210,6 +1210,8 @@ Core behavior:
 - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
 - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
 - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
+- For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.
+- Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.
 - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
 - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
 - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
@@ -1622,10 +1624,18 @@ function buildMcpToolFallbackSection(response: unknown): string | null {
   }
 
   const resultText = asNonEmptyString(result.text);
+  const resourceText = asNonEmptyString(result.resourceText);
   const isError = result.isError === true;
+  if (toolName === "get_file_contents" && resourceText) {
+    return `${serverLabel} ${toolName}: ${textSnippet(resourceText.replace(/\s+/g, " "), 320)}`;
+  }
   if (resultText) {
     const prefix = `${serverLabel} ${toolName}${isError ? " error" : ""}:`;
     return `${prefix} ${textSnippet(resultText, 320)}`;
+  }
+
+  if (resourceText) {
+    return `${serverLabel} ${toolName}: ${textSnippet(resourceText.replace(/\s+/g, " "), 320)}`;
   }
 
   if (result.structuredContent) {
@@ -1802,6 +1812,7 @@ const FUNCTION_CALL_HISTORY_LIMIT = 24;
 const TOOL_RESULT_ITEM_LIMIT = 12;
 const DEADLINE_TOOL_RESULT_LIMIT = 24;
 const TOOL_RESULT_TEXT_MAX_CHARS = 480;
+const MCP_TOOL_RESULT_TEXT_MAX_CHARS = 16000;
 const TOOL_RESULT_MAX_DEPTH = 5;
 const CHAT_MEMORY_MIN_MESSAGES = 24;
 const CHAT_MEMORY_REFRESH_MESSAGE_DELTA = 10;
@@ -1837,6 +1848,35 @@ function canonicalizeForToolSignature(value: unknown): unknown {
     return normalized;
   }
   return value;
+}
+
+function isMcpRateLimitedResponse(response: unknown): boolean {
+  const payload = asRecord(response);
+  if (!payload) {
+    return false;
+  }
+  const result = asRecord(payload.result);
+  if (!result || result.isError !== true) {
+    return false;
+  }
+  const text = asNonEmptyString(result.text);
+  if (!text) {
+    return false;
+  }
+  return /rate limit exceeded|secondary rate limit|too many requests|retry after/i.test(text);
+}
+
+function maxCallsPerToolInTurn(toolName: string, binding: McpToolBinding | undefined): number {
+  if (binding?.remoteToolName === "search_code") {
+    return 2;
+  }
+  if (binding?.remoteToolName === "search_repositories") {
+    return 4;
+  }
+  if (toolName === "setResponseMood") {
+    return 8;
+  }
+  return 6;
 }
 
 function citationKey(citation: ChatCitation): string {
@@ -2310,7 +2350,45 @@ function compactNutritionMutationForModel(response: unknown): unknown {
   };
 }
 
+function compactMcpResultForModel(response: unknown): unknown {
+  const payload = asRecord(response);
+  if (!payload) {
+    return compactGenericValue(response);
+  }
+
+  const result = asRecord(payload.result);
+  if (!result) {
+    return {
+      serverLabel: asNonEmptyString(payload.serverLabel) ?? "MCP server",
+      tool: asNonEmptyString(payload.tool) ?? "tool",
+      result: compactGenericValue(payload.result)
+    };
+  }
+
+  const statusText = asNonEmptyString(result.text);
+  const resourceText = asNonEmptyString(result.resourceText);
+  const resourceUris = Array.isArray(result.resourceUris)
+    ? result.resourceUris
+        .filter((value): value is string => typeof value === "string")
+        .slice(0, 8)
+    : [];
+
+  return {
+    serverLabel: asNonEmptyString(payload.serverLabel) ?? "MCP server",
+    tool: asNonEmptyString(payload.tool) ?? "tool",
+    isError: result.isError === true,
+    statusText: statusText ? compactTextValue(statusText, TOOL_RESULT_TEXT_MAX_CHARS) : null,
+    contentText: resourceText ? compactTextValue(resourceText, MCP_TOOL_RESULT_TEXT_MAX_CHARS) : null,
+    resourceUris: resourceUris.length > 0 ? resourceUris : undefined,
+    structuredContent: result.structuredContent ? compactGenericValue(result.structuredContent, 1) : undefined
+  };
+}
+
 function compactFunctionResponseForModel(functionName: string, response: unknown): unknown {
+  if (functionName.startsWith("mcp_")) {
+    return compactMcpResultForModel(response);
+  }
+
   switch (functionName) {
     case "getSchedule":
       return compactScheduleForModel(response);
@@ -3419,6 +3497,8 @@ export async function sendChatMessage(
   const maxFunctionRounds = 8;
   const workingMessages: GeminiMessage[] = [...messages];
   const toolCallSignatureCount = new Map<string, number>();
+  const toolCallNameCount = new Map<string, number>();
+  const blockedToolCallNames = new Set<string>();
 
   const requiresThoughtSignatureReplay = /gemini-3/i.test(config.GEMINI_LIVE_MODEL);
   const getThoughtSignature = (call: { thought_signature?: unknown; thoughtSignature?: unknown }): string | undefined => {
@@ -3477,6 +3557,24 @@ export async function sendChatMessage(
             ? (call.args as Record<string, unknown>)
             : {};
         const args = hydrateFunctionArgsForRequest(call.name, callArgs, userInput);
+        const mcpBinding: McpToolBinding | undefined = mcpToolContext.bindings.get(call.name);
+        const toolLimitKey = mcpBinding
+          ? `mcp:${mcpBinding.server.id}:${mcpBinding.remoteToolName}`
+          : call.name;
+
+        if (blockedToolCallNames.has(toolLimitKey)) {
+          roundResponses.push({
+            name: call.name,
+            rawResponse: {
+              error: "Skipped tool call after earlier rate-limit response in this turn. Continue with existing results."
+            },
+            modelResponse: {
+              error: "Skipped tool call after earlier rate-limit response in this turn. Continue with existing results."
+            }
+          });
+          continue;
+        }
+
         let toolCallSignature = call.name;
         try {
           toolCallSignature = `${call.name}:${JSON.stringify(canonicalizeForToolSignature(args))}`;
@@ -3497,10 +3595,24 @@ export async function sendChatMessage(
           continue;
         }
         toolCallSignatureCount.set(toolCallSignature, seenCount + 1);
+        const callCount = toolCallNameCount.get(toolLimitKey) ?? 0;
+        const maxCalls = maxCallsPerToolInTurn(call.name, mcpBinding);
+        if (callCount >= maxCalls) {
+          roundResponses.push({
+            name: call.name,
+            rawResponse: {
+              error: `Skipped repeated ${mcpBinding?.remoteToolName ?? call.name} calls to prevent tool-loop exhaustion. Continue with available results.`
+            },
+            modelResponse: {
+              error: `Skipped repeated ${mcpBinding?.remoteToolName ?? call.name} calls to prevent tool-loop exhaustion. Continue with available results.`
+            }
+          });
+          continue;
+        }
+        toolCallNameCount.set(toolLimitKey, callCount + 1);
         console.log(`[tool] Round ${round + 1}/${callIndex + 1}: ${call.name}(${JSON.stringify(args).slice(0, 200)})`);
         let result: { name: string; response: unknown };
         try {
-          const mcpBinding: McpToolBinding | undefined = mcpToolContext.bindings.get(call.name);
           if (mcpBinding) {
             result = {
               name: call.name,
@@ -3511,8 +3623,14 @@ export async function sendChatMessage(
           }
           const resultSummary = JSON.stringify(result.response);
           console.log(`[tool] ${call.name} → ${resultSummary.length > 300 ? resultSummary.slice(0, 300) + "..." : resultSummary}`);
+          if (mcpBinding && isMcpRateLimitedResponse(result.response)) {
+            blockedToolCallNames.add(toolLimitKey);
+          }
         } catch (error) {
           const message = error instanceof Error ? error.message : "Tool call failed";
+          if (/rate limit exceeded|too many requests|retry after/i.test(message)) {
+            blockedToolCallNames.add(toolLimitKey);
+          }
           roundResponses.push({
             name: call.name,
             rawResponse: { error: message },

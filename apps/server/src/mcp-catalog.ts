@@ -33,7 +33,6 @@ const MCP_SERVER_TEMPLATES: readonly McpServerTemplate[] = [
       "Optional fallback if OAuth is unavailable. Create a fine-grained token with read access to the repositories you want Gemini to use.",
     suggestedToolAllowlist: [
       "search_repositories",
-      "search_code",
       "get_file_contents",
       "list_branches",
       "list_commits",

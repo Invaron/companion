@@ -485,10 +485,47 @@ export async function buildMcpToolContext(store: RuntimeStore, userId: string): 
   };
 }
 
-function normalizeMcpToolResult(value: unknown): unknown {
+export function normalizeMcpToolResult(value: unknown): unknown {
   if (!value || typeof value !== "object") {
     return value;
   }
+
+  const appendIfNonEmpty = (target: string[], candidate: unknown): void => {
+    if (typeof candidate !== "string") {
+      return;
+    }
+    const trimmed = candidate.trim();
+    if (trimmed.length === 0) {
+      return;
+    }
+    target.push(trimmed);
+  };
+
+  const tryDecodeBlobText = (blob: unknown, mimeType: unknown): string | null => {
+    const mime = typeof mimeType === "string" ? mimeType.toLowerCase() : "";
+    const isTextMime =
+      mime.startsWith("text/") ||
+      mime.includes("json") ||
+      mime.includes("xml") ||
+      mime.includes("yaml") ||
+      mime.includes("markdown");
+    if (!isTextMime) {
+      return null;
+    }
+
+    try {
+      if (typeof blob === "string") {
+        return Buffer.from(blob, "base64").toString("utf8");
+      }
+      if (Array.isArray(blob) && blob.every((entry) => typeof entry === "number")) {
+        return Buffer.from(Uint8Array.from(blob as number[])).toString("utf8");
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  };
 
   const result = value as {
     content?: Array<{ type?: string; text?: string; [key: string]: unknown }>;
@@ -496,15 +533,50 @@ function normalizeMcpToolResult(value: unknown): unknown {
     isError?: boolean;
   };
 
+  const resourceTextChunks: string[] = [];
+  const resourceUris: string[] = [];
   const textChunks = Array.isArray(result.content)
-    ? result.content
-        .filter((item) => item && item.type === "text" && typeof item.text === "string")
-        .map((item) => item.text)
+    ? result.content.flatMap((item) => {
+        const chunks: string[] = [];
+        if (!item || typeof item !== "object") {
+          return chunks;
+        }
+
+        if (item.type === "text" && typeof item.text === "string") {
+          chunks.push(item.text);
+        }
+
+        const resource = item.resource && typeof item.resource === "object"
+          ? (item.resource as { text?: unknown; uri?: unknown; blob?: unknown; mimeType?: unknown; mime_type?: unknown })
+          : null;
+        if (resource) {
+          appendIfNonEmpty(resourceTextChunks, resource.text);
+          appendIfNonEmpty(resourceUris, resource.uri);
+          const decodedBlob = tryDecodeBlobText(resource.blob, resource.mimeType ?? resource.mime_type);
+          appendIfNonEmpty(resourceTextChunks, decodedBlob);
+        }
+
+        if (item.type === "resource_link") {
+          appendIfNonEmpty(resourceUris, item.uri);
+        }
+
+        if (item.type === "json" && item.json !== undefined) {
+          try {
+            chunks.push(JSON.stringify(item.json));
+          } catch {
+            // Ignore JSON serialization failures for non-critical extra context.
+          }
+        }
+
+        return chunks;
+      })
     : [];
 
   return {
     ...(typeof result.isError === "boolean" ? { isError: result.isError } : {}),
     ...(textChunks.length > 0 ? { text: textChunks.join("\n\n") } : {}),
+    ...(resourceTextChunks.length > 0 ? { resourceText: resourceTextChunks.join("\n\n") } : {}),
+    ...(resourceUris.length > 0 ? { resourceUris: Array.from(new Set(resourceUris)) } : {}),
     ...(result.structuredContent ? { structuredContent: result.structuredContent } : {}),
     raw: value
   };
