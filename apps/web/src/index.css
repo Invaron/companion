@@ -2521,11 +2521,6 @@ button:disabled {
   color: var(--muted);
 }
 
-/* When only the welcome screen is shown, prevent touch-scroll bounce */
-.chat-messages:has(> .chat-welcome:only-child) {
-  overflow: hidden;
-}
-
 .chat-welcome h2 {
   margin: 0 0 12px;
   color: var(--text);
