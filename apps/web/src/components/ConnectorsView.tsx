@@ -101,6 +101,8 @@ const GEMINI_CARD: GeminiCard = {
   description: "Conversational AI, summaries, coaching"
 };
 
+const GITHUB_MCP_ICON = { src: iconPath("icons/integrations/github.svg"), alt: "GitHub" };
+
 const FREE_TIER_SERVICES: ConnectorService[] = ["canvas", "tp_schedule"];
 const CONNECTED_APPS_SERVICES: ConnectorService[] = ["withings", "mcp"];
 
@@ -129,6 +131,24 @@ function formatConnectedAppLabel(label: string): string {
     .replace(/\s+/g, " ")
     .replace(/\(\s*\)/g, "")
     .trim();
+}
+
+function isGithubMcpText(value: string): boolean {
+  return /github/i.test(value);
+}
+
+function getMcpTemplateIcon(template: McpServerTemplate): { src: string; alt: string } | null {
+  if (isGithubMcpText(template.provider) || isGithubMcpText(template.label)) {
+    return GITHUB_MCP_ICON;
+  }
+  return null;
+}
+
+function getMcpServerIcon(server: McpServerConfig): { src: string; alt: string } | null {
+  if (isGithubMcpText(server.label) || isGithubMcpText(server.serverUrl)) {
+    return GITHUB_MCP_ICON;
+  }
+  return null;
 }
 
 export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JSX.Element {
@@ -546,13 +566,23 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                         <div className="connector-mcp-template-grid">
                           {mcpTemplates.map((template) => {
                             const selected = selectedMcpTemplateId === template.id;
+                            const templateIcon = getMcpTemplateIcon(template);
                             return (
                               <div
                                 key={template.id}
                                 className={`connector-mcp-template-card ${selected ? "connector-mcp-template-card-selected" : ""}`}
                               >
                                 <div className="connector-mcp-template-head">
-                                  <span className="connector-mcp-template-provider">{template.provider}</span>
+                                  <span className="connector-mcp-template-provider-wrap">
+                                    {templateIcon && (
+                                      <img
+                                        className="connector-mcp-provider-icon"
+                                        src={templateIcon.src}
+                                        alt={templateIcon.alt}
+                                      />
+                                    )}
+                                    <span className="connector-mcp-template-provider">{template.provider}</span>
+                                  </span>
                                   {template.verified && (
                                     <span className="connector-badge connector-badge-connected">Verified</span>
                                   )}
@@ -625,18 +655,30 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                       {mcpServers.length === 0 ? (
                         <p className="connector-help-text">No connected apps yet.</p>
                       ) : (
-                        mcpServers.map((server) => (
-                          <div key={server.id} className="connector-actions">
-                            <span className="connector-display-label">{formatConnectedAppLabel(server.label)}</span>
-                            <button
-                              className="connector-disconnect-btn"
-                              onClick={() => void handleDeleteMcpServer(server.id)}
-                              disabled={busy}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))
+                        mcpServers.map((server) => {
+                          const serverIcon = getMcpServerIcon(server);
+                          return (
+                            <div key={server.id} className="connector-actions">
+                              <span className="connector-mcp-server-label">
+                                {serverIcon && (
+                                  <img
+                                    className="connector-mcp-provider-icon"
+                                    src={serverIcon.src}
+                                    alt={serverIcon.alt}
+                                  />
+                                )}
+                                <span className="connector-display-label">{formatConnectedAppLabel(server.label)}</span>
+                              </span>
+                              <button
+                                className="connector-disconnect-btn"
+                                onClick={() => void handleDeleteMcpServer(server.id)}
+                                disabled={busy}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   </>

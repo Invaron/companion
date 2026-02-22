@@ -4904,6 +4904,19 @@ body.keyboard-open .chat-overlay-backdrop {
   gap: 8px;
 }
 
+.connector-mcp-template-provider-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.connector-mcp-provider-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: inline-block;
+}
+
 .connector-mcp-template-provider {
   font-size: 0.74rem;
   color: var(--muted);
@@ -4924,6 +4937,13 @@ body.keyboard-open .chat-overlay-backdrop {
   font-size: 0.74rem;
   color: var(--muted);
   line-height: 1.35;
+}
+
+.connector-mcp-server-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .connector-mcp-template-url {
