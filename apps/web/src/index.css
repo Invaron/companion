@@ -2450,7 +2450,7 @@ button:disabled {
   position: fixed !important;
   left: 0;
   right: 0;
-  bottom: var(--tab-bar-safe-space);
+  bottom: calc(var(--tab-bar-safe-space) + 1px);
   top: auto;
   height: 50dvh;
   max-height: calc(100dvh - var(--tab-bar-safe-space) - 40px);
@@ -2461,7 +2461,7 @@ button:disabled {
   overflow: hidden;
   display: flex !important;
   flex-direction: column;
-  background: var(--surface);
+  background: var(--surface-soft);
 }
 
 /* Header bar at top of overlay with close button */
@@ -2492,12 +2492,12 @@ button:disabled {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: none;
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s, color 0.15s;
+  transition: color 0.15s;
 }
 
 .chat-overlay-close-btn:active {
@@ -2515,7 +2515,7 @@ button:disabled {
   height: 100%;
   max-height: 100%;
   border-radius: 0;
-  background: var(--surface-soft);
+  background: transparent;
 }
 
 .chat-overlay-panel .chat-messages {
@@ -2539,6 +2539,11 @@ body.keyboard-open .chat-overlay-panel {
   max-height: 100dvh;
   border-radius: 0;
   animation: none;
+  background: var(--surface-soft);
+}
+
+body.keyboard-open .chat-overlay-panel .chat-view {
+  background: transparent;
 }
 
 body.keyboard-open .chat-overlay-header {
@@ -2560,9 +2565,9 @@ body.keyboard-open .chat-overlay-panel .chat-messages {
   padding-bottom: calc(72px + var(--keyboard-gap));
 }
 
-/* Blur background content visible between input and keyboard */
+/* Fill gap between input and keyboard with console background color */
 body.keyboard-open.chat-overlay-active .tab-content-area {
-  filter: blur(6px);
+  background: var(--surface-soft);
   pointer-events: none;
 }
 
@@ -4906,6 +4911,11 @@ body.keyboard-open .chat-view {
   border-radius: 0;
   background: #091019;
   z-index: 1;
+}
+
+/* Override: overlay chat-view stays transparent even with keyboard open */
+body.keyboard-open .chat-overlay-panel .chat-view {
+  background: transparent;
 }
 
 body.keyboard-open .chat-input-container {
