@@ -1068,6 +1068,24 @@ export class RuntimeStore {
       this.db.prepare("ALTER TABLE users ADD COLUMN vippsAgreementId TEXT").run();
     }
 
+    // Migration: add TOS/Privacy consent columns
+    const hasTosAcceptedAt = userColumns.some((col) => col.name === "tosAcceptedAt");
+    if (!hasTosAcceptedAt) {
+      this.db.prepare("ALTER TABLE users ADD COLUMN tosAcceptedAt TEXT").run();
+    }
+    const hasTosVersion = userColumns.some((col) => col.name === "tosVersion");
+    if (!hasTosVersion) {
+      this.db.prepare("ALTER TABLE users ADD COLUMN tosVersion TEXT").run();
+    }
+    const hasPrivacyAcceptedAt = userColumns.some((col) => col.name === "privacyAcceptedAt");
+    if (!hasPrivacyAcceptedAt) {
+      this.db.prepare("ALTER TABLE users ADD COLUMN privacyAcceptedAt TEXT").run();
+    }
+    const hasPrivacyVersion = userColumns.some((col) => col.name === "privacyVersion");
+    if (!hasPrivacyVersion) {
+      this.db.prepare("ALTER TABLE users ADD COLUMN privacyVersion TEXT").run();
+    }
+
     // Migration: create daily_usage table for rate limiting
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS daily_usage (
@@ -1838,6 +1856,10 @@ export class RuntimeStore {
       role: input.role,
       plan,
       trialEndsAt: null,
+      tosAcceptedAt: null,
+      tosVersion: null,
+      privacyAcceptedAt: null,
+      privacyVersion: null,
       createdAt,
       updatedAt: createdAt
     };
@@ -1862,6 +1884,10 @@ export class RuntimeStore {
       role: input.role,
       plan: existing.plan,
       trialEndsAt: existing.trialEndsAt,
+      tosAcceptedAt: existing.tosAcceptedAt ?? null,
+      tosVersion: existing.tosVersion ?? null,
+      privacyAcceptedAt: existing.privacyAcceptedAt ?? null,
+      privacyVersion: existing.privacyVersion ?? null,
       createdAt: existing.createdAt,
       updatedAt
     };
@@ -1885,6 +1911,10 @@ export class RuntimeStore {
         role: effectiveRole,
         plan: existing.plan,
         trialEndsAt: existing.trialEndsAt,
+        tosAcceptedAt: existing.tosAcceptedAt ?? null,
+        tosVersion: existing.tosVersion ?? null,
+        privacyAcceptedAt: existing.privacyAcceptedAt ?? null,
+        privacyVersion: existing.privacyVersion ?? null,
         createdAt: existing.createdAt,
         updatedAt
       };
@@ -1913,6 +1943,10 @@ export class RuntimeStore {
           role: string;
           plan: string | null;
           trialEndsAt: string | null;
+          tosAcceptedAt: string | null;
+          tosVersion: string | null;
+          privacyAcceptedAt: string | null;
+          privacyVersion: string | null;
           createdAt: string;
           updatedAt: string;
         }
@@ -1932,13 +1966,17 @@ export class RuntimeStore {
       role: this.parseAuthRole(row.role),
       plan: this.parsePlanId(row.plan),
       trialEndsAt: row.trialEndsAt ?? null,
+      tosAcceptedAt: row.tosAcceptedAt ?? null,
+      tosVersion: row.tosVersion ?? null,
+      privacyAcceptedAt: row.privacyAcceptedAt ?? null,
+      privacyVersion: row.privacyVersion ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt
     };
   }
 
   getUserById(id: string): AuthUser | null {
-    const row = this.db.prepare("SELECT id, email, name, avatarUrl, provider, role, plan, trialEndsAt, stripeCustomerId, vippsAgreementId, createdAt, updatedAt FROM users WHERE id = ?").get(id) as
+    const row = this.db.prepare("SELECT id, email, name, avatarUrl, provider, role, plan, trialEndsAt, stripeCustomerId, vippsAgreementId, tosAcceptedAt, tosVersion, privacyAcceptedAt, privacyVersion, createdAt, updatedAt FROM users WHERE id = ?").get(id) as
       | {
           id: string;
           email: string;
@@ -1950,6 +1988,10 @@ export class RuntimeStore {
           trialEndsAt: string | null;
           stripeCustomerId: string | null;
           vippsAgreementId: string | null;
+          tosAcceptedAt: string | null;
+          tosVersion: string | null;
+          privacyAcceptedAt: string | null;
+          privacyVersion: string | null;
           createdAt: string;
           updatedAt: string;
         }
@@ -1970,6 +2012,10 @@ export class RuntimeStore {
       trialEndsAt: row.trialEndsAt ?? null,
       stripeCustomerId: row.stripeCustomerId ?? undefined,
       vippsAgreementId: row.vippsAgreementId ?? undefined,
+      tosAcceptedAt: row.tosAcceptedAt ?? null,
+      tosVersion: row.tosVersion ?? null,
+      privacyAcceptedAt: row.privacyAcceptedAt ?? null,
+      privacyVersion: row.privacyVersion ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt
     };
@@ -2010,6 +2056,89 @@ export class RuntimeStore {
       | undefined;
     if (!row) return null;
     return this.getUserById(row.id);
+  }
+
+  // ── TOS / Privacy Consent ──
+
+  acceptConsent(userId: string, tosVersion: string, privacyVersion: string): void {
+    const now = nowIso();
+    this.db
+      .prepare("UPDATE users SET tosAcceptedAt = ?, tosVersion = ?, privacyAcceptedAt = ?, privacyVersion = ?, updatedAt = ? WHERE id = ?")
+      .run(now, tosVersion, now, privacyVersion, now, userId);
+  }
+
+  getConsentStatus(userId: string): { tosAcceptedAt: string | null; tosVersion: string | null; privacyAcceptedAt: string | null; privacyVersion: string | null } {
+    const row = this.db
+      .prepare("SELECT tosAcceptedAt, tosVersion, privacyAcceptedAt, privacyVersion FROM users WHERE id = ?")
+      .get(userId) as { tosAcceptedAt: string | null; tosVersion: string | null; privacyAcceptedAt: string | null; privacyVersion: string | null } | undefined;
+    return {
+      tosAcceptedAt: row?.tosAcceptedAt ?? null,
+      tosVersion: row?.tosVersion ?? null,
+      privacyAcceptedAt: row?.privacyAcceptedAt ?? null,
+      privacyVersion: row?.privacyVersion ?? null,
+    };
+  }
+
+  // ── GDPR: Right to Erasure ──
+
+  deleteAllUserData(userId: string): void {
+    // Delete from all user-data tables, then the user record itself.
+    // Tables with ON DELETE CASCADE (auth_sessions, user_connections, daily_usage) are handled automatically.
+    const tables = [
+      "agent_events",
+      "notifications",
+      "chat_messages",
+      "chat_pending_actions",
+      "chat_long_term_memory",
+      "reflection_entries",
+      "email_digests",
+      "journal_entry_tags",
+      "journal_entries",
+      "tags",
+      "schedule_events",
+      "schedule_suggestion_mutes",
+      "routine_presets",
+      "deadlines",
+      "habit_check_ins",
+      "habits",
+      "goal_check_ins",
+      "goals",
+      "nutrition_meals",
+      "nutrition_custom_foods",
+      "nutrition_target_profiles",
+      "nutrition_plan_snapshots",
+      "nutrition_plan_settings",
+      "study_plan_sessions",
+      "deadline_reminder_state",
+      "push_subscriptions",
+      "push_delivery_failures",
+      "push_delivery_metrics",
+      "agent_states",
+      "user_context",
+      "context_history",
+      "notification_preferences",
+      "scheduled_notifications",
+      "notification_interactions",
+      "locations",
+      "location_history",
+      "sync_queue",
+      "integration_sync_attempts",
+      "canvas_data",
+      "github_course_data",
+      "github_tracked_repos",
+      "gmail_data",
+      "withings_data",
+    ];
+
+    const deleteTransaction = this.db.transaction(() => {
+      for (const table of tables) {
+        this.db.prepare(`DELETE FROM ${table} WHERE userId = ?`).run(userId);
+      }
+      // Finally delete the user (cascades auth_sessions, user_connections, daily_usage)
+      this.db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+    });
+
+    deleteTransaction();
   }
 
   startTrial(userId: string, durationDays: number): void {

@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { NotificationSettings } from "./NotificationSettings";
 import { IntegrationScopeSettings } from "./IntegrationScopeSettings";
 import { ConnectorsView } from "./ConnectorsView";
+import { deleteAllUserData } from "../lib/api";
+import { clearCompanionSessionData } from "../lib/storage";
 import type { UserPlanInfo } from "../types";
 
 interface SettingsViewProps {
@@ -35,6 +38,23 @@ export function SettingsView({
 }: SettingsViewProps): JSX.Element {
   const pushButtonDisabled =
     pushState === "checking" || pushState === "enabled" || pushState === "unsupported" || pushState === "denied" || pushState === "error";
+
+  const [deleteConfirmStep, setDeleteConfirmStep] = useState<0 | 1 | 2>(0);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteAccount = async (): Promise<void> => {
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      await deleteAllUserData();
+      clearCompanionSessionData({ keepTheme: false });
+      window.location.reload();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Deletion failed. Please try again.");
+      setDeleteLoading(false);
+    }
+  };
 
   return (
     <div className="settings-container">
@@ -151,6 +171,81 @@ export function SettingsView({
         </div>
 
         <NotificationSettings />
+      </div>
+
+      {/* GDPR / Data section */}
+      <div className="settings-section">
+        <h3 className="settings-section-title">🛡️ Privacy &amp; Data</h3>
+        <div className="settings-gdpr-card">
+          <p className="settings-gdpr-info">
+            Your data is processed in accordance with the GDPR (EEA). You can delete your
+            account and all associated data at any time. This action is permanent and cannot be undone.
+          </p>
+
+          {deleteConfirmStep === 0 && (
+            <button
+              type="button"
+              className="settings-delete-btn"
+              onClick={() => setDeleteConfirmStep(1)}
+            >
+              🗑️ Delete my account &amp; data
+            </button>
+          )}
+
+          {deleteConfirmStep === 1 && (
+            <div className="settings-delete-confirm">
+              <p className="settings-delete-warning">
+                ⚠️ This will permanently delete ALL your data: chat history, schedules, deadlines,
+                habits, goals, journal entries, nutrition logs, integrations, and your account.
+                This cannot be undone.
+              </p>
+              <div className="settings-delete-actions">
+                <button
+                  type="button"
+                  className="settings-delete-btn settings-delete-btn-final"
+                  onClick={() => setDeleteConfirmStep(2)}
+                >
+                  I understand, continue
+                </button>
+                <button
+                  type="button"
+                  className="settings-delete-cancel-btn"
+                  onClick={() => setDeleteConfirmStep(0)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {deleteConfirmStep === 2 && (
+            <div className="settings-delete-confirm">
+              <p className="settings-delete-warning settings-delete-final-warning">
+                🔴 Final confirmation: Are you absolutely sure? All your data will be gone forever.
+              </p>
+              <div className="settings-delete-actions">
+                <button
+                  type="button"
+                  className="settings-delete-btn settings-delete-btn-final"
+                  onClick={() => void handleDeleteAccount()}
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? "Deleting…" : "Yes, permanently delete everything"}
+                </button>
+                <button
+                  type="button"
+                  className="settings-delete-cancel-btn"
+                  onClick={() => setDeleteConfirmStep(0)}
+                  disabled={deleteLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {deleteError && <p className="settings-delete-error">{deleteError}</p>}
+        </div>
       </div>
 
     </div>

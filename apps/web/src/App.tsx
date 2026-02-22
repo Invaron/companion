@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatTab } from "./components/ChatTab";
+import { ConsentGate } from "./components/ConsentGate";
 import { LoginView } from "./components/LoginView";
 import { ScheduleTab } from "./components/ScheduleTab";
 import { InstallPrompt } from "./components/InstallPrompt";
@@ -28,7 +29,7 @@ import { parseDeepLink } from "./lib/deepLink";
 import { ChatMood, FeatureId } from "./types";
 
 type PushState = "checking" | "ready" | "enabled" | "unsupported" | "denied" | "error";
-type AuthState = "checking" | "required-login" | "ready";
+type AuthState = "checking" | "required-login" | "consent-pending" | "ready";
 
 /** Map tab IDs to the feature gate that controls access. */
 const TAB_FEATURE_MAP: Record<TabId, FeatureId> = {
@@ -130,7 +131,7 @@ export default function App(): JSX.Element {
         setAuthRequired(status.required);
         setAuthProviders(status.providers ?? { local: true, google: false, github: false });
         if (!status.required) {
-          setAuthState("ready");
+          setAuthState("consent-pending");
           return;
         }
 
@@ -145,7 +146,7 @@ export default function App(): JSX.Element {
         }
 
         setAuthUserEmail(me.user.email);
-        setAuthState("ready");
+        setAuthState("consent-pending");
       } catch (error) {
         if (disposed) {
           return;
@@ -157,7 +158,7 @@ export default function App(): JSX.Element {
         if (message.includes("404")) {
           // Backward-compatible fallback for older server versions without auth endpoints.
           setAuthRequired(false);
-          setAuthState("ready");
+          setAuthState("consent-pending");
           return;
         }
 
@@ -446,6 +447,10 @@ export default function App(): JSX.Element {
         <LoginView loading={authSubmitting} error={authError} providers={authProviders} />
       </main>
     );
+  }
+
+  if (authState === "consent-pending") {
+    return <ConsentGate onAccepted={() => setAuthState("ready")} />;
   }
 
   return (

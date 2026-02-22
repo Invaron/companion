@@ -3766,6 +3766,333 @@ button:disabled {
 }
 
 /* ── Login View ── */
+/* ── Consent Gate ── */
+
+.consent-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 24px 16px;
+}
+
+.consent-card {
+  width: 100%;
+  max-width: 440px;
+  display: grid;
+  gap: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  padding: 28px 24px;
+}
+
+.consent-card-document {
+  max-width: 600px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.consent-loading {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.consent-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  color: var(--accent);
+}
+
+.consent-brand h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.consent-intro {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.5;
+  text-align: center;
+  margin: 0;
+}
+
+.consent-links {
+  display: grid;
+  gap: 10px;
+}
+
+.consent-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.consent-link-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-border);
+}
+
+.consent-link-read {
+  border-color: var(--accent-border);
+  background: var(--accent-surface);
+}
+
+.consent-link-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.consent-link-arrow {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.consent-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 0;
+}
+
+.consent-error {
+  font-size: 0.85rem;
+  color: var(--danger);
+  text-align: center;
+  margin: 0;
+}
+
+.consent-accept-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--accent);
+  color: var(--bg);
+  transition: opacity 0.15s;
+}
+
+.consent-accept-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.consent-accept-btn:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+.consent-back-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-bottom: 8px;
+}
+
+.consent-back-btn:hover {
+  text-decoration: underline;
+}
+
+/* Legal document content */
+.legal-document {
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.legal-document h2 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.legal-document h3 {
+  margin: 20px 0 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.legal-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+.legal-document p {
+  font-size: 0.88rem;
+  margin: 0 0 10px;
+}
+
+.legal-document ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.legal-document li {
+  font-size: 0.88rem;
+  margin-bottom: 4px;
+}
+
+.legal-document a {
+  color: var(--accent);
+}
+
+.legal-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.82rem;
+}
+
+.legal-table th,
+.legal-table td {
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  text-align: left;
+}
+
+.legal-table th {
+  background: var(--card-bg);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.legal-table td {
+  color: var(--muted);
+}
+
+/* ── GDPR / Settings Delete ── */
+
+.settings-gdpr-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.settings-gdpr-info {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.settings-delete-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--danger, #e53935);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--danger, #e53935);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.settings-delete-btn:hover {
+  background: var(--danger, #e53935);
+  color: #fff;
+}
+
+.settings-delete-btn-final {
+  background: var(--danger, #e53935);
+  color: #fff;
+  border-color: var(--danger, #e53935);
+}
+
+.settings-delete-btn-final:hover {
+  opacity: 0.9;
+}
+
+.settings-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-delete-confirm {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-delete-warning {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+  padding: 12px;
+  background: rgba(229, 57, 53, 0.08);
+  border: 1px solid rgba(229, 57, 53, 0.2);
+  border-radius: 10px;
+}
+
+.settings-delete-final-warning {
+  background: rgba(229, 57, 53, 0.15);
+  border-color: rgba(229, 57, 53, 0.3);
+  font-weight: 500;
+}
+
+.settings-delete-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-delete-cancel-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.settings-delete-cancel-btn:hover {
+  background: var(--surface-hover);
+}
+
+.settings-delete-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-delete-error {
+  font-size: 0.85rem;
+  color: var(--danger, #e53935);
+  margin: 8px 0 0;
+}
+
+/* ── Login View ── */
+
 .login-view {
   display: flex;
   align-items: center;

@@ -183,6 +183,10 @@ export interface AuthUser {
   trialEndsAt: string | null;
   stripeCustomerId?: string;
   vippsAgreementId?: string;
+  tosAcceptedAt: string | null;
+  tosVersion: string | null;
+  privacyAcceptedAt: string | null;
+  privacyVersion: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -547,6 +547,10 @@ export interface AuthUser {
   provider: AuthProvider;
   plan: PlanId;
   trialEndsAt: string | null;
+  tosAcceptedAt: string | null;
+  tosVersion: string | null;
+  privacyAcceptedAt: string | null;
+  privacyVersion: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -161,6 +161,10 @@ export class AuthService {
         role: user.role,
         plan: user.plan,
         trialEndsAt: user.trialEndsAt,
+        tosAcceptedAt: user.tosAcceptedAt ?? null,
+        tosVersion: user.tosVersion ?? null,
+        privacyAcceptedAt: user.privacyAcceptedAt ?? null,
+        privacyVersion: user.privacyVersion ?? null,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       }

@@ -173,6 +173,37 @@ export async function getAuthMe(): Promise<AuthMeResponse> {
   });
 }
 
+// ── Consent ──
+
+export interface ConsentStatusResponse {
+  needsConsent: boolean;
+  currentTosVersion: string;
+  currentPrivacyVersion: string;
+  tosAcceptedAt: string | null;
+  tosVersion: string | null;
+  privacyAcceptedAt: string | null;
+  privacyVersion: string | null;
+}
+
+export async function getConsentStatus(): Promise<ConsentStatusResponse> {
+  return await jsonOrThrow<ConsentStatusResponse>("/api/consent/status", {
+    method: "GET"
+  });
+}
+
+export async function acceptConsent(tosVersion: string, privacyVersion: string): Promise<{ accepted: boolean }> {
+  return await jsonOrThrow<{ accepted: boolean }>("/api/consent/accept", {
+    method: "POST",
+    body: JSON.stringify({ tosVersion, privacyVersion })
+  });
+}
+
+export async function deleteAllUserData(): Promise<{ deleted: boolean }> {
+  return await jsonOrThrow<{ deleted: boolean }>("/api/user/data", {
+    method: "DELETE"
+  });
+}
+
 export async function logout(): Promise<void> {
   try {
     await jsonOrThrow<unknown>("/api/auth/logout", {

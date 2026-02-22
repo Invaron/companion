@@ -683,6 +683,51 @@ app.get("/api/auth/github/callback", async (req, res) => {
   }
 });
 
+// ── Consent / TOS / Privacy ──
+
+const CURRENT_TOS_VERSION = "1.0";
+const CURRENT_PRIVACY_VERSION = "1.0";
+
+app.get("/api/consent/status", (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.authUser) return res.status(401).json({ error: "Unauthorized" });
+
+  const consent = store.getConsentStatus(authReq.authUser.id);
+  const needsConsent =
+    consent.tosVersion !== CURRENT_TOS_VERSION ||
+    consent.privacyVersion !== CURRENT_PRIVACY_VERSION;
+
+  return res.json({
+    needsConsent,
+    currentTosVersion: CURRENT_TOS_VERSION,
+    currentPrivacyVersion: CURRENT_PRIVACY_VERSION,
+    ...consent
+  });
+});
+
+app.post("/api/consent/accept", (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.authUser) return res.status(401).json({ error: "Unauthorized" });
+
+  const { tosVersion, privacyVersion } = (req.body ?? {}) as { tosVersion?: string; privacyVersion?: string };
+  if (tosVersion !== CURRENT_TOS_VERSION || privacyVersion !== CURRENT_PRIVACY_VERSION) {
+    return res.status(400).json({ error: "Version mismatch — please review the latest terms" });
+  }
+
+  store.acceptConsent(authReq.authUser.id, tosVersion, privacyVersion);
+  return res.json({ accepted: true });
+});
+
+// ── GDPR: Data Deletion ──
+
+app.delete("/api/user/data", (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.authUser) return res.status(401).json({ error: "Unauthorized" });
+
+  store.deleteAllUserData(authReq.authUser.id);
+  return res.json({ deleted: true });
+});
+
 // ── User Connections / Connectors ──
 
 const connectorServiceSchema = z.enum(["canvas", "gmail", "github_course", "withings", "tp_schedule"]);
