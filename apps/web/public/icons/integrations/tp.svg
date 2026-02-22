@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-label="TP EduCloud">
+  <rect width="512" height="512" fill="#000000"/>
+  <g fill="#f5f5f5">
+    <circle cx="256" cy="54" r="18"/>
+    <circle cx="357" cy="81" r="18"/>
+    <circle cx="431" cy="155" r="18"/>
+    <circle cx="458" cy="256" r="18"/>
+    <circle cx="431" cy="357" r="18"/>
+    <circle cx="357" cy="431" r="18"/>
+    <circle cx="256" cy="458" r="18"/>
+    <circle cx="155" cy="431" r="18"/>
+    <circle cx="81" cy="357" r="18"/>
+    <circle cx="54" cy="256" r="18"/>
+    <circle cx="81" cy="155" r="18"/>
+    <circle cx="155" cy="81" r="18"/>
+  </g>
+  <text
+    x="256"
+    y="334"
+    text-anchor="middle"
+    fill="#f5f5f5"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="220"
+    font-weight="400"
+  >T</text>
+</svg>

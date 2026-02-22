@@ -75,14 +75,14 @@ const CONNECTORS: ConnectorMeta[] = [
   {
     service: "withings",
     label: "Withings Health",
-    icon: { src: "/icons/integrations/withings.png", alt: "Withings" },
+    icon: { src: "/icons/integrations/withings.jpg", alt: "Withings" },
     description: "Sleep, weight, and health data from Withings devices.",
     type: "oauth"
   },
   {
     service: "tp_schedule",
     label: "TP EduCloud Schedule",
-    icon: { src: "/icons/integrations/tp.ico", alt: "TP EduCloud" },
+    icon: { src: "/icons/integrations/tp.svg", alt: "TP EduCloud" },
     description: "Lecture schedule via iCal subscription from TP.",
     type: "url",
     placeholder: "Paste your TP iCal URL here"
