@@ -74,6 +74,7 @@ interface CitationLinkTarget {
   deadlineId?: string;
   lectureId?: string;
   section?: string;
+  externalUrl?: string;
 }
 
 function toCitationTarget(citation: ChatCitation): CitationLinkTarget {
@@ -90,6 +91,10 @@ function toCitationTarget(citation: ChatCitation): CitationLinkTarget {
     case "withings-weight":
     case "withings-sleep":
       return { tab: "habits" };
+    case "web-search": {
+      const url = (citation.metadata as Record<string, unknown> | undefined)?.url as string | undefined;
+      return { tab: "settings", externalUrl: url };
+    }
     case "email":
       return { tab: "settings", section: "integrations" };
     case "github-course-doc":
@@ -760,6 +765,13 @@ export function ChatView({ mood, onMoodChange }: ChatViewProps): JSX.Element {
 
   const handleCitationClick = (citation: ChatCitation): void => {
     const target = toCitationTarget(citation);
+
+    // Web-search citations open the actual URL in a new tab
+    if (target.externalUrl) {
+      window.open(target.externalUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
     const params = new URLSearchParams();
     params.set("tab", target.tab);
     if (target.deadlineId) {

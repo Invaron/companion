@@ -433,7 +433,8 @@ export type ChatCitationType =
   | "email"
   | "withings-weight"
   | "withings-sleep"
-  | "github-course-doc";
+  | "github-course-doc"
+  | "web-search";
 
 export interface ChatCitation {
   id: string;
