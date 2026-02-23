@@ -4876,6 +4876,42 @@ body.keyboard-open .chat-overlay-backdrop {
   gap: 8px;
 }
 
+.connector-mcp-addon {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.connector-mcp-addon-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.connector-mcp-addon-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.connector-mcp-addon-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.connector-mcp-addon-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
 .connector-mcp-template-grid {
   display: grid;
   gap: 8px;

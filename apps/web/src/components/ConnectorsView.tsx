@@ -104,7 +104,7 @@ const GEMINI_CARD: GeminiCard = {
 const GITHUB_MCP_ICON = { src: iconPath("icons/integrations/github.svg"), alt: "GitHub" };
 
 const FREE_TIER_SERVICES: ConnectorService[] = ["canvas", "tp_schedule"];
-const CONNECTED_APPS_SERVICES: ConnectorService[] = ["withings", "mcp"];
+const CONNECTED_APPS_SERVICES: ConnectorService[] = ["mcp"];
 
 function formatRelative(timestamp: string | null): string {
   if (!timestamp) return "Never";
@@ -210,12 +210,18 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
   const getConnection = (service: ConnectorService): UserConnection | undefined =>
     connections.find((connection) => connection.service === service);
 
+  const withingsConnector = CONNECTORS.find((connector) => connector.service === "withings") ?? null;
+
   const getStatusDetail = (service: ConnectorService): string | null => {
     if (service === "canvas" && canvasStatus.lastSyncedAt) {
       return `${canvasStatus.courses.length} courses · Synced ${formatRelative(canvasStatus.lastSyncedAt)}`;
     }
-    if (service === "mcp" && mcpServers.length > 0) {
-      return mcpServers.length === 1 ? "1 app connected" : `${mcpServers.length} apps connected`;
+    if (service === "mcp") {
+      const withingsConnected = connections.some((connection) => connection.service === "withings");
+      const connectedApps = mcpServers.length + (withingsConnected ? 1 : 0);
+      if (connectedApps > 0) {
+        return connectedApps === 1 ? "1 app connected" : `${connectedApps} apps connected`;
+      }
     }
     return null;
   };
@@ -408,6 +414,31 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
     }
   };
 
+  const handleDisconnectConnectedApps = async (): Promise<void> => {
+    setSubmitting("mcp");
+    setError(null);
+    try {
+      const pending: Promise<unknown>[] = [];
+      if (isConnected("mcp")) {
+        pending.push(disconnectService("mcp"));
+      }
+      if (isConnected("withings")) {
+        pending.push(disconnectService("withings"));
+      }
+      if (pending.length === 0) {
+        return;
+      }
+      await Promise.all(pending);
+      setMcpServers([]);
+      setSelectedMcpTemplateId(null);
+      await Promise.all([fetchConnections(), fetchConnectorMeta()]);
+    } catch (err) {
+      setError(extractErrorMessage(err, "Disconnect failed"));
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
   const isPaidPlan = planInfo ? planInfo.plan !== "free" : false;
   const freeTierConnectors = FREE_TIER_SERVICES
     .map((service) => CONNECTORS.find((connector) => connector.service === service))
@@ -417,10 +448,18 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
     .filter((connector): connector is ConnectorMeta => connector !== undefined);
 
   const renderConnectorCard = (connector: ConnectorMeta): JSX.Element => {
-    const connected = isConnected(connector.service);
+    const withingsConnected = isConnected("withings");
+    const mcpConnected = isConnected("mcp");
+    const connected =
+      connector.service === "mcp"
+        ? mcpConnected || withingsConnected || mcpServers.length > 0
+        : isConnected(connector.service);
     const connection = getConnection(connector.service);
     const expanded = expandedService === connector.service && (!connected || connector.service === "mcp");
-    const busy = submitting === connector.service;
+    const busy =
+      connector.service === "mcp"
+        ? submitting === "mcp" || submitting === "withings"
+        : submitting === connector.service;
     const statusDetail = connected ? getStatusDetail(connector.service) : null;
 
     return (
@@ -477,7 +516,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
             )}
             <button
               className="connector-disconnect-btn"
-              onClick={() => void handleDisconnect(connector.service)}
+              onClick={() => void (connector.service === "mcp" ? handleDisconnectConnectedApps() : handleDisconnect(connector.service))}
               disabled={busy}
             >
               {busy ? "Disconnecting..." : connector.service === "mcp" ? "Disconnect all" : "Disconnect"}
@@ -560,6 +599,44 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
               <div className="connector-config-fields">
                 {connector.service === "mcp" ? (
                   <>
+                    {withingsConnector && (
+                      <div className="connector-mcp-addon">
+                        <div className="connector-mcp-addon-head">
+                          <span className="connector-mcp-addon-title-wrap">
+                            <img
+                              className="connector-mcp-addon-icon"
+                              src={withingsConnector.icon.src}
+                              alt={withingsConnector.icon.alt}
+                            />
+                            <span className="connector-mcp-addon-title">{withingsConnector.label}</span>
+                          </span>
+                          {withingsConnected ? (
+                            <span className="connector-badge connector-badge-connected">Connected</span>
+                          ) : (
+                            <span className="connector-badge connector-badge-disconnected">Not connected</span>
+                          )}
+                        </div>
+                        <p className="connector-help-text">{withingsConnector.description}</p>
+                        {withingsConnected ? (
+                          <button
+                            className="connector-disconnect-btn"
+                            onClick={() => void handleDisconnect("withings")}
+                            disabled={busy}
+                          >
+                            {submitting === "withings" ? "Disconnecting..." : "Disconnect"}
+                          </button>
+                        ) : (
+                          <button
+                            className="connector-connect-btn"
+                            onClick={() => void handleConnect(withingsConnector)}
+                            disabled={busy}
+                          >
+                            {submitting === "withings" ? "Redirecting..." : "Connect Withings"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     {mcpTemplates.length > 0 && (
                       <div className="connector-mcp-templates">
                         <p className="connector-input-label">Verified templates</p>
@@ -653,7 +730,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
 
                     <div className="connector-mcp-list">
                       {mcpServers.length === 0 ? (
-                        <p className="connector-help-text">No connected apps yet.</p>
+                        <p className="connector-help-text">No MCP servers connected yet.</p>
                       ) : (
                         mcpServers.map((server) => {
                           const serverIcon = getMcpServerIcon(server);
