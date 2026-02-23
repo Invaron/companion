@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-label="Connected Apps">
+  <g fill="none" stroke="#f8fafc" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5">
+    <path d="M20 20h24M20 44h24M14 24v16M50 24v16"/>
+  </g>
+  <g fill="#f8fafc">
+    <circle cx="14" cy="20" r="6"/>
+    <circle cx="50" cy="20" r="6"/>
+    <circle cx="14" cy="44" r="6"/>
+    <circle cx="50" cy="44" r="6"/>
+    <circle cx="32" cy="32" r="4"/>
+  </g>
+</svg>

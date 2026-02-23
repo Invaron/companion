@@ -73,14 +73,14 @@ const CONNECTORS: ConnectorMeta[] = [
   {
     service: "mcp",
     label: "Connected Apps",
-    icon: { src: iconPath("icons/integrations/connected-apps.svg"), alt: "Connected apps" },
+    icon: { src: iconPath("icons/integrations/connected-apps-custom.svg"), alt: "Connected apps" },
     description: "Connect trusted external apps like GitHub.",
     type: "config"
   },
   {
     service: "withings",
     label: "Withings Health",
-    icon: { src: iconPath("icons/integrations/withings.jpg"), alt: "Withings" },
+    icon: { src: iconPath("icons/integrations/withings.png"), alt: "Withings" },
     description: "Sleep, weight, and health data from Withings devices.",
     type: "oauth"
   },
