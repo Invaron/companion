@@ -3272,8 +3272,8 @@ body.keyboard-open .chat-overlay-backdrop {
 
 body.chat-tab-active:not(.keyboard-open) .app-shell-chat-active .chat-input-container {
   background: var(--card);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .chat-input-row {
@@ -5546,8 +5546,8 @@ body.keyboard-open .chat-overlay-panel .chat-messages {
 /* Chat tab + quick-chat overlay: extend composer into keyboard gap for continuous backdrop. */
 body.keyboard-open.chat-tab-active .app-shell-chat-active .chat-input-container,
 body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-input-container {
-  bottom: 0;
-  padding-bottom: calc(max(var(--keyboard-gap), 44px) + 8px);
+  bottom: var(--keyboard-gap);
+  padding-bottom: 8px;
   background: var(--card);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);

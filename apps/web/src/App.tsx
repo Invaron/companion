@@ -280,7 +280,11 @@ export default function App(): JSX.Element {
       const keyboardOpen =
         mobileChatInputFocused &&
         (keyboardGap > KEYBOARD_GAP_THRESHOLD_PX || viewportDrop > VIEWPORT_DROP_THRESHOLD_PX);
-      const effectiveKeyboardGap = keyboardOpen ? keyboardGap : 0;
+      // iOS often under-reports keyboard overlap while keeping viewport drop accurate.
+      // Use the larger signal and keep a small floor so the composer stays flush to keyboard.
+      const mergedKeyboardGap = Math.max(keyboardGap, viewportDrop);
+      const minimumTouchKeyboardGap = isIOS || isCoarsePointer ? 44 : 0;
+      const effectiveKeyboardGap = keyboardOpen ? Math.max(mergedKeyboardGap, minimumTouchKeyboardGap) : 0;
       root.style.setProperty("--keyboard-gap", `${effectiveKeyboardGap}px`);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
     };
