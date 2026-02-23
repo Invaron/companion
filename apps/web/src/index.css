@@ -4801,19 +4801,39 @@ body.keyboard-open .chat-overlay-backdrop {
   line-height: 1.35;
 }
 
-.connector-token-input input {
-  flex: 1;
+.connector-token-input input,
+.connector-url-input input,
+.connector-config-field input {
+  width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: var(--bg);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text);
   font-size: 0.85rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.connector-token-input input:focus {
+.connector-token-input input::placeholder,
+.connector-url-input input::placeholder,
+.connector-config-field input::placeholder {
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.connector-token-input input:focus,
+.connector-url-input input:focus,
+.connector-config-field input:focus {
   outline: none;
   border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(246, 195, 127, 0.14);
+}
+
+.connector-token-input input {
+  flex: 1;
 }
 
 .connector-token-input .connector-connect-btn {
@@ -4827,19 +4847,8 @@ body.keyboard-open .chat-overlay-backdrop {
 }
 
 .connector-url-input input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--card-border);
-  background: var(--bg);
-  color: var(--text);
   font-size: 0.82rem;
   font-family: monospace;
-}
-
-.connector-url-input input:focus {
-  outline: none;
-  border-color: var(--accent);
 }
 
 .connector-connect-btn {
@@ -5052,17 +5061,7 @@ body.keyboard-open .chat-overlay-backdrop {
 }
 
 .connector-config-field input {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--card-border);
-  background: var(--bg);
-  color: var(--text);
   font-size: 0.85rem;
-}
-
-.connector-config-field input:focus {
-  outline: none;
-  border-color: var(--accent);
 }
 
 .connector-error {
