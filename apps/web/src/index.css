@@ -2544,10 +2544,8 @@ button:disabled {
 
 .chat-overlay-backdrop {
   position: fixed;
-  inset: 0;
+  inset: 0 0 var(--tab-bar-safe-space) 0;
   background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   z-index: 101;
   animation: chat-overlay-fade-in 0.2s ease both;
   -webkit-tap-highlight-color: transparent;
@@ -2573,7 +2571,9 @@ button:disabled {
   overflow: hidden;
   display: flex !important;
   flex-direction: column;
-  background: transparent;
+  background: var(--card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 /* Header bar at top of overlay with close button */
@@ -2646,20 +2646,22 @@ button:disabled {
   border-top: none;
 }
 
-/* When keyboard is open, expand overlay to full screen like regular chat */
+/* Keep quick-chat as a bottom sheet when keyboard is open. */
 body.keyboard-open .chat-overlay-panel {
   bottom: 0;
-  height: 100dvh;
-  max-height: 100dvh;
-  border-radius: 0;
+  height: min(50dvh, calc(100dvh - var(--keyboard-gap) - 8px));
+  max-height: calc(100dvh - var(--keyboard-gap) - 8px);
+  border-radius: 16px 16px 0 0;
   animation: none;
-  background: transparent;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 body.keyboard-open .chat-overlay-panel .chat-view {
   background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 body.keyboard-open .chat-overlay-header {
@@ -2685,7 +2687,7 @@ body.keyboard-open .chat-overlay-panel .chat-messages {
 /* Blur all background content when overlay keyboard is open */
 body.keyboard-open.chat-overlay-active .tab-content-area,
 body.keyboard-open.chat-overlay-active .tab-bar {
-  filter: blur(10px);
+  filter: none;
   pointer-events: none;
 }
 
@@ -3259,6 +3261,12 @@ body.keyboard-open .chat-overlay-backdrop {
   position: sticky;
   bottom: 4px;
   z-index: 4;
+}
+
+body.chat-tab-active:not(.keyboard-open) .app-shell-chat-active .chat-input-container {
+  background: var(--card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .chat-input-row {
