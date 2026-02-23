@@ -379,7 +379,7 @@ export interface NotificationPreferences {
   categoryToggles: Record<AgentName, boolean>;
 }
 
-export type ThemePreference = "light" | "dark" | "system";
+export type ThemePreference = "ocean-gold" | "emerald-dusk" | "sunset-indigo";
 
 export type NotificationInteractionType = "tap" | "dismiss" | "action";
 

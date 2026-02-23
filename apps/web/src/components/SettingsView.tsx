@@ -4,11 +4,15 @@ import { IntegrationScopeSettings } from "./IntegrationScopeSettings";
 import { ConnectorsView } from "./ConnectorsView";
 import { deleteAllUserData } from "../lib/api";
 import { clearCompanionSessionData } from "../lib/storage";
-import type { UserPlanInfo } from "../types";
+import { THEME_OPTIONS } from "../lib/theme";
+import type { ThemePreference, UserPlanInfo } from "../types";
 
 interface SettingsViewProps {
   planInfo: UserPlanInfo | null;
   onUpgrade: () => void;
+  themePreference: ThemePreference;
+  themesLocked: boolean;
+  onThemeChange: (theme: ThemePreference) => void;
   /** Currently signed-in user email (null if auth not required) */
   userEmail: string | null;
   /** Whether auth is required (shows account section) */
@@ -28,6 +32,9 @@ interface SettingsViewProps {
 export function SettingsView({
   planInfo,
   onUpgrade,
+  themePreference,
+  themesLocked,
+  onThemeChange,
   userEmail,
   authRequired,
   onSignOut,
@@ -123,6 +130,47 @@ export function SettingsView({
           </div>
         </div>
       )}
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">🎨 Appearance</h3>
+        <div className="settings-theme-card">
+          <p className="settings-theme-info">
+            {themesLocked
+              ? "Custom themes are available on paid plans."
+              : "Choose a visual theme that applies across the app, including chat."}
+          </p>
+          <div className="settings-theme-grid">
+            {THEME_OPTIONS.map((theme) => {
+              const selected = themePreference === theme.id;
+              return (
+                <button
+                  key={theme.id}
+                  type="button"
+                  className={`settings-theme-option ${selected ? "settings-theme-option-active" : ""}`}
+                  onClick={() => onThemeChange(theme.id)}
+                  disabled={themesLocked}
+                  aria-pressed={selected}
+                >
+                  <span className="settings-theme-swatches" aria-hidden="true">
+                    {theme.preview.map((color) => (
+                      <span key={color} className="settings-theme-swatch" style={{ background: color }} />
+                    ))}
+                  </span>
+                  <span className="settings-theme-text">
+                    <span className="settings-theme-label">{theme.label}</span>
+                    <span className="settings-theme-desc">{theme.description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {themesLocked && (
+            <button type="button" className="settings-theme-upgrade-btn" onClick={onUpgrade}>
+              Upgrade to unlock themes
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="settings-section">
         <h3 className="settings-section-title">🔗 Integrations</h3>

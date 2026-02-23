@@ -16,18 +16,20 @@ import { usePlan } from "./hooks/usePlan";
 import { getAuthMe, getAuthStatus, logout } from "./lib/api";
 import { enablePushNotifications, isPushEnabled, supportsPushNotifications } from "./lib/push";
 import { setupSyncListeners } from "./lib/sync";
-import { applyTheme } from "./lib/theme";
+import { applyTheme, DEFAULT_THEME } from "./lib/theme";
 import {
   clearAuthToken,
   clearCompanionSessionData,
+  loadThemePreference,
   loadAuthToken,
   loadChatMood,
+  saveThemePreference,
   saveAuthToken,
   saveChatMood
 } from "./lib/storage";
 import { hapticCriticalAlert } from "./lib/haptics";
 import { parseDeepLink } from "./lib/deepLink";
-import { ChatMood, FeatureId } from "./types";
+import { ChatMood, FeatureId, ThemePreference } from "./types";
 
 type PushState = "checking" | "ready" | "enabled" | "unsupported" | "denied" | "error";
 type AuthState = "checking" | "required-login" | "consent-pending" | "ready";
@@ -134,6 +136,7 @@ export default function App(): JSX.Element {
   const [focusLectureId, setFocusLectureId] = useState<string | null>(initialDeepLink.lectureId);
   const [settingsSection, setSettingsSection] = useState<string | null>(initialDeepLink.section);
   const [chatMood, setChatMood] = useState<ChatMood>(loadChatMood);
+  const [themePreference, setThemePreference] = useState<ThemePreference>(loadThemePreference);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeatureLabel, setUpgradeFeatureLabel] = useState<string | undefined>(undefined);
   const [chatOverlayOpen, setChatOverlayOpen] = useState(false);
@@ -219,8 +222,21 @@ export default function App(): JSX.Element {
   }, []);
 
   useEffect(() => {
-    applyTheme("dark");
-  }, []);
+    if (!planInfo) {
+      applyTheme(themePreference);
+      return;
+    }
+
+    const allowCustomThemes = planInfo.plan !== "free";
+    const effectiveTheme = allowCustomThemes ? themePreference : DEFAULT_THEME;
+
+    if (!allowCustomThemes && themePreference !== DEFAULT_THEME) {
+      setThemePreference(DEFAULT_THEME);
+      saveThemePreference(DEFAULT_THEME);
+    }
+
+    applyTheme(effectiveTheme);
+  }, [planInfo, themePreference]);
 
   // Set up background sync listeners
   useEffect(() => {
@@ -465,6 +481,20 @@ export default function App(): JSX.Element {
     saveChatMood(mood);
   }, []);
 
+  const handleThemeChange = useCallback((theme: ThemePreference): void => {
+    if (!planInfo) {
+      return;
+    }
+    const canCustomizeThemes = planInfo.plan !== "free";
+    if (!canCustomizeThemes) {
+      openUpgradeModal("Custom themes");
+      return;
+    }
+    setThemePreference(theme);
+    saveThemePreference(theme);
+    applyTheme(theme);
+  }, [openUpgradeModal, planInfo]);
+
   const handleDataMutated = useCallback((tools: string[]): void => {
     if (tools.some((tool) => SCHEDULE_MUTATION_TOOLS.has(tool))) {
       setScheduleRevision((r) => r + 1);
@@ -566,6 +596,9 @@ export default function App(): JSX.Element {
               <SettingsView
                 planInfo={planInfo}
                 onUpgrade={() => openUpgradeModal()}
+                themePreference={themePreference}
+                themesLocked={!planInfo || planInfo.plan === "free"}
+                onThemeChange={handleThemeChange}
                 userEmail={authUserEmail}
                 authRequired={authRequired}
                 onSignOut={() => void handleLogout()}

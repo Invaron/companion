@@ -599,44 +599,6 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
               <div className="connector-config-fields">
                 {connector.service === "mcp" ? (
                   <>
-                    {withingsConnector && (
-                      <div className="connector-mcp-addon">
-                        <div className="connector-mcp-addon-head">
-                          <span className="connector-mcp-addon-title-wrap">
-                            <img
-                              className="connector-mcp-addon-icon"
-                              src={withingsConnector.icon.src}
-                              alt={withingsConnector.icon.alt}
-                            />
-                            <span className="connector-mcp-addon-title">{withingsConnector.label}</span>
-                          </span>
-                          {withingsConnected ? (
-                            <span className="connector-badge connector-badge-connected">Connected</span>
-                          ) : (
-                            <span className="connector-badge connector-badge-disconnected">Not connected</span>
-                          )}
-                        </div>
-                        <p className="connector-help-text">{withingsConnector.description}</p>
-                        {withingsConnected ? (
-                          <button
-                            className="connector-disconnect-btn"
-                            onClick={() => void handleDisconnect("withings")}
-                            disabled={busy}
-                          >
-                            {submitting === "withings" ? "Disconnecting..." : "Disconnect"}
-                          </button>
-                        ) : (
-                          <button
-                            className="connector-sync-btn"
-                            onClick={() => void handleConnect(withingsConnector)}
-                            disabled={busy}
-                          >
-                            {submitting === "withings" ? "Connecting..." : "Connect"}
-                          </button>
-                        )}
-                      </div>
-                    )}
-
                     {mcpTemplates.length > 0 && (
                       <div className="connector-mcp-templates">
                         <p className="connector-input-label">Verified templates</p>
@@ -725,6 +687,44 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                         >
                           {busy ? "Connecting..." : "Connect"}
                         </button>
+                      </div>
+                    )}
+
+                    {withingsConnector && (
+                      <div className="connector-mcp-addon">
+                        <div className="connector-mcp-addon-head">
+                          <span className="connector-mcp-addon-title-wrap">
+                            <img
+                              className="connector-mcp-addon-icon"
+                              src={withingsConnector.icon.src}
+                              alt={withingsConnector.icon.alt}
+                            />
+                            <span className="connector-mcp-addon-title">{withingsConnector.label}</span>
+                          </span>
+                          {withingsConnected ? (
+                            <span className="connector-badge connector-badge-connected">Connected</span>
+                          ) : (
+                            <span className="connector-badge connector-badge-disconnected">Not connected</span>
+                          )}
+                        </div>
+                        <p className="connector-help-text">{withingsConnector.description}</p>
+                        {withingsConnected ? (
+                          <button
+                            className="connector-disconnect-btn"
+                            onClick={() => void handleDisconnect("withings")}
+                            disabled={busy}
+                          >
+                            {submitting === "withings" ? "Disconnecting..." : "Disconnect"}
+                          </button>
+                        ) : (
+                          <button
+                            className="connector-sync-btn"
+                            onClick={() => void handleConnect(withingsConnector)}
+                            disabled={busy}
+                          >
+                            {submitting === "withings" ? "Connecting..." : "Connect"}
+                          </button>
+                        )}
                       </div>
                     )}
 

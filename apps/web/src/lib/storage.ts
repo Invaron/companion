@@ -7,6 +7,7 @@ import {
   ThemePreference,
   UserContext
 } from "../types";
+import { DEFAULT_THEME, normalizeThemePreference } from "./theme";
 
 // Storage version - increment when data structures change to auto-clear cache
 const STORAGE_VERSION = "1.0.2";  // Changed to trigger cache clear
@@ -130,13 +131,18 @@ export function saveNotificationPreferences(preferences: NotificationPreferences
 export function loadThemePreference(): ThemePreference {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.theme);
-    if (raw === "light" || raw === "dark" || raw === "system") {
-      return raw;
+    if (!raw) {
+      return DEFAULT_THEME;
     }
+    // Backward compatibility with old theme values.
+    if (raw === "light" || raw === "dark" || raw === "system") {
+      return DEFAULT_THEME;
+    }
+    return normalizeThemePreference(raw);
   } catch {
     // corrupted
   }
-  return "system";
+  return DEFAULT_THEME;
 }
 
 export function saveThemePreference(preference: ThemePreference): void {

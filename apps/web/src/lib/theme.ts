@@ -1,28 +1,55 @@
 import { ThemePreference } from "../types";
 
-const THEME_COLORS: Record<"light" | "dark", string> = {
-  light: "#f5f7fb",
-  dark: "#0f1f2f"
+export interface ThemeOption {
+  id: ThemePreference;
+  label: string;
+  description: string;
+  preview: [string, string, string];
+}
+
+export const DEFAULT_THEME: ThemePreference = "ocean-gold";
+
+export const THEME_OPTIONS: ThemeOption[] = [
+  {
+    id: "ocean-gold",
+    label: "Ocean Gold",
+    description: "Deep blue with warm gold accents.",
+    preview: ["#1f5a76", "#0f1f2f", "#f6c37f"]
+  },
+  {
+    id: "emerald-dusk",
+    label: "Emerald Dusk",
+    description: "Teal dusk tones with mint highlights.",
+    preview: ["#165954", "#0e2227", "#73e4bc"]
+  },
+  {
+    id: "sunset-indigo",
+    label: "Sunset Indigo",
+    description: "Indigo night with coral sunset accents.",
+    preview: ["#4a2f67", "#181025", "#ffb38a"]
+  }
+];
+
+const THEME_COLORS: Record<ThemePreference, string> = {
+  "ocean-gold": "#0f1f2f",
+  "emerald-dusk": "#0e2227",
+  "sunset-indigo": "#181025"
 };
 
-function prefersDark(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) {
-    return false;
+const VALID_THEME_IDS = new Set<ThemePreference>(THEME_OPTIONS.map((theme) => theme.id));
+
+export function normalizeThemePreference(value: unknown): ThemePreference {
+  if (typeof value === "string" && VALID_THEME_IDS.has(value as ThemePreference)) {
+    return value as ThemePreference;
   }
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return DEFAULT_THEME;
 }
 
-export function resolveTheme(preference: ThemePreference): "light" | "dark" {
-  if (preference === "system") {
-    return prefersDark() ? "dark" : "light";
-  }
-  return preference;
-}
-
-export function applyTheme(preference: ThemePreference): "light" | "dark" {
-  const resolved = resolveTheme(preference);
+export function applyTheme(preference: ThemePreference): ThemePreference {
+  const resolved = normalizeThemePreference(preference);
   const root = document.documentElement;
-  root.dataset.theme = resolved;
+  root.dataset.theme = "dark";
+  root.dataset.colorTheme = resolved;
 
   const themeColorMeta = document.querySelector('meta[name="theme-color"]');
   if (themeColorMeta) {

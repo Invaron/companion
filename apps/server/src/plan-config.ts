@@ -67,7 +67,7 @@ export const PLAN_TIERS: Record<PlanId, PlanTier> = {
     dailyChatLimit: 100,
     features: new Set<FeatureId>([
       "chat", "schedule", "nutrition", "habits",
-      "connectors", "gemini_tools", "chat_history", "analytics"
+      "connectors", "gemini_tools", "chat_history", "analytics", "custom_moods"
     ]),
     connectors: ["canvas", "mcp", "withings", "tp_schedule"] as ConnectorService[],
     maxChatHistory: 0, // unlimited
