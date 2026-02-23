@@ -380,11 +380,9 @@ export default function App(): JSX.Element {
   useEffect(() => {
     const isChatActive = activeTab === "chat";
     document.body.classList.toggle("chat-tab-active", isChatActive);
-    document.body.dataset.activeTab = activeTab;
 
     return () => {
       document.body.classList.remove("chat-tab-active");
-      delete document.body.dataset.activeTab;
     };
   }, [activeTab]);
 
