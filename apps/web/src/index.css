@@ -3630,6 +3630,46 @@ body.keyboard-open .chat-overlay-backdrop {
   border-color: var(--accent-border-strong);
 }
 
+.settings-language-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  background: var(--card-bg, var(--card));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.settings-language-options {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-language-option {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.settings-language-option:hover {
+  border-color: var(--accent-border);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-language-option-active {
+  border-color: var(--accent-border-strong);
+  background: var(--accent-surface);
+}
+
 /* ── Account bar ── */
 .settings-account-bar {
   display: flex;

@@ -4,6 +4,7 @@ import {
   ChatMood,
   NotificationPreferences,
   IntegrationScopeSettings,
+  Locale,
   ThemePreference,
   UserContext
 } from "../types";
@@ -27,6 +28,7 @@ const STORAGE_KEYS = {
   syncQueue: "companion:sync-queue",
   notificationPreferences: "companion:notification-preferences",
   theme: "companion:theme",
+  locale: "companion:locale",
   talkModeEnabled: "companion:talk-mode-enabled",
   canvasSettings: "companion:canvas-settings",
   canvasStatus: "companion:canvas-status",
@@ -149,6 +151,22 @@ export function saveThemePreference(preference: ThemePreference): void {
   localStorage.setItem(STORAGE_KEYS.theme, preference);
 }
 
+export function loadLocalePreference(): Locale {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.locale);
+    if (raw === "en" || raw === "no") {
+      return raw;
+    }
+  } catch {
+    // corrupted
+  }
+  return "en";
+}
+
+export function saveLocalePreference(locale: Locale): void {
+  localStorage.setItem(STORAGE_KEYS.locale, locale);
+}
+
 export function loadTalkModeEnabled(): boolean {
   try {
     return localStorage.getItem(STORAGE_KEYS.talkModeEnabled) === "true";
@@ -201,10 +219,15 @@ export function clearAuthToken(): void {
 
 export function clearCompanionSessionData(options: { keepTheme?: boolean } = {}): void {
   const keepTheme = options.keepTheme ?? true;
+  const keepLocale = true;
   const themeValue = keepTheme ? localStorage.getItem(STORAGE_KEYS.theme) : null;
+  const localeValue = keepLocale ? localStorage.getItem(STORAGE_KEYS.locale) : null;
 
   Object.values(STORAGE_KEYS).forEach((key) => {
     if (keepTheme && key === STORAGE_KEYS.theme) {
+      return;
+    }
+    if (keepLocale && key === STORAGE_KEYS.locale) {
       return;
     }
     localStorage.removeItem(key);
@@ -212,6 +235,9 @@ export function clearCompanionSessionData(options: { keepTheme?: boolean } = {})
 
   if (keepTheme && themeValue) {
     localStorage.setItem(STORAGE_KEYS.theme, themeValue);
+  }
+  if (keepLocale && localeValue) {
+    localStorage.setItem(STORAGE_KEYS.locale, localeValue);
   }
 
   localStorage.setItem(VERSION_KEY, STORAGE_VERSION);

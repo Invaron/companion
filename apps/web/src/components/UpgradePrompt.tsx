@@ -8,6 +8,7 @@ import {
   getUserPlan,
   startTrial
 } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 import type { FeatureId, PlanId, PlanTierSummary, UserPlanInfo } from "../types";
 
 type PaymentMethod = "vipps" | "stripe";
@@ -18,6 +19,8 @@ interface UpgradePromptProps {
 }
 
 export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.Element {
+  const { locale, t } = useI18n();
+  const localeTag = locale === "no" ? "nb-NO" : "en-US";
   const [tiers, setTiers] = useState<PlanTierSummary[]>([]);
   const [planInfo, setPlanInfo] = useState<UserPlanInfo | null>(null);
   const [starting, setStarting] = useState(false);
@@ -49,7 +52,7 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
       setPlanInfo(updated);
       window.location.reload();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to start trial";
+      const msg = err instanceof Error ? err.message : t("Failed to start trial");
       try {
         const parsed = JSON.parse(msg) as { error?: string };
         setError(parsed.error ?? msg);
@@ -59,7 +62,7 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
     } finally {
       setStarting(false);
     }
-  }, []);
+  }, [t]);
 
   const handleStripeCheckout = useCallback(async (plan: PlanId) => {
     setStarting(true);
@@ -68,7 +71,7 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
       const result = await createStripeCheckout(plan);
       window.location.href = result.url;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to start checkout";
+      const msg = err instanceof Error ? err.message : t("Failed to start checkout");
       try {
         const parsed = JSON.parse(msg) as { error?: string };
         setError(parsed.error ?? msg);
@@ -87,7 +90,7 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
       // Redirect user to Vipps to approve the agreement
       window.location.href = result.redirectUrl;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to start Vipps payment";
+      const msg = err instanceof Error ? err.message : t("Failed to start Vipps payment");
       try {
         const parsed = JSON.parse(msg) as { error?: string };
         setError(parsed.error ?? msg);
@@ -96,7 +99,7 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
       }
       setStarting(false);
     }
-  }, []);
+  }, [t]);
 
   const handlePayment = useCallback(async (plan: PlanId) => {
     if (selectedPayment === "vipps" && vippsReady) {
@@ -115,7 +118,7 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
   return (
     <div className="upgrade-overlay" onClick={onDismiss}>
       <div className="upgrade-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="upgrade-close" onClick={onDismiss} aria-label="Close">
+        <button className="upgrade-close" onClick={onDismiss} aria-label={t("Close")}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -123,17 +126,17 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
 
         <div className="upgrade-header">
           <span className="upgrade-icon">✨</span>
-          <h2 className="upgrade-title">Upgrade to unlock</h2>
-          {feature && <p className="upgrade-feature-label">{feature} requires a paid plan</p>}
+          <h2 className="upgrade-title">{t("Upgrade to unlock")}</h2>
+          {feature && <p className="upgrade-feature-label">{t("{feature} requires a paid plan", { feature })}</p>}
         </div>
 
         {planInfo && (
           <div className="upgrade-current-plan">
             <span className={`plan-badge plan-badge-${planInfo.plan}`}>{planInfo.badge}</span>
-            <span className="upgrade-current-label">Current plan</span>
+            <span className="upgrade-current-label">{t("Current plan")}</span>
             {planInfo.isTrial && planInfo.trialEndsAt && (
               <span className="upgrade-trial-label">
-                Trial ends {new Date(planInfo.trialEndsAt).toLocaleDateString()}
+                {t("Trial ends {date}", { date: new Date(planInfo.trialEndsAt).toLocaleDateString(localeTag) })}
               </span>
             )}
           </div>
@@ -153,15 +156,15 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
               </div>
               <p className="upgrade-tier-desc">{tier.description}</p>
               <ul className="upgrade-tier-features">
-                <li>{tier.dailyChatLimit === 0 ? "Unlimited" : tier.dailyChatLimit} AI messages/day</li>
-                <li>{tier.connectors.length} integrations</li>
-                {tier.features.includes("nutrition" as FeatureId) && <li>Nutrition tracking</li>}
-                {tier.features.includes("habits" as FeatureId) && <li>Growth & analytics</li>}
-                {tier.features.includes("custom_moods" as FeatureId) && <li>Custom chat themes</li>}
-                {tier.trialDays > 0 && <li>{tier.trialDays}-day free trial</li>}
+                <li>{tier.dailyChatLimit === 0 ? t("Unlimited") : tier.dailyChatLimit} {t("AI messages/day")}</li>
+                <li>{tier.connectors.length} {t("integrations")}</li>
+                {tier.features.includes("nutrition" as FeatureId) && <li>{t("Nutrition tracking")}</li>}
+                {tier.features.includes("habits" as FeatureId) && <li>{t("Growth & analytics")}</li>}
+                {tier.features.includes("custom_moods" as FeatureId) && <li>{t("Custom chat themes")}</li>}
+                {tier.trialDays > 0 && <li>{t("{days}-day free trial", { days: tier.trialDays })}</li>}
               </ul>
               {planInfo?.plan === tier.id ? (
-                <div className="upgrade-tier-active">Current plan</div>
+                <div className="upgrade-tier-active">{t("Current plan")}</div>
               ) : (
                 <button
                   className="upgrade-tier-btn"
@@ -175,12 +178,12 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
                   disabled={starting || (!canTrial && !hasPaymentMethod)}
                 >
                   {starting
-                    ? "Processing..."
+                    ? t("Processing...")
                     : canTrial && tier.id === "plus"
-                      ? `Start ${tier.trialDays}-day free trial`
+                      ? t("Start {days}-day free trial", { days: tier.trialDays })
                       : hasPaymentMethod
-                        ? `Subscribe — ${tier.priceMonthlyNok} kr/mo`
-                        : "Coming soon"}
+                        ? t("Subscribe — {price} kr/mo", { price: tier.priceMonthlyNok })
+                        : t("Coming soon")}
                 </button>
               )}
             </div>
@@ -192,7 +195,7 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
         {/* Payment method selector — show when both Vipps and Stripe are available */}
         {vippsReady && stripeReady && !canTrial && (
           <div className="payment-method-selector">
-            <span className="payment-method-label">Pay with:</span>
+            <span className="payment-method-label">{t("Pay with:")}</span>
             <button
               className={`payment-method-btn ${selectedPayment === "vipps" ? "payment-method-active" : ""}`}
               onClick={() => setSelectedPayment("vipps")}
@@ -203,19 +206,19 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
               className={`payment-method-btn ${selectedPayment === "stripe" ? "payment-method-active" : ""}`}
               onClick={() => setSelectedPayment("stripe")}
             >
-              Card
+              {t("Card")}
             </button>
           </div>
         )}
 
         <p className="upgrade-footer">
           {canTrial
-            ? "Start your free trial — cancel anytime within 7 days."
+            ? t("Start your free trial — cancel anytime within 7 days.")
             : vippsReady && selectedPayment === "vipps"
-              ? "Pay easily with Vipps MobilePay. Cancel anytime."
+              ? t("Pay easily with Vipps MobilePay. Cancel anytime.")
               : stripeReady
-                ? "Secure checkout powered by Stripe. Cancel anytime."
-                : "Payment integration coming soon."}
+                ? t("Secure checkout powered by Stripe. Cancel anytime.")
+                : t("Payment integration coming soon.")}
         </p>
       </div>
     </div>
@@ -228,6 +231,8 @@ interface LockedFeatureOverlayProps {
 }
 
 export function LockedFeatureOverlay({ featureName, onUpgradeClick }: LockedFeatureOverlayProps): JSX.Element {
+  const { t } = useI18n();
+
   return (
     <div className="locked-feature-overlay">
       <div className="locked-feature-content">
@@ -238,9 +243,9 @@ export function LockedFeatureOverlay({ featureName, onUpgradeClick }: LockedFeat
           </svg>
         </div>
         <h3 className="locked-feature-title">{featureName}</h3>
-        <p className="locked-feature-desc">This feature is available on paid plans.</p>
+        <p className="locked-feature-desc">{t("This feature is available on paid plans.")}</p>
         <button className="locked-feature-btn" onClick={onUpgradeClick}>
-          <span>✨</span> Upgrade to unlock
+          <span>✨</span> {t("Upgrade to unlock")}
         </button>
       </div>
     </div>

@@ -19,6 +19,7 @@ import {
   getGeminiStatus,
   getMcpServers
 } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 import {
   loadCanvasSettings,
   loadIntegrationScopeSettings,
@@ -106,18 +107,21 @@ const GITHUB_MCP_ICON = { src: iconPath("icons/integrations/github.svg"), alt: "
 const FREE_TIER_SERVICES: ConnectorService[] = ["canvas", "tp_schedule"];
 const CONNECTED_APPS_SERVICES: ConnectorService[] = ["mcp"];
 
-function formatRelative(timestamp: string | null): string {
-  if (!timestamp) return "Never";
+function formatRelative(
+  timestamp: string | null,
+  t: (text: string, vars?: Record<string, string | number>) => string
+): string {
+  if (!timestamp) return t("Never");
   const diffMs = Date.now() - new Date(timestamp).getTime();
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
-  if (diffSec < 10) return "Just now";
-  if (diffSec < 60) return `${diffSec}s ago`;
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHour < 24) return `${diffHour}h ago`;
-  return `${diffDay}d ago`;
+  if (diffSec < 10) return t("Just now");
+  if (diffSec < 60) return t("{value}s ago", { value: diffSec });
+  if (diffMin < 60) return t("{value}m ago", { value: diffMin });
+  if (diffHour < 24) return t("{value}h ago", { value: diffHour });
+  return t("{value}d ago", { value: diffDay });
 }
 
 function formatConnectedAppLabel(label: string): string {
@@ -152,6 +156,8 @@ function getMcpServerIcon(server: McpServerConfig): { src: string; alt: string }
 }
 
 export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JSX.Element {
+  const { locale, t } = useI18n();
+  const localeTag = locale === "no" ? "nb-NO" : "en-US";
   const [connections, setConnections] = useState<UserConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedService, setExpandedService] = useState<ConnectorService | null>(null);
@@ -214,13 +220,16 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
 
   const getStatusDetail = (service: ConnectorService): string | null => {
     if (service === "canvas" && canvasStatus.lastSyncedAt) {
-      return `${canvasStatus.courses.length} courses · Synced ${formatRelative(canvasStatus.lastSyncedAt)}`;
+      const courseLabel = canvasStatus.courses.length === 1 ? t("course") : t("courses");
+      return `${canvasStatus.courses.length} ${courseLabel} · ${t("Synced")} ${formatRelative(canvasStatus.lastSyncedAt, t)}`;
     }
     if (service === "mcp") {
       const withingsConnected = connections.some((connection) => connection.service === "withings");
       const connectedApps = mcpServers.length + (withingsConnected ? 1 : 0);
       if (connectedApps > 0) {
-        return connectedApps === 1 ? "1 app connected" : `${connectedApps} apps connected`;
+        return connectedApps === 1
+          ? t("1 app connected")
+          : t("{count} apps connected", { count: connectedApps });
       }
     }
     return null;
@@ -288,7 +297,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
         mcp_token: ""
       }));
     } catch (err) {
-      setError(extractErrorMessage(err, "Failed to connect app template"));
+      setError(extractErrorMessage(err, t("Failed to connect app template")));
     } finally {
       setSubmitting(null);
     }
@@ -308,7 +317,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
       } else if (connector.type === "token") {
         const token = inputValues[connector.service]?.trim();
         if (!token) {
-          setError("Please enter a token");
+          setError(t("Please enter a token"));
           setSubmitting(null);
           return;
         }
@@ -316,7 +325,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
         if (connector.service === "canvas") {
           const baseUrl = inputValues.canvas_baseUrl?.trim();
           if (!baseUrl || !baseUrl.startsWith("http")) {
-            setError("Please enter a valid Canvas base URL");
+            setError(t("Please enter a valid Canvas base URL"));
             setSubmitting(null);
             return;
           }
@@ -327,7 +336,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
         }
       } else if (connector.type === "config") {
         if (connector.service === "mcp") {
-          setError("Use a verified app template to connect.");
+          setError(t("Use a verified app template to connect."));
           setSubmitting(null);
           return;
         } else {
@@ -335,7 +344,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
           for (const field of connector.configFields ?? []) {
             const val = inputValues[`${connector.service}_${field.key}`]?.trim();
             if (!val) {
-              setError(`Please fill in ${field.label}`);
+              setError(t("Please fill in {field}", { field: t(field.label) }));
               setSubmitting(null);
               return;
             }
@@ -346,7 +355,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
       } else if (connector.type === "url") {
         const url = inputValues[connector.service]?.trim();
         if (!url || !url.startsWith("http")) {
-          setError("Please enter a valid URL");
+          setError(t("Please enter a valid URL"));
           setSubmitting(null);
           return;
         }
@@ -368,7 +377,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
         setInputValues(getDefaultInputValues());
       }
     } catch (err) {
-      setError(extractErrorMessage(err, "Connection failed"));
+      setError(extractErrorMessage(err, t("Connection failed")));
     } finally {
       setSubmitting(null);
     }
@@ -403,7 +412,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
       }
       await fetchConnections();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Disconnect failed");
+      setError(err instanceof Error ? err.message : t("Disconnect failed"));
     } finally {
       setSubmitting(null);
     }
@@ -416,7 +425,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
       await deleteMcpServer(serverId);
       await Promise.all([fetchConnections(), fetchConnectorMeta()]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove connected app");
+      setError(err instanceof Error ? err.message : t("Failed to remove connected app"));
     } finally {
       setSubmitting(null);
     }
@@ -441,7 +450,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
       setSelectedMcpTemplateId(null);
       await Promise.all([fetchConnections(), fetchConnectorMeta()]);
     } catch (err) {
-      setError(extractErrorMessage(err, "Disconnect failed"));
+      setError(extractErrorMessage(err, t("Disconnect failed")));
     } finally {
       setSubmitting(null);
     }
@@ -486,7 +495,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
             <img className="connector-icon-image" src={connector.icon.src} alt={connector.icon.alt} />
           </span>
           <div className="connector-info">
-            <span className="connector-label">{connector.label}</span>
+            <span className="connector-label">{t(connector.label)}</span>
             {connected && statusDetail && (
               <span className="connector-display-label">{statusDetail}</span>
             )}
@@ -494,14 +503,14 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
               <span className="connector-display-label">{connection.displayLabel}</span>
             )}
             {!connected && (
-              <span className="connector-desc">{connector.description}</span>
+              <span className="connector-desc">{t(connector.description)}</span>
             )}
           </div>
           <div className="connector-status">
             {connected ? (
-              <span className="connector-badge connector-badge-connected">Connected</span>
+              <span className="connector-badge connector-badge-connected">{t("Connected")}</span>
             ) : (
-              <span className="connector-badge connector-badge-disconnected">Not connected</span>
+              <span className="connector-badge connector-badge-disconnected">{t("Not connected")}</span>
             )}
           </div>
         </div>
@@ -510,7 +519,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
           <div className="connector-actions">
             {connector.service !== "mcp" && (
               <span className="connector-connected-since">
-                Connected {new Date(connection!.connectedAt).toLocaleDateString()}
+                {t("Connected {date}", { date: new Date(connection!.connectedAt).toLocaleDateString(localeTag) })}
               </span>
             )}
             {connector.service === "mcp" && (
@@ -519,7 +528,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                 onClick={() => handleToggleExpand("mcp")}
                 disabled={busy}
               >
-                {expanded ? "Close" : "Manage"}
+                {expanded ? t("Close") : t("Manage")}
               </button>
             )}
             <button
@@ -527,7 +536,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
               onClick={() => void (connector.service === "mcp" ? handleDisconnectConnectedApps() : handleDisconnect(connector.service))}
               disabled={busy}
             >
-              {busy ? "Disconnecting..." : connector.service === "mcp" ? "Disconnect all" : "Disconnect"}
+              {busy ? t("Disconnecting...") : connector.service === "mcp" ? t("Disconnect all") : t("Disconnect")}
             </button>
           </div>
         )}
@@ -539,7 +548,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                 {connector.service === "canvas" && (
                   <div className="connector-input-block">
                     <label className="connector-input-label" htmlFor="canvas-base-url-input">
-                      Canvas base URL
+                      {t("Canvas base URL")}
                     </label>
                     <input
                       id="canvas-base-url-input"
@@ -550,20 +559,20 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                       disabled={busy}
                     />
                     <p className="connector-input-hint">
-                      Use your school Canvas root URL (no <code>/courses</code>).
+                      {t("Use your school Canvas root URL (no <code>/courses</code>).")}
                     </p>
                   </div>
                 )}
                 <div className="connector-input-block">
                   {connector.service === "canvas" && (
                     <label className="connector-input-label" htmlFor="canvas-token-input">
-                      Canvas API token
+                      {t("Canvas API token")}
                     </label>
                   )}
                   <input
                     id={connector.service === "canvas" ? "canvas-token-input" : undefined}
                     type="password"
-                    placeholder={connector.placeholder}
+                    placeholder={connector.placeholder ? t(connector.placeholder) : undefined}
                     value={inputValues[connector.service] ?? ""}
                     onChange={(event) => handleInputChange(connector.service, event.target.value)}
                     disabled={busy}
@@ -571,7 +580,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                 </div>
                 {connector.service === "canvas" && (
                   <p className="connector-help-text">
-                    In Canvas go to <strong>Account</strong> → <strong>Settings</strong> → <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>, then paste the token above.
+                    {t("In Canvas go to <strong>Account</strong> → <strong>Settings</strong> → <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>, then paste the token above.")}
                   </p>
                 )}
                 <button
@@ -583,7 +592,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                     (connector.service === "canvas" && !inputValues.canvas_baseUrl?.trim())
                   }
                 >
-                  {busy ? "Connecting..." : "Connect"}
+                  {busy ? t("Connecting...") : t("Connect")}
                 </button>
               </div>
             )}
@@ -591,14 +600,14 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
             {connector.type === "oauth" && (
               <div className="connector-oauth-setup">
                 <p className="connector-oauth-hint">
-                  You&apos;ll be redirected to {connector.label} to authorize access.
+                  {t("You'll be redirected to {label} to authorize access.", { label: t(connector.label) })}
                 </p>
                 <button
                   className="connector-connect-btn"
                   onClick={() => void handleConnect(connector)}
                   disabled={busy}
                 >
-                  {busy ? "Redirecting..." : `Connect ${connector.label}`}
+                  {busy ? t("Redirecting...") : `${t("Connect")} ${t(connector.label)}`}
                 </button>
               </div>
             )}
@@ -609,7 +618,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                   <>
                     {mcpTemplates.length > 0 && (
                       <div className="connector-mcp-templates">
-                        <p className="connector-input-label">Verified templates</p>
+                        <p className="connector-input-label">{t("Verified templates")}</p>
                         <div className="connector-mcp-template-grid">
                           {mcpTemplates.map((template) => {
                             const selected = selectedMcpTemplateId === template.id;
@@ -631,7 +640,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                     <span className="connector-mcp-template-provider">{template.provider}</span>
                                   </span>
                                   {template.verified && (
-                                    <span className="connector-badge connector-badge-connected">Verified</span>
+                                    <span className="connector-badge connector-badge-connected">{t("Verified")}</span>
                                   )}
                                 </div>
                                 <p className="connector-mcp-template-title">{template.label}</p>
@@ -643,7 +652,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                     onClick={() => handleMcpTemplatePrimaryAction(template)}
                                     disabled={busy}
                                   >
-                                    Connect
+                                    {t("Connect")}
                                   </button>
                                 </div>
                               </div>
@@ -665,15 +674,15 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                               disabled={busy || selectedMcpTemplate.oauthEnabled === false}
                             >
                               {busy
-                                ? "Connecting..."
+                                ? t("Connecting...")
                                 : selectedMcpTemplate.oauthEnabled === false
-                                  ? "OAuth unavailable on this server"
-                                  : "Connect"}
+                                  ? t("OAuth unavailable on this server")
+                                  : t("Connect")}
                             </button>
                             <p className="connector-help-text">
                               {selectedMcpTemplate.oauthEnabled === false
-                                ? "This deployment has no OAuth client configured for this provider. Paste a token below instead."
-                                : "OAuth is preferred. You can still paste a token below if needed."}
+                                ? t("This deployment has no OAuth client configured for this provider. Paste a token below instead.")
+                                : t("OAuth is preferred. You can still paste a token below if needed.")}
                             </p>
                           </>
                         ) : null}
@@ -693,7 +702,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                           onClick={() => void handleConnectMcpTemplate(selectedMcpTemplate, inputValues.mcp_token)}
                           disabled={busy || !inputValues.mcp_token?.trim()}
                         >
-                          {busy ? "Connecting..." : "Connect"}
+                          {busy ? t("Connecting...") : t("Connect")}
                         </button>
                       </div>
                     )}
@@ -707,22 +716,22 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                               src={withingsConnector.icon.src}
                               alt={withingsConnector.icon.alt}
                             />
-                            <span className="connector-mcp-addon-title">{withingsConnector.label}</span>
+                            <span className="connector-mcp-addon-title">{t(withingsConnector.label)}</span>
                           </span>
                           {withingsConnected ? (
-                            <span className="connector-badge connector-badge-connected">Connected</span>
+                            <span className="connector-badge connector-badge-connected">{t("Connected")}</span>
                           ) : (
-                            <span className="connector-badge connector-badge-disconnected">Not connected</span>
+                            <span className="connector-badge connector-badge-disconnected">{t("Not connected")}</span>
                           )}
                         </div>
-                        <p className="connector-help-text">{withingsConnector.description}</p>
+                        <p className="connector-help-text">{t(withingsConnector.description)}</p>
                         {withingsConnected ? (
                           <button
                             className="connector-disconnect-btn"
                             onClick={() => void handleDisconnect("withings")}
                             disabled={busy}
                           >
-                            {submitting === "withings" ? "Disconnecting..." : "Disconnect"}
+                            {submitting === "withings" ? t("Disconnecting...") : t("Disconnect")}
                           </button>
                         ) : (
                           <button
@@ -730,7 +739,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                             onClick={() => void handleConnect(withingsConnector)}
                             disabled={busy}
                           >
-                            {submitting === "withings" ? "Connecting..." : "Connect"}
+                            {submitting === "withings" ? t("Connecting...") : t("Connect")}
                           </button>
                         )}
                       </div>
@@ -738,7 +747,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
 
                     <div className="connector-mcp-list">
                       {mcpServers.length === 0 ? (
-                        <p className="connector-help-text">No MCP servers connected yet.</p>
+                        <p className="connector-help-text">{t("No MCP servers connected yet.")}</p>
                       ) : (
                         mcpServers.map((server) => {
                           const serverIcon = getMcpServerIcon(server);
@@ -759,7 +768,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                 onClick={() => void handleDeleteMcpServer(server.id)}
                                 disabled={busy}
                               >
-                                Remove
+                                {t("Remove")}
                               </button>
                             </div>
                           );
@@ -782,7 +791,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                       </div>
                     ))}
                     <button className="connector-connect-btn" onClick={() => void handleConnect(connector)} disabled={busy}>
-                      {busy ? "Saving..." : "Save & Connect"}
+                      {busy ? t("Saving...") : t("Save & Connect")}
                     </button>
                   </>
                 )}
@@ -793,14 +802,14 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
               <div className="connector-url-input">
                 <input
                   type="url"
-                  placeholder={connector.placeholder}
+                  placeholder={connector.placeholder ? t(connector.placeholder) : undefined}
                   value={inputValues[connector.service] ?? ""}
                   onChange={(event) => handleInputChange(connector.service, event.target.value)}
                   disabled={busy}
                 />
                 {connector.service === "tp_schedule" && (
                   <p className="connector-help-text">
-                    Go to <strong>tp.educloud.no</strong> → find your courses → click <strong>Verktøy</strong> → <strong>Kopier abonnementlenken til timeplanen</strong>. Paste the iCal URL here (starts with https://tp.educloud.no/...).
+                    {t("Go to <strong>tp.educloud.no</strong> → find your courses → click <strong>Verktøy</strong> → <strong>Kopier abonnementlenken til timeplanen</strong>. Paste the iCal URL here (starts with https://tp.educloud.no/...).")}
                   </p>
                 )}
                 <button
@@ -808,7 +817,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                   onClick={() => void handleConnect(connector)}
                   disabled={busy || !inputValues[connector.service]?.trim()}
                 >
-                  {busy ? "Saving..." : "Save"}
+                  {busy ? t("Saving...") : t("Save")}
                 </button>
               </div>
             )}
@@ -841,20 +850,20 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
               <img className="connector-icon-image" src={GEMINI_CARD.icon.src} alt={GEMINI_CARD.icon.alt} />
             </span>
             <div className="connector-info">
-              <span className="connector-label">{GEMINI_CARD.label}</span>
+              <span className="connector-label">{t(GEMINI_CARD.label)}</span>
               {geminiStatus.apiConfigured ? (
                 <span className="connector-display-label connector-display-label-wrap">
-                  {geminiStatus.model} · Last used {formatRelative(geminiStatus.lastRequestAt)}
+                  {geminiStatus.model} · {t("Last used")} {formatRelative(geminiStatus.lastRequestAt, t)}
                 </span>
               ) : (
-                <span className="connector-desc">{GEMINI_CARD.description}</span>
+                <span className="connector-desc">{t(GEMINI_CARD.description)}</span>
               )}
             </div>
             <div className="connector-status">
               {geminiStatus.apiConfigured ? (
-                <span className="connector-badge connector-badge-connected">Connected</span>
+                <span className="connector-badge connector-badge-connected">{t("Connected")}</span>
               ) : (
-                <span className="connector-badge connector-badge-disconnected">Not configured</span>
+                <span className="connector-badge connector-badge-disconnected">{t("Not configured")}</span>
               )}
             </div>
           </div>
@@ -864,7 +873,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
 
       <section className="connector-section">
         <div className="connector-section-head">
-          <h4 className="connector-section-title">Connected Apps</h4>
+          <h4 className="connector-section-title">{t("Connected Apps")}</h4>
         </div>
         {isPaidPlan ? (
           connectedAppConnectors.map(renderConnectorCard)
@@ -873,16 +882,16 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
             <div className="connector-header connector-header-static">
               <span className="connector-icon">🔒</span>
               <div className="connector-info">
-                <span className="connector-label">Upgrade to unlock Connected Apps</span>
-                <span className="connector-desc">Connect external apps like GitHub and Withings.</span>
+                <span className="connector-label">{t("Upgrade to unlock Connected Apps")}</span>
+                <span className="connector-desc">{t("Connect external apps like GitHub and Withings.")}</span>
               </div>
               <div className="connector-status">
-                <span className="connector-badge connector-badge-disconnected">Paid plan</span>
+                <span className="connector-badge connector-badge-disconnected">{t("Paid plan")}</span>
               </div>
             </div>
             <div className="connector-actions">
               <button className="connector-sync-btn" onClick={onUpgrade}>
-                Upgrade
+                {t("Upgrade")}
               </button>
             </div>
           </div>

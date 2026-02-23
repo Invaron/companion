@@ -14,6 +14,7 @@ import { LockedFeatureOverlay, UpgradePrompt } from "./components/UpgradePrompt"
 import { useDashboard } from "./hooks/useDashboard";
 import { usePlan } from "./hooks/usePlan";
 import { getAuthMe, getAuthStatus, logout } from "./lib/api";
+import { useI18n } from "./lib/i18n";
 import { enablePushNotifications, isPushEnabled, supportsPushNotifications } from "./lib/push";
 import { setupSyncListeners } from "./lib/sync";
 import { applyTheme, DEFAULT_THEME } from "./lib/theme";
@@ -41,14 +42,6 @@ const TAB_FEATURE_MAP: Record<TabId, FeatureId> = {
   nutrition: "nutrition",
   habits: "habits",
   settings: "chat" // settings is always accessible (same gate as chat)
-};
-
-const TAB_DISPLAY_NAMES: Record<TabId, string> = {
-  chat: "Chat",
-  schedule: "Schedule",
-  nutrition: "Nutrition",
-  habits: "Growth",
-  settings: "Settings"
 };
 
 const SCHEDULE_MUTATION_TOOLS = new Set([
@@ -115,6 +108,7 @@ function parseApiErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function App(): JSX.Element {
+  const { t } = useI18n();
   const initialDeepLink = parseDeepLink(typeof window === "undefined" ? "" : window.location.search);
   const [authState, setAuthState] = useState<AuthState>("checking");
   const [authRequired, setAuthRequired] = useState(false);
@@ -487,13 +481,13 @@ export default function App(): JSX.Element {
     }
     const canCustomizeThemes = planInfo.plan !== "free";
     if (!canCustomizeThemes) {
-      openUpgradeModal("Custom themes");
+      openUpgradeModal(t("Custom chat themes"));
       return;
     }
     setThemePreference(theme);
     saveThemePreference(theme);
     applyTheme(theme);
-  }, [openUpgradeModal, planInfo]);
+  }, [openUpgradeModal, planInfo, t]);
 
   const handleDataMutated = useCallback((tools: string[]): void => {
     if (tools.some((tool) => SCHEDULE_MUTATION_TOOLS.has(tool))) {
@@ -533,7 +527,7 @@ export default function App(): JSX.Element {
                   <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                 </svg>
               </div>
-              <p className="login-subtitle">Connecting...</p>
+              <p className="login-subtitle">{t("Connecting...")}</p>
             </div>
           </div>
         </section>
@@ -559,7 +553,7 @@ export default function App(): JSX.Element {
     <main className={`app-shell chat-mood-${chatMood} ${isChatTab ? "app-shell-chat-active" : ""}`}>
       <InstallPrompt />
 
-      {loading && <p>Loading...</p>}
+      {loading && <p>{t("Loading...")}</p>}
       {error && <p className="error">{error}</p>}
 
       {data && (
@@ -572,7 +566,7 @@ export default function App(): JSX.Element {
             </div>
             {activeTab === "schedule" && (
               isTabLocked("schedule")
-                ? <LockedFeatureOverlay featureName={TAB_DISPLAY_NAMES.schedule} onUpgradeClick={() => openUpgradeModal(TAB_DISPLAY_NAMES.schedule)} />
+                ? <LockedFeatureOverlay featureName={t("Schedule")} onUpgradeClick={() => openUpgradeModal(t("Schedule"))} />
                 : <ScheduleTab
                     scheduleKey={`schedule-${scheduleRevision}`}
                     focusDeadlineId={focusDeadlineId ?? undefined}
@@ -581,12 +575,12 @@ export default function App(): JSX.Element {
             )}
             {activeTab === "nutrition" && (
               isTabLocked("nutrition")
-                ? <LockedFeatureOverlay featureName={TAB_DISPLAY_NAMES.nutrition} onUpgradeClick={() => openUpgradeModal(TAB_DISPLAY_NAMES.nutrition)} />
+                ? <LockedFeatureOverlay featureName={t("Food")} onUpgradeClick={() => openUpgradeModal(t("Food"))} />
                 : <NutritionView key={`nutrition-${nutritionRevision}`} />
             )}
             {activeTab === "habits" && (
               isTabLocked("habits")
-                ? <LockedFeatureOverlay featureName={TAB_DISPLAY_NAMES.habits} onUpgradeClick={() => openUpgradeModal(TAB_DISPLAY_NAMES.habits)} />
+                ? <LockedFeatureOverlay featureName={t("Growth")} onUpgradeClick={() => openUpgradeModal(t("Growth"))} />
                 : <div key={`habits-${habitsRevision}`} className="habits-tab-container habits-analytics-stack">
                     <HabitsGoalsView />
                     <AnalyticsDashboard />
@@ -633,12 +627,12 @@ export default function App(): JSX.Element {
                 }}
               >
                 <div className="chat-overlay-header">
-                  <span className="chat-overlay-title">Chat</span>
+                  <span className="chat-overlay-title">{t("Chat")}</span>
                   <button
                     type="button"
                     className="chat-overlay-close-btn"
                     onClick={() => setChatOverlayOpen(false)}
-                    aria-label="Close chat overlay"
+                    aria-label={t("Close chat overlay")}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18" />

@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useI18n } from "../lib/i18n";
 
 export type TabId = "chat" | "schedule" | "nutrition" | "habits" | "settings";
 
@@ -55,12 +56,14 @@ function TabIcon({ id }: { id: TabId }): ReactNode {
 }
 
 export function TabBar({ activeTab, onTabChange }: TabBarProps): JSX.Element {
+  const { t } = useI18n();
+
   const tabs: Array<{ id: TabId; label: string }> = [
-    { id: "chat", label: "Chat" },
-    { id: "schedule", label: "Schedule" },
-    { id: "nutrition", label: "Food" },
-    { id: "habits", label: "Growth" },
-    { id: "settings", label: "Settings" }
+    { id: "chat", label: t("Chat") },
+    { id: "schedule", label: t("Schedule") },
+    { id: "nutrition", label: t("Food") },
+    { id: "habits", label: t("Growth") },
+    { id: "settings", label: t("Settings") }
   ];
 
   return (

@@ -379,6 +379,8 @@ export interface NotificationPreferences {
   categoryToggles: Record<AgentName, boolean>;
 }
 
+export type Locale = "en" | "no";
+
 export type ThemePreference = "ocean-gold" | "emerald-dusk" | "sunset-indigo";
 
 export type NotificationInteractionType = "tap" | "dismiss" | "action";

@@ -4,6 +4,7 @@ import { IntegrationScopeSettings } from "./IntegrationScopeSettings";
 import { ConnectorsView } from "./ConnectorsView";
 import { deleteAllUserData } from "../lib/api";
 import { clearCompanionSessionData } from "../lib/storage";
+import { useI18n } from "../lib/i18n";
 import { THEME_OPTIONS } from "../lib/theme";
 import type { ThemePreference, UserPlanInfo } from "../types";
 
@@ -43,6 +44,8 @@ export function SettingsView({
   onEnablePush,
   pushMessage,
 }: SettingsViewProps): JSX.Element {
+  const { locale, setLocale, t } = useI18n();
+  const localeTag = locale === "no" ? "nb-NO" : "en-US";
   const pushButtonDisabled =
     pushState === "checking" || pushState === "enabled" || pushState === "unsupported" || pushState === "denied" || pushState === "error";
 
@@ -58,7 +61,7 @@ export function SettingsView({
       clearCompanionSessionData({ keepTheme: false });
       window.location.reload();
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Deletion failed. Please try again.");
+      setDeleteError(err instanceof Error ? err.message : t("Deletion failed. Please try again."));
       setDeleteLoading(false);
     }
   };
@@ -70,7 +73,7 @@ export function SettingsView({
         <div className="settings-account-bar">
           <div className="settings-account-info">
             {userEmail && (
-              <p className="settings-account-email">Signed in as <strong>{userEmail}</strong></p>
+              <p className="settings-account-email">{t("Signed in as")} <strong>{userEmail}</strong></p>
             )}
           </div>
           <button
@@ -84,32 +87,32 @@ export function SettingsView({
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            {signingOut ? "Signing out…" : "Sign out"}
+            {signingOut ? t("Signing out…") : t("Sign out")}
           </button>
         </div>
       )}
 
       <div className="settings-header">
         <span className="settings-header-icon">⚙️</span>
-        <h2>Settings</h2>
+        <h2>{t("Settings")}</h2>
       </div>
 
       {/* Plan & Usage section */}
       {planInfo && (
         <div className="settings-section">
-          <h3 className="settings-section-title">💎 Your Plan</h3>
+          <h3 className="settings-section-title">💎 {t("Your Plan")}</h3>
           <div className="plan-info-card">
             <div className="plan-info-row">
               <span className={`plan-badge plan-badge-${planInfo.plan}`}>{planInfo.badge}</span>
               <span className="plan-info-name">{planInfo.planName}</span>
               {planInfo.isTrial && planInfo.trialEndsAt && (
                 <span className="plan-trial-badge">
-                  Trial · ends {new Date(planInfo.trialEndsAt).toLocaleDateString()}
+                  {t("Trial · ends {date}", { date: new Date(planInfo.trialEndsAt).toLocaleDateString(localeTag) })}
                 </span>
               )}
             </div>
             <div className="plan-usage-row">
-              <span className="plan-usage-label">AI messages today</span>
+              <span className="plan-usage-label">{t("AI messages today")}</span>
               <span className="plan-usage-value">
                 {planInfo.chatUsedToday} / {planInfo.chatLimitToday === 0 ? "∞" : planInfo.chatLimitToday}
               </span>
@@ -124,7 +127,7 @@ export function SettingsView({
             )}
             {planInfo.plan === "free" && (
               <button className="plan-upgrade-btn" onClick={onUpgrade}>
-                ✨ Upgrade plan
+                ✨ {t("Upgrade plan")}
               </button>
             )}
           </div>
@@ -132,12 +135,12 @@ export function SettingsView({
       )}
 
       <div className="settings-section">
-        <h3 className="settings-section-title">🎨 Appearance</h3>
+        <h3 className="settings-section-title">🎨 {t("Appearance")}</h3>
         <div className="settings-theme-card">
           <p className="settings-theme-info">
             {themesLocked
-              ? "Custom themes are available on paid plans."
-              : "Choose a visual theme that applies across the app, including chat."}
+              ? t("Custom themes are available on paid plans.")
+              : t("Choose a visual theme that applies across the app, including chat.")}
           </p>
           <div className="settings-theme-grid">
             {THEME_OPTIONS.map((theme) => {
@@ -166,44 +169,69 @@ export function SettingsView({
           </div>
           {themesLocked && (
             <button type="button" className="settings-theme-upgrade-btn" onClick={onUpgrade}>
-              Upgrade to unlock themes
+              {t("Upgrade to unlock themes")}
             </button>
           )}
         </div>
       </div>
 
       <div className="settings-section">
-        <h3 className="settings-section-title">🔗 Integrations</h3>
+        <h3 className="settings-section-title">🔗 {t("Integrations")}</h3>
         <ConnectorsView planInfo={planInfo} onUpgrade={onUpgrade} />
       </div>
 
       <div className="settings-section">
-        <h3 className="settings-section-title">🎯 Data Scope</h3>
+        <h3 className="settings-section-title">🌐 {t("Language")}</h3>
+        <div className="settings-language-card">
+          <p className="settings-theme-info">{t("Choose app language. English is default.")}</p>
+          <div className="settings-language-options">
+            <button
+              type="button"
+              className={`settings-language-option ${locale === "en" ? "settings-language-option-active" : ""}`}
+              onClick={() => setLocale("en")}
+              aria-pressed={locale === "en"}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              className={`settings-language-option ${locale === "no" ? "settings-language-option-active" : ""}`}
+              onClick={() => setLocale("no")}
+              aria-pressed={locale === "no"}
+            >
+              Norsk
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">🎯 {t("Data Scope")}</h3>
         <IntegrationScopeSettings />
       </div>
 
       <div className="settings-section">
-        <h3 className="settings-section-title">🔔 Notifications</h3>
+        <h3 className="settings-section-title">🔔 {t("Notifications")}</h3>
 
         {/* Push notification toggle */}
         <div className="settings-push-card">
           <div className="settings-push-row">
             <div className="settings-push-info">
-              <span className="settings-push-label">Push Notifications</span>
+              <span className="settings-push-label">{t("Push Notifications")}</span>
               <span className="settings-push-desc">
                 {pushState === "enabled"
-                  ? "Receiving push notifications"
+                  ? t("Receiving push notifications")
                   : pushState === "unsupported"
-                    ? "Not supported in this browser"
+                    ? t("Not supported in this browser")
                     : pushState === "denied"
-                      ? "Permission denied — enable in browser settings"
+                      ? t("Permission denied — enable in browser settings")
                       : pushState === "error"
-                        ? "Something went wrong — try again later"
-                        : "Get notified about deadlines, reminders, and updates"}
+                        ? t("Something went wrong — try again later")
+                        : t("Get notified about deadlines, reminders, and updates")}
               </span>
             </div>
             {pushState === "enabled" ? (
-              <span className="settings-push-badge">✓ Enabled</span>
+              <span className="settings-push-badge">{t("✓ Enabled")}</span>
             ) : (
               <button
                 type="button"
@@ -211,7 +239,7 @@ export function SettingsView({
                 onClick={onEnablePush}
                 disabled={pushButtonDisabled}
               >
-                {pushState === "checking" ? "Connecting…" : "Enable"}
+                {pushState === "checking" ? t("Connecting…") : t("Enable")}
               </button>
             )}
           </div>
@@ -223,11 +251,10 @@ export function SettingsView({
 
       {/* GDPR / Data section */}
       <div className="settings-section">
-        <h3 className="settings-section-title">🛡️ Privacy &amp; Data</h3>
+        <h3 className="settings-section-title">🛡️ {t("Privacy & Data")}</h3>
         <div className="settings-gdpr-card">
           <p className="settings-gdpr-info">
-            Your data is processed in accordance with the GDPR (EEA). You can delete your
-            account and all associated data at any time. This action is permanent and cannot be undone.
+            {t("Your data is processed in accordance with the GDPR (EEA). You can delete your account and all associated data at any time. This action is permanent and cannot be undone.")}
           </p>
 
           {deleteConfirmStep === 0 && (
@@ -236,16 +263,14 @@ export function SettingsView({
               className="settings-delete-btn"
               onClick={() => setDeleteConfirmStep(1)}
             >
-              🗑️ Delete my account &amp; data
+              🗑️ {t("Delete my account & data")}
             </button>
           )}
 
           {deleteConfirmStep === 1 && (
             <div className="settings-delete-confirm">
               <p className="settings-delete-warning">
-                ⚠️ This will permanently delete ALL your data: chat history, schedules, deadlines,
-                habits, goals, journal entries, nutrition logs, integrations, and your account.
-                This cannot be undone.
+                ⚠️ {t("This will permanently delete ALL your data: chat history, schedules, deadlines, habits, goals, journal entries, nutrition logs, integrations, and your account. This cannot be undone.")}
               </p>
               <div className="settings-delete-actions">
                 <button
@@ -253,14 +278,14 @@ export function SettingsView({
                   className="settings-delete-btn settings-delete-btn-final"
                   onClick={() => setDeleteConfirmStep(2)}
                 >
-                  I understand, continue
+                  {t("I understand, continue")}
                 </button>
                 <button
                   type="button"
                   className="settings-delete-cancel-btn"
                   onClick={() => setDeleteConfirmStep(0)}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </button>
               </div>
             </div>
@@ -269,7 +294,7 @@ export function SettingsView({
           {deleteConfirmStep === 2 && (
             <div className="settings-delete-confirm">
               <p className="settings-delete-warning settings-delete-final-warning">
-                🔴 Final confirmation: Are you absolutely sure? All your data will be gone forever.
+                🔴 {t("Final confirmation: Are you absolutely sure? All your data will be gone forever.")}
               </p>
               <div className="settings-delete-actions">
                 <button
@@ -278,7 +303,7 @@ export function SettingsView({
                   onClick={() => void handleDeleteAccount()}
                   disabled={deleteLoading}
                 >
-                  {deleteLoading ? "Deleting…" : "Yes, permanently delete everything"}
+                  {deleteLoading ? t("Deleting…") : t("Yes, permanently delete everything")}
                 </button>
                 <button
                   type="button"
@@ -286,7 +311,7 @@ export function SettingsView({
                   onClick={() => setDeleteConfirmStep(0)}
                   disabled={deleteLoading}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </button>
               </div>
             </div>

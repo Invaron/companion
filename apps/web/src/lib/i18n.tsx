@@ -1,0 +1,216 @@
+import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import type { Locale } from "../types";
+import { loadLocalePreference, saveLocalePreference } from "./storage";
+
+interface TranslationVariables {
+  [key: string]: string | number;
+}
+
+interface I18nContextValue {
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
+  t: (text: string, vars?: TranslationVariables) => string;
+}
+
+const NORWEGIAN_TRANSLATIONS: Record<string, string> = {
+  "Chat": "Chat",
+  "Schedule": "Plan",
+  "Food": "Mat",
+  "Growth": "Vekst",
+  "Settings": "Innstillinger",
+  "Your personal AI study companion": "Din personlige AI-studieassistent",
+  "Continue with Google": "Fortsett med Google",
+  "Continue with GitHub": "Fortsett med GitHub",
+  "No authentication providers configured. Please set up OAuth credentials on the server.": "Ingen autentiseringsleverandører er konfigurert. Sett opp OAuth-legitimasjon på serveren.",
+  "Connecting…": "Kobler til…",
+  "Secured with session-based authentication": "Sikret med sesjonsbasert autentisering",
+  "Install Companion": "Installer Companion",
+  "Add Companion to your home screen for the best experience with push notifications and offline access.": "Legg Companion til på hjemskjermen for best opplevelse med push-varsler og offline-tilgang.",
+  "Tap the Share button": "Trykk på Del-knappen",
+  "Tap the <strong>Share</strong> button": "Trykk på <strong>Del</strong>-knappen",
+  "in Safari's toolbar": "i Safari-verktøylinjen",
+  "Scroll down and tap \"Add to Home Screen\"": "Bla ned og trykk \"Legg til på hjemskjermen\"",
+  "Scroll down and tap <strong>\"Add to Home Screen\"</strong>": "Bla ned og trykk <strong>\"Legg til på hjemskjermen\"</strong>",
+  "Tap Add to confirm": "Trykk Legg til for å bekrefte",
+  "Tap <strong>Add</strong> to confirm": "Trykk <strong>Legg til</strong> for å bekrefte",
+  "Got it": "Skjønner",
+  "Signed in as": "Innlogget som",
+  "Signed in as <strong>{email}</strong>": "Innlogget som <strong>{email}</strong>",
+  "Signing out…": "Logger ut…",
+  "Sign out": "Logg ut",
+  "Your Plan": "Din plan",
+  "Trial · ends {date}": "Prøveperiode · utløper {date}",
+  "AI messages today": "AI-meldinger i dag",
+  "Upgrade plan": "Oppgrader plan",
+  "Appearance": "Utseende",
+  "Custom themes are available on paid plans.": "Egendefinerte temaer er tilgjengelig på betalte planer.",
+  "Choose a visual theme that applies across the app, including chat.": "Velg et visuelt tema som brukes i hele appen, inkludert chat.",
+  "Upgrade to unlock themes": "Oppgrader for å låse opp temaer",
+  "Language": "Språk",
+  "Choose app language. English is default.": "Velg språk i appen. Engelsk er standard.",
+  "Integrations": "Integrasjoner",
+  "Data Scope": "Datascope",
+  "Notifications": "Varsler",
+  "Push Notifications": "Push-varsler",
+  "Receiving push notifications": "Mottar push-varsler",
+  "Not supported in this browser": "Ikke støttet i denne nettleseren",
+  "Permission denied — enable in browser settings": "Tillatelse avslått — aktiver i nettleserinnstillinger",
+  "Something went wrong — try again later": "Noe gikk galt — prøv igjen senere",
+  "Get notified about deadlines, reminders, and updates": "Få varsler om frister, påminnelser og oppdateringer",
+  "✓ Enabled": "✓ Aktivert",
+  "Enable": "Aktiver",
+  "Privacy & Data": "Personvern og data",
+  "Your data is processed in accordance with the GDPR (EEA). You can delete your account and all associated data at any time. This action is permanent and cannot be undone.": "Dine data behandles i samsvar med GDPR (EØS). Du kan slette kontoen og alle tilknyttede data når som helst. Denne handlingen er permanent og kan ikke angres.",
+  "Delete my account & data": "Slett kontoen min og data",
+  "This will permanently delete ALL your data: chat history, schedules, deadlines, habits, goals, journal entries, nutrition logs, integrations, and your account. This cannot be undone.": "Dette vil permanent slette ALLE dataene dine: chat-historikk, planer, frister, vaner, mål, journalnotater, kostholdslogger, integrasjoner og kontoen din. Dette kan ikke angres.",
+  "I understand, continue": "Jeg forstår, fortsett",
+  "Cancel": "Avbryt",
+  "Final confirmation: Are you absolutely sure? All your data will be gone forever.": "Siste bekreftelse: Er du helt sikker? Alle dataene dine blir borte for alltid.",
+  "Deleting…": "Sletter…",
+  "Yes, permanently delete everything": "Ja, slett alt permanent",
+  "Deletion failed. Please try again.": "Sletting feilet. Prøv igjen.",
+  "Connected Apps": "Tilkoblede apper",
+  "Connect trusted external apps like GitHub.": "Koble til eksterne apper som GitHub.",
+  "Canvas LMS": "Canvas LMS",
+  "Courses, assignments, deadlines, and grades from your Canvas instance.": "Emner, oppgaver, frister og karakterer fra din Canvas-instans.",
+  "Withings Health": "Withings Health",
+  "Sleep, weight, and health data from Withings devices.": "Søvn-, vekt- og helsedata fra Withings-enheter.",
+  "TP EduCloud Schedule": "TP EduCloud-plan",
+  "Lecture schedule via iCal subscription from TP.": "Forelesningsplan via iCal-abonnement fra TP.",
+  "Gemini AI": "Gemini AI",
+  "Conversational AI, summaries, coaching": "Samtale-AI, oppsummeringer, coaching",
+  "Connected": "Tilkoblet",
+  "Not connected": "Ikke tilkoblet",
+  "Not configured": "Ikke konfigurert",
+  "Last used": "Sist brukt",
+  "Never": "Aldri",
+  "Just now": "Akkurat nå",
+  "{value}s ago": "for {value}s siden",
+  "{value}m ago": "for {value}m siden",
+  "{value}h ago": "for {value}t siden",
+  "{value}d ago": "for {value}d siden",
+  "course": "emne",
+  "courses": "emner",
+  "Synced": "Synket",
+  "1 app connected": "1 app tilkoblet",
+  "{count} apps connected": "{count} apper tilkoblet",
+  "Verified": "Verifisert",
+  "Disconnect": "Koble fra",
+  "Disconnecting...": "Kobler fra...",
+  "Disconnect all": "Koble fra alle",
+  "Manage": "Administrer",
+  "Close": "Lukk",
+  "Canvas base URL": "Canvas base-URL",
+  "Use your school Canvas root URL (no <code>/courses</code>).": "Bruk skolens Canvas-rot-URL (uten <code>/courses</code>).",
+  "Canvas API token": "Canvas API-token",
+  "In Canvas go to <strong>Account</strong> → <strong>Settings</strong> → <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>, then paste the token above.": "I Canvas gå til <strong>Account</strong> → <strong>Settings</strong> → <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>, og lim inn tokenet over.",
+  "Connect": "Koble til",
+  "Connecting...": "Kobler til...",
+  "You'll be redirected to {label} to authorize access.": "Du blir videresendt til {label} for å autorisere tilgang.",
+  "Redirecting...": "Videresender...",
+  "Verified templates": "Verifiserte maler",
+  "OAuth unavailable on this server": "OAuth er ikke tilgjengelig på denne serveren",
+  "OAuth is preferred. You can still paste a token below if needed.": "OAuth er anbefalt. Du kan fortsatt lime inn et token under ved behov.",
+  "This deployment has no OAuth client configured for this provider. Paste a token below instead.": "Denne deployen har ingen OAuth-klient konfigurert for denne leverandøren. Lim inn et token under i stedet.",
+  "No MCP servers connected yet.": "Ingen MCP-servere er tilkoblet ennå.",
+  "Remove": "Fjern",
+  "Use a verified app template to connect.": "Bruk en verifisert app-mal for å koble til.",
+  "Please enter a token": "Skriv inn et token",
+  "Please enter a valid Canvas base URL": "Skriv inn en gyldig Canvas base-URL",
+  "Please enter a valid URL": "Skriv inn en gyldig URL",
+  "Please fill in {field}": "Fyll ut {field}",
+  "Connection failed": "Tilkobling feilet",
+  "Disconnect failed": "Frakobling feilet",
+  "Failed to connect app template": "Kunne ikke koble app-mal",
+  "Failed to remove connected app": "Kunne ikke fjerne tilkoblet app",
+  "No Canvas courses available yet. Connect Canvas above, then sync.": "Ingen Canvas-emner tilgjengelig ennå. Koble til Canvas over, og synkroniser.",
+  "Go to <strong>tp.educloud.no</strong> → find your courses → click <strong>Verktøy</strong> → <strong>Kopier abonnementlenken til timeplanen</strong>. Paste the iCal URL here (starts with https://tp.educloud.no/...).": "Gå til <strong>tp.educloud.no</strong> → finn emnene dine → klikk <strong>Verktøy</strong> → <strong>Kopier abonnementlenken til timeplanen</strong>. Lim inn iCal-URL-en her (starter med https://tp.educloud.no/...).",
+  "Saving...": "Lagrer...",
+  "Save": "Lagre",
+  "Save & Connect": "Lagre og koble til",
+  "Connected {date}": "Tilkoblet {date}",
+  "Pending": "Venter",
+  "Upgrade to unlock Connected Apps": "Oppgrader for å låse opp tilkoblede apper",
+  "Connect external apps like GitHub and Withings.": "Koble til eksterne apper som GitHub og Withings.",
+  "Paid plan": "Betalt plan",
+  "Loading...": "Laster...",
+  "Connecting... (status)": "Kobler til...",
+  "Close chat overlay": "Lukk chat-overlegg",
+  "Upgrade to unlock": "Oppgrader for å låse opp",
+  "{feature} requires a paid plan": "{feature} krever en betalt plan",
+  "Current plan": "Nåværende plan",
+  "Trial ends {date}": "Prøveperiode utløper {date}",
+  "Unlimited": "Ubegrenset",
+  "AI messages/day": "AI-meldinger/dag",
+  "integrations": "integrasjoner",
+  "Nutrition tracking": "Kostholdssporing",
+  "Growth & analytics": "Vekst og analyse",
+  "Custom chat themes": "Egendefinerte chat-temaer",
+  "{days}-day free trial": "{days}-dagers gratis prøveperiode",
+  "Processing...": "Behandler...",
+  "Start {days}-day free trial": "Start {days}-dagers gratis prøveperiode",
+  "Subscribe — {price} kr/mo": "Abonner — {price} kr/mnd",
+  "Coming soon": "Kommer snart",
+  "Pay with:": "Betal med:",
+  "Card": "Kort",
+  "Start your free trial — cancel anytime within 7 days.": "Start gratis prøveperiode — avbryt når som helst innen 7 dager.",
+  "Pay easily with Vipps MobilePay. Cancel anytime.": "Betal enkelt med Vipps MobilePay. Avbryt når som helst.",
+  "Secure checkout powered by Stripe. Cancel anytime.": "Sikker betaling via Stripe. Avbryt når som helst.",
+  "Payment integration coming soon.": "Betalingsintegrasjon kommer snart.",
+  "Failed to start trial": "Kunne ikke starte prøveperiode",
+  "Failed to start checkout": "Kunne ikke starte betaling",
+  "Failed to start Vipps payment": "Kunne ikke starte Vipps-betaling",
+  "Upgrade": "Oppgrader",
+  "This feature is available on paid plans.": "Denne funksjonen er tilgjengelig på betalte planer."
+};
+
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+function interpolate(template: string, vars?: TranslationVariables): string {
+  if (!vars) {
+    return template;
+  }
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => {
+    const value = vars[key];
+    return value === undefined ? `{${key}}` : String(value);
+  });
+}
+
+export function I18nProvider({ children }: { children: ReactNode }): JSX.Element {
+  const [locale, setLocaleState] = useState<Locale>(loadLocalePreference);
+
+  const setLocale = useCallback((next: Locale) => {
+    setLocaleState(next);
+    saveLocalePreference(next);
+  }, []);
+
+  const t = useCallback(
+    (text: string, vars?: TranslationVariables): string => {
+      if (locale === "no") {
+        const translated = NORWEGIAN_TRANSLATIONS[text] ?? text;
+        return interpolate(translated, vars);
+      }
+      return interpolate(text, vars);
+    },
+    [locale]
+  );
+
+  const value = useMemo<I18nContextValue>(
+    () => ({
+      locale,
+      setLocale,
+      t
+    }),
+    [locale, setLocale, t]
+  );
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n(): I18nContextValue {
+  const context = useContext(I18nContext);
+  if (!context) {
+    throw new Error("useI18n must be used within I18nProvider");
+  }
+  return context;
+}

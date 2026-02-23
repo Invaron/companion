@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { dismissInstallPrompt, isInstallPromptDismissed, shouldShowInstallPrompt } from "../lib/install";
+import { useI18n } from "../lib/i18n";
 
 export function InstallPrompt(): JSX.Element | null {
   const [visible, setVisible] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     // Check if we should show the prompt
@@ -22,13 +24,13 @@ export function InstallPrompt(): JSX.Element | null {
   return (
     <div className="install-prompt">
       <div className="install-prompt-content">
-        <h3>Install Companion</h3>
+        <h3>{t("Install Companion")}</h3>
         <p>
-          Add Companion to your home screen for the best experience with push notifications and offline access.
+          {t("Add Companion to your home screen for the best experience with push notifications and offline access.")}
         </p>
         <ol className="install-instructions">
           <li>
-            Tap the <strong>Share</strong> button{" "}
+            {t("Tap the Share button")}{" "}
             <svg
               width="16"
               height="16"
@@ -40,15 +42,15 @@ export function InstallPrompt(): JSX.Element | null {
               <path d="M4.5 7L8 3.5L11.5 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
               <path d="M2 11.5L2 14.5C2 14.7761 2.22386 15 2.5 15L13.5 15C13.7761 15 14 14.7761 14 14.5L14 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>{" "}
-            in Safari's toolbar
+            {t("in Safari's toolbar")}
           </li>
           <li>
-            Scroll down and tap <strong>"Add to Home Screen"</strong>
+            {t("Scroll down and tap \"Add to Home Screen\"")}
           </li>
-          <li>Tap <strong>Add</strong> to confirm</li>
+          <li>{t("Tap Add to confirm")}</li>
         </ol>
         <button type="button" onClick={handleDismiss} className="dismiss-button">
-          Got it
+          {t("Got it")}
         </button>
       </div>
     </div>
