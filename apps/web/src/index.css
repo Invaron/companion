@@ -2479,10 +2479,10 @@ button:disabled {
 
 /* iOS can occasionally flatten backdrop-filter in chat-tab mode; force the same glass pipeline. */
 body.chat-tab-active .tab-bar {
-  background: var(--footer-glass-bg);
-  backdrop-filter: blur(var(--footer-glass-blur));
-  -webkit-backdrop-filter: blur(var(--footer-glass-blur));
-  isolation: isolate;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  isolation: auto;
 }
 
 .tab-item {
@@ -3456,7 +3456,7 @@ body:not(.keyboard-open) .app-shell-chat-active .chat-messages {
   max-height: 112px;
   padding: 9px 11px;
   background: var(--input-bg);
-  border: none;
+  border: 1px solid var(--border-soft);
   border-radius: 18px;
   color: var(--text);
   font-size: 0.94rem;
