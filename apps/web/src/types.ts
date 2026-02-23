@@ -194,7 +194,7 @@ export interface CheckInDay {
 export interface Habit {
   id: string;
   name: string;
-  cadence: Cadence;
+  cadence: string;
   targetPerWeek: number;
   motivation?: string;
   streak: number;

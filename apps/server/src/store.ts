@@ -3901,7 +3901,7 @@ export class RuntimeStore {
     return rows.map((row) => ({
       id: row.id,
       name: row.name,
-      cadence: row.cadence as Cadence,
+      cadence: row.cadence,
       targetPerWeek: row.targetPerWeek,
       motivation: row.motivation ?? undefined,
       createdAt: row.createdAt
@@ -3951,7 +3951,7 @@ export class RuntimeStore {
     return {
       id: row.id,
       name: row.name,
-      cadence: row.cadence as Cadence,
+      cadence: row.cadence,
       targetPerWeek: row.targetPerWeek,
       motivation: row.motivation ?? undefined,
       createdAt: row.createdAt

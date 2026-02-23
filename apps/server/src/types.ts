@@ -479,7 +479,7 @@ export type Cadence = "daily" | "weekly";
 export interface Habit {
   id: string;
   name: string;
-  cadence: Cadence;
+  cadence: string;
   targetPerWeek: number;
   motivation?: string;
   createdAt: string;

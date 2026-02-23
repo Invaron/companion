@@ -509,8 +509,8 @@ export async function getHabits(): Promise<Habit[]> {
 
 export interface HabitUpdatePayload {
   name?: string;
-  cadence?: "daily" | "weekly";
-  targetPerWeek?: number;
+  cadence?: string;
+  targetPerWeek?: number | string;
   motivation?: string | null;
 }
 

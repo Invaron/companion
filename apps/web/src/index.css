@@ -941,11 +941,13 @@ button:disabled {
 }
 
 .noti-settings-card {
-  background: var(--card);
+  background: var(--card-bg, var(--card));
   border: 1px solid var(--card-border);
   border-radius: 14px;
   padding: 4px 0;
   overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .noti-settings-section-title {
@@ -3402,27 +3404,33 @@ body.keyboard-open .chat-overlay-backdrop {
 /* ── Account bar ── */
 .settings-account-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 14px 16px;
-  background: var(--card);
+  background: var(--card-bg, var(--card));
   border: 1px solid var(--card-border);
   border-radius: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .settings-account-info {
   min-width: 0;
-  flex: 1;
+  flex: 1 1 220px;
 }
 
 .settings-account-email {
   margin: 0;
   font-size: 0.85rem;
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
 }
 
 .settings-account-email strong {
@@ -3445,6 +3453,7 @@ body.keyboard-open .chat-overlay-backdrop {
   transition: all 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .settings-sign-out-btn:hover {
@@ -3460,10 +3469,12 @@ body.keyboard-open .chat-overlay-backdrop {
 
 /* ── Push notification card ── */
 .settings-push-card {
-  background: var(--card);
+  background: var(--card-bg, var(--card));
   border: 1px solid var(--card-border);
   border-radius: 14px;
   padding: 14px 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .settings-push-row {
@@ -4167,10 +4178,12 @@ body.keyboard-open .chat-overlay-backdrop {
 /* ── GDPR / Settings Delete ── */
 
 .settings-gdpr-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-soft);
+  background: var(--card-bg, var(--card));
+  border: 1px solid var(--card-border);
   border-radius: 14px;
   padding: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .settings-gdpr-info {
@@ -8026,10 +8039,12 @@ label small.muted {
    ══════════════════════════════════════════════════════════════════════════ */
 
 .plan-info-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--color-border, #374151);
+  background: var(--card-bg, var(--card));
+  border: 1px solid var(--card-border);
   border-radius: 1rem;
   padding: 1rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .plan-info-row {

@@ -256,11 +256,15 @@ export const functionDeclarations: FunctionDeclaration[] = [
         },
         cadence: {
           type: SchemaType.STRING,
-          description: "Cadence: daily or weekly. Defaults to daily."
+          description: "Cadence label (for example daily, weekly, monthly, weekdays, or custom). Defaults to daily."
         },
         targetPerWeek: {
-          type: SchemaType.NUMBER,
-          description: "Target check-ins per week. Defaults based on cadence."
+          type: SchemaType.STRING,
+          description: "Target amount as text. Use values like '5' or '∞'/'infinity'. Defaults based on cadence."
+        },
+        target: {
+          type: SchemaType.STRING,
+          description: "Alias of targetPerWeek. Supports numeric text or '∞'/'infinity'."
         },
         motivation: {
           type: SchemaType.STRING,
@@ -2227,10 +2231,64 @@ export function handleUpdateGoalCheckIn(
   };
 }
 
-function parseCadence(value: unknown, fallback: "daily" | "weekly"): "daily" | "weekly" {
+const UNBOUNDED_HABIT_TARGET = -1;
+const MAX_HABIT_TARGET = 10000;
+const HABIT_INFINITY_TOKENS = new Set([
+  "∞",
+  "inf",
+  "infinite",
+  "infinity",
+  "unlimited",
+  "unbounded",
+  "nolimit",
+  "no-limit",
+  "no_limit",
+  "no limit"
+]);
+
+function parseGoalCadence(value: unknown, fallback: "daily" | "weekly"): "daily" | "weekly" {
   const raw = asTrimmedString(value)?.toLowerCase();
   if (raw === "daily" || raw === "weekly") {
     return raw;
+  }
+  return fallback;
+}
+
+function parseHabitCadence(value: unknown, fallback = "daily"): string {
+  const raw = asTrimmedString(value);
+  if (!raw) {
+    return fallback;
+  }
+  return raw.slice(0, 60);
+}
+
+function parseHabitTarget(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value) && Number.isInteger(value)) {
+    if (value === UNBOUNDED_HABIT_TARGET) {
+      return value;
+    }
+    if (value >= 1 && value <= MAX_HABIT_TARGET) {
+      return value;
+    }
+    return fallback;
+  }
+
+  const raw = asTrimmedString(value);
+  if (!raw) {
+    return fallback;
+  }
+  const normalized = raw.toLowerCase().replace(/\s+/g, "");
+  if (HABIT_INFINITY_TOKENS.has(normalized)) {
+    return UNBOUNDED_HABIT_TARGET;
+  }
+  if (/^-?\d+$/.test(raw)) {
+    const parsed = Number.parseInt(raw, 10);
+    if (parsed === UNBOUNDED_HABIT_TARGET) {
+      return parsed;
+    }
+    if (parsed >= 1 && parsed <= MAX_HABIT_TARGET) {
+      return parsed;
+    }
   }
   return fallback;
 }
@@ -2256,8 +2314,11 @@ export function handleCreateHabit(
     };
   }
 
-  const cadence = parseCadence(args.cadence, "daily");
-  const targetPerWeek = clampNumber(args.targetPerWeek, cadence === "daily" ? 5 : 3, 1, 14);
+  const cadence = parseHabitCadence(args.cadence, "daily");
+  const cadenceLower = cadence.toLowerCase();
+  const fallbackTarget = cadenceLower === "daily" ? 5 : cadenceLower === "weekly" ? 3 : 1;
+  const targetRaw = Object.prototype.hasOwnProperty.call(args, "target") ? args.target : args.targetPerWeek;
+  const targetPerWeek = parseHabitTarget(targetRaw, fallbackTarget);
   const motivation = asTrimmedString(args.motivation) ?? undefined;
 
   const habit = store.createHabit(userId, {
@@ -2374,7 +2435,7 @@ export function handleCreateGoal(
     };
   }
 
-  const cadence = parseCadence(args.cadence, "weekly");
+  const cadence = parseGoalCadence(args.cadence, "weekly");
   const targetCount = clampNumber(args.targetCount, 1, 1, 365);
   const dueDateRaw = asTrimmedString(args.dueDate);
   const dueDate = dueDateRaw
@@ -5077,14 +5138,13 @@ export function executePendingChatAction(
         };
       }
 
-      const cadenceRaw = asTrimmedString(pendingAction.payload.cadence)?.toLowerCase();
-      const cadence = cadenceRaw === "weekly" ? "weekly" : "daily";
-      const targetPerWeek = clampNumber(
-        pendingAction.payload.targetPerWeek,
-        cadence === "daily" ? 5 : 3,
-        1,
-        7
-      );
+      const cadence = parseHabitCadence(pendingAction.payload.cadence, "daily");
+      const cadenceLower = cadence.toLowerCase();
+      const fallbackTarget = cadenceLower === "daily" ? 5 : cadenceLower === "weekly" ? 3 : 1;
+      const targetSource = Object.prototype.hasOwnProperty.call(pendingAction.payload, "target")
+        ? pendingAction.payload.target
+        : pendingAction.payload.targetPerWeek;
+      const targetPerWeek = parseHabitTarget(targetSource, fallbackTarget);
       const motivation = asTrimmedString(pendingAction.payload.motivation);
 
       const existingHabit = store
@@ -5133,13 +5193,18 @@ export function executePendingChatAction(
         patch.name = name;
       }
 
-      const cadenceRaw = asTrimmedString(pendingAction.payload.cadence)?.toLowerCase();
-      if (cadenceRaw === "daily" || cadenceRaw === "weekly") {
-        patch.cadence = cadenceRaw;
+      const cadence = parseHabitCadence(pendingAction.payload.cadence, "");
+      if (cadence) {
+        patch.cadence = cadence;
       }
 
-      if (typeof pendingAction.payload.targetPerWeek === "number") {
-        patch.targetPerWeek = clampNumber(pendingAction.payload.targetPerWeek, 5, 1, 7);
+      const hasTarget = Object.prototype.hasOwnProperty.call(pendingAction.payload, "targetPerWeek")
+        || Object.prototype.hasOwnProperty.call(pendingAction.payload, "target");
+      if (hasTarget) {
+        const targetSource = Object.prototype.hasOwnProperty.call(pendingAction.payload, "target")
+          ? pendingAction.payload.target
+          : pendingAction.payload.targetPerWeek;
+        patch.targetPerWeek = parseHabitTarget(targetSource, 5);
       }
 
       if (Object.prototype.hasOwnProperty.call(pendingAction.payload, "motivation")) {

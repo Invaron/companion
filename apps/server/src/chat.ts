@@ -504,6 +504,9 @@ function detectHabitGoalAutocaptureSuggestion(
   history: ChatMessage[],
   pendingActions: ChatPendingAction[]
 ): HabitGoalAutocaptureSuggestion | null {
+  const formatHabitTarget = (targetPerWeek: number): string =>
+    targetPerWeek <= -1 ? "∞" : String(targetPerWeek);
+
   const input = userInput.trim();
   if (!input || input.length < 8) {
     return null;
@@ -560,8 +563,11 @@ function detectHabitGoalAutocaptureSuggestion(
     );
 
     if (existingHabit) {
+      const habitHasUnboundedTarget = existingHabit.targetPerWeek <= -1;
       const nextTargetPerWeek = struggleSignal
-        ? Math.max(1, existingHabit.targetPerWeek - 1)
+        ? habitHasUnboundedTarget
+          ? existingHabit.targetPerWeek
+          : Math.max(1, existingHabit.targetPerWeek - 1)
         : existingHabit.targetPerWeek;
       const shouldAdjustTarget = nextTargetPerWeek !== existingHabit.targetPerWeek;
       const payload: Record<string, unknown> = {
@@ -575,12 +581,12 @@ function detectHabitGoalAutocaptureSuggestion(
       return {
         actionType: "update-habit",
         summary: shouldAdjustTarget
-          ? `Adjust habit "${existingHabit.name}" to ${nextTargetPerWeek}/week`
+          ? `Adjust habit "${existingHabit.name}" target to ${formatHabitTarget(nextTargetPerWeek)}`
           : `Update habit "${existingHabit.name}" motivation`,
         payload,
         rationale,
         prompt: shouldAdjustTarget
-          ? `I can adjust **${existingHabit.name}** to ${nextTargetPerWeek}/week so it is easier to stay consistent.`
+          ? `I can adjust **${existingHabit.name}** to target **${formatHabitTarget(nextTargetPerWeek)}** so it is easier to stay consistent.`
           : `I can keep **${existingHabit.name}** and update its motivation from what you just said.`
       };
     }
@@ -589,7 +595,7 @@ function detectHabitGoalAutocaptureSuggestion(
     const targetPerWeek = cadence === "daily" ? 5 : 3;
     return {
       actionType: "create-habit",
-      summary: `Create habit "${label}" (${cadence}, ${targetPerWeek}/week)`,
+      summary: `Create habit "${label}" (${cadence}, target ${formatHabitTarget(targetPerWeek)})`,
       payload: {
         name: label,
         cadence,
@@ -597,7 +603,7 @@ function detectHabitGoalAutocaptureSuggestion(
         motivation: label
       },
       rationale,
-      prompt: `I can create a new habit **${label}** (${cadence}, ${targetPerWeek}/week) and track it from today.`
+      prompt: `I can create a new habit **${label}** (${cadence}, target **${formatHabitTarget(targetPerWeek)}**) and track it from today.`
     };
   }
 

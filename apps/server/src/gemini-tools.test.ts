@@ -495,6 +495,23 @@ describe("gemini-tools", () => {
       expect(store.getHabitsWithStatus(userId).length).toBe(1);
     });
 
+    it("creates a habit with custom cadence and infinity target", () => {
+      const result = handleCreateHabit(store, userId, {
+        name: "Read research papers",
+        cadence: "monthly",
+        target: "∞"
+      });
+
+      if ("error" in result) {
+        throw new Error(result.error);
+      }
+
+      expect(result.success).toBe(true);
+      expect(result.created).toBe(true);
+      expect(result.habit.cadence).toBe("monthly");
+      expect(result.habit.targetPerWeek).toBe(-1);
+    });
+
     it("returns non-deleted success when deleting habit with empty state", () => {
       const result = handleDeleteHabit(store, userId, {
         habitName: "study sprint"

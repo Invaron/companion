@@ -13,6 +13,23 @@ interface BusyState {
   id: string;
 }
 
+const UNBOUNDED_HABIT_TARGET = -1;
+
+function formatHabitCadence(cadence: string): string {
+  const trimmed = cadence.trim();
+  if (!trimmed) {
+    return "Flexible";
+  }
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+function formatHabitTarget(targetPerWeek: number): string {
+  if (!Number.isFinite(targetPerWeek) || targetPerWeek <= UNBOUNDED_HABIT_TARGET) {
+    return "∞";
+  }
+  return String(targetPerWeek);
+}
+
 export function HabitsGoalsView(): JSX.Element {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -70,7 +87,7 @@ export function HabitsGoalsView(): JSX.Element {
             <p className="eyebrow">Habit</p>
             <h3>{habit.name}</h3>
             <p className="muted">
-              {habit.cadence === "daily" ? "Daily" : "Weekly"} • {habit.targetPerWeek}/week
+              {formatHabitCadence(habit.cadence)} • Target {formatHabitTarget(habit.targetPerWeek)}
               {habit.streak > 0 ? ` • ${habit.streak} day streak` : ""}
             </p>
             {habit.motivation && <p className="muted">{habit.motivation}</p>}

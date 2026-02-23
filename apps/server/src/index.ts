@@ -2318,11 +2318,70 @@ const deadlineImportSchema = z.object({
   effortConfidence: z.enum(["low", "medium", "high"]).optional()
 });
 
+const UNBOUNDED_HABIT_TARGET = -1;
+const MAX_HABIT_TARGET = 10000;
+const HABIT_INFINITY_TOKENS = new Set([
+  "∞",
+  "inf",
+  "infinite",
+  "infinity",
+  "unlimited",
+  "unbounded",
+  "nolimit",
+  "no-limit",
+  "no_limit",
+  "no limit"
+]);
+
+function normalizeHabitTarget(raw: unknown): number | null {
+  if (typeof raw === "number" && Number.isFinite(raw) && Number.isInteger(raw)) {
+    return raw;
+  }
+
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const normalized = trimmed.toLowerCase().replace(/\s+/g, "");
+    if (HABIT_INFINITY_TOKENS.has(normalized)) {
+      return UNBOUNDED_HABIT_TARGET;
+    }
+    if (/^-?\d+$/.test(trimmed)) {
+      return Number.parseInt(trimmed, 10);
+    }
+  }
+
+  return null;
+}
+
+const habitTargetSchema = z.union([z.number(), z.string()]).transform((value, ctx) => {
+  const target = normalizeHabitTarget(value);
+  if (target === null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "targetPerWeek must be an integer or '∞'/'infinity'."
+    });
+    return z.NEVER;
+  }
+  if (target === UNBOUNDED_HABIT_TARGET) {
+    return target;
+  }
+  if (target < 1 || target > MAX_HABIT_TARGET) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `targetPerWeek must be ${UNBOUNDED_HABIT_TARGET} (infinite) or between 1 and ${MAX_HABIT_TARGET}.`
+    });
+    return z.NEVER;
+  }
+  return target;
+});
+
 const habitImportSchema = z.object({
   id: z.string().min(1),
   name: z.string().trim().min(1).max(120),
-  cadence: z.enum(["daily", "weekly"]),
-  targetPerWeek: z.number().int().min(1).max(7),
+  cadence: z.string().trim().min(1).max(60),
+  targetPerWeek: habitTargetSchema,
   motivation: z.string().trim().max(300).optional(),
   createdAt: z.string().datetime()
 });
@@ -2489,16 +2548,16 @@ const deadlineStatusConfirmSchema = z.object({
 
 const habitCreateSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  cadence: z.enum(["daily", "weekly"]).default("daily"),
-  targetPerWeek: z.number().int().min(1).max(7).default(5),
+  cadence: z.string().trim().min(1).max(60).default("daily"),
+  targetPerWeek: habitTargetSchema.default(5),
   motivation: z.string().trim().max(240).optional()
 });
 
 const habitUpdateSchema = z
   .object({
     name: z.string().trim().min(1).max(120).optional(),
-    cadence: z.enum(["daily", "weekly"]).optional(),
-    targetPerWeek: z.number().int().min(1).max(7).optional(),
+    cadence: z.string().trim().min(1).max(60).optional(),
+    targetPerWeek: habitTargetSchema.optional(),
     motivation: z.string().trim().max(240).nullable().optional()
   })
   .refine((value) => Object.keys(value).length > 0, "At least one field is required");
