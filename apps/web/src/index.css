@@ -2450,7 +2450,7 @@ button:disabled {
   -webkit-backdrop-filter: blur(20px);
   padding: 8px 0 max(8px, env(safe-area-inset-bottom));
   z-index: 100;
-  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   transition: transform 0.22s ease, opacity 0.22s ease, visibility 0.22s ease;
 }
 
@@ -2546,6 +2546,8 @@ button:disabled {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 101;
   animation: chat-overlay-fade-in 0.2s ease both;
   -webkit-tap-highlight-color: transparent;
