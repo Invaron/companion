@@ -194,7 +194,8 @@ body {
 }
 
 html {
-  background: #091019;
+  background: var(--chat-mood-active-bg, #091019);
+  transition: background 1.2s ease;
 }
 
 body.chat-tab-active {
@@ -5616,19 +5617,6 @@ body.keyboard-open.chat-tab-active {
 
 /* Keyboard-up chat tab: keep one continuous mood backdrop behind composer and keyboard gap. */
 body.keyboard-open.chat-tab-active .app-shell-chat-active {
-  background: var(--chat-mood-active-bg, var(--chat-mood-bg, var(--surface-soft)));
-}
-
-/* Fill keyboard-gap region with mood tint without changing composer box height. */
-body.keyboard-open.chat-tab-active::after {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--keyboard-gap);
-  pointer-events: none;
-  z-index: 5;
   background: var(--chat-mood-active-bg, var(--chat-mood-bg, var(--surface-soft)));
 }
 
