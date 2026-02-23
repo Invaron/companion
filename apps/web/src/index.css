@@ -6,7 +6,6 @@
   --tab-bar-safe-space: max(62px, calc(54px + env(safe-area-inset-bottom)));
   --bg: radial-gradient(circle at top right, #1f5a76 0%, #0f1f2f 35%, #091019 100%);
   --card: rgba(255, 255, 255, 0.08);
-  --card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.045) 100%);
   --card-border: rgba(255, 255, 255, 0.2);
   --surface: rgba(7, 14, 20, 0.3);
   --surface-strong: rgba(3, 7, 11, 0.45);
@@ -42,7 +41,6 @@
 :root[data-color-theme="ocean-gold"] {
   --bg: radial-gradient(circle at top right, #1f5a76 0%, #0f1f2f 35%, #091019 100%);
   --card: rgba(255, 255, 255, 0.08);
-  --card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.045) 100%);
   --card-border: rgba(255, 255, 255, 0.2);
   --surface: rgba(7, 14, 20, 0.3);
   --surface-strong: rgba(3, 7, 11, 0.45);
@@ -78,7 +76,6 @@
 :root[data-color-theme="emerald-dusk"] {
   --bg: radial-gradient(circle at top right, #165954 0%, #0e2227 40%, #081015 100%);
   --card: rgba(232, 249, 245, 0.08);
-  --card-bg: linear-gradient(180deg, rgba(225, 250, 242, 0.11) 0%, rgba(173, 232, 215, 0.05) 100%);
   --card-border: rgba(190, 237, 223, 0.22);
   --surface: rgba(8, 23, 21, 0.32);
   --surface-strong: rgba(4, 13, 12, 0.52);
@@ -114,7 +111,6 @@
 :root[data-color-theme="sunset-indigo"] {
   --bg: radial-gradient(circle at top right, #4a2f67 0%, #181025 42%, #0c0b14 100%);
   --card: rgba(244, 234, 255, 0.08);
-  --card-bg: linear-gradient(180deg, rgba(247, 232, 255, 0.11) 0%, rgba(225, 198, 255, 0.05) 100%);
   --card-border: rgba(225, 198, 255, 0.24);
   --surface: rgba(22, 13, 34, 0.36);
   --surface-strong: rgba(11, 8, 18, 0.56);
@@ -151,7 +147,6 @@
   color-scheme: light;
   --bg: radial-gradient(circle at top right, #e2ecff 0%, #f7f9fd 45%, #ffffff 100%);
   --card: rgba(255, 255, 255, 0.9);
-  --card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 252, 255, 0.9) 100%);
   --card-border: rgba(15, 23, 42, 0.12);
   --surface: rgba(255, 255, 255, 0.95);
   --surface-strong: rgba(255, 255, 255, 0.98);
@@ -169,7 +164,6 @@
     color-scheme: light;
     --bg: radial-gradient(circle at top right, #e2ecff 0%, #f7f9fd 45%, #ffffff 100%);
     --card: rgba(255, 255, 255, 0.9);
-    --card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 252, 255, 0.9) 100%);
     --card-border: rgba(15, 23, 42, 0.12);
     --surface: rgba(255, 255, 255, 0.95);
     --surface-strong: rgba(255, 255, 255, 0.98);
@@ -555,14 +549,12 @@ button:disabled {
 
 /* ──────────── Schedule Card ──────────── */
 .schedule-card {
-  background: var(--card-bg, var(--card));
+  background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 16px;
   display: grid;
   gap: 14px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .schedule-card-header {
@@ -755,14 +747,12 @@ button:disabled {
 
 /* ──────────── Deadline Card ──────────── */
 .deadline-card {
-  background: var(--card-bg, var(--card));
+  background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 16px;
   display: grid;
   gap: 14px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .deadline-card-header {
@@ -1592,13 +1582,11 @@ button:disabled {
 }
 
 .habit-card {
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 12px;
-  background: var(--card-bg, var(--card));
+  background: var(--surface);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .goal-card {
@@ -3874,7 +3862,7 @@ body.keyboard-open .chat-overlay-backdrop {
 }
 
 .intg-card {
-  background: var(--card-bg, var(--card));
+  background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 14px;
   padding: 14px;
@@ -3883,8 +3871,6 @@ body.keyboard-open .chat-overlay-backdrop {
   gap: 6px;
   transition: opacity 0.15s;
   min-width: 0;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .intg-card-inactive {
@@ -4218,15 +4204,13 @@ body.keyboard-open .chat-overlay-backdrop {
 }
 
 .context-card {
-  background: var(--card-bg, var(--card));
+  background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .context-card h3 {
@@ -5671,14 +5655,12 @@ body.keyboard-open .pull-to-refresh-container {
 }
 
 .summary-tile {
-  border: 1px solid var(--card-border);
-  background: var(--card-bg, var(--card));
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
   border-radius: 12px;
   padding: 10px;
   display: grid;
   gap: 4px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .summary-label {
@@ -5697,14 +5679,12 @@ body.keyboard-open .pull-to-refresh-container {
 }
 
 .nutrition-card {
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
-  background: var(--card-bg, var(--card));
+  background: var(--surface);
   padding: 12px;
   display: grid;
   gap: 10px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .nutrition-card h3 {
@@ -6726,14 +6706,12 @@ body.keyboard-open .pull-to-refresh-container {
 }
 
 .study-plan-adherence {
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
-  background: var(--card-bg, var(--card));
+  background: var(--surface);
   padding: 10px;
   display: grid;
   gap: 8px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .study-plan-adherence-header {
@@ -6775,14 +6753,12 @@ body.keyboard-open .pull-to-refresh-container {
 }
 
 .study-plan-day {
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
-  background: var(--card-bg, var(--card));
+  background: var(--surface);
   padding: 12px;
   display: grid;
   gap: 10px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .study-plan-day-header {
@@ -6837,14 +6813,12 @@ body.keyboard-open .pull-to-refresh-container {
 }
 
 .study-plan-session {
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
-  background: var(--card-bg, var(--card));
+  background: var(--surface-soft);
   padding: 10px;
   display: grid;
   gap: 6px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .study-plan-session-header {
@@ -6968,13 +6942,11 @@ body.keyboard-open .pull-to-refresh-container {
 
 .study-plan-checkin-panel {
   border: 1px solid var(--accent-border);
-  background: var(--card-bg, var(--card));
+  background: var(--surface);
   border-radius: 10px;
   padding: 10px;
   display: grid;
   gap: 10px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .study-plan-checkin-header {
@@ -7307,14 +7279,12 @@ label small.muted {
 }
 
 .analytics-summary-card {
-  background: var(--card-bg, var(--card));
-  border: 1px solid var(--card-border);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
   border-radius: 14px;
   padding: 14px;
   display: grid;
   gap: 10px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .analytics-summary-hero {
@@ -7366,14 +7336,12 @@ label small.muted {
 
 .analytics-metric-pill {
   margin: 0;
-  background: var(--card-bg, var(--card));
+  background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 10px;
   padding: 10px;
   font-size: 0.84rem;
   color: var(--muted);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .analytics-title {
@@ -7401,14 +7369,12 @@ label small.muted {
 }
 
 .analytics-card {
-  background: var(--card-bg, var(--card));
-  border: 1px solid var(--card-border);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 14px;
   display: grid;
   gap: 8px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .analytics-card-risk {
@@ -7559,14 +7525,12 @@ label small.muted {
 }
 
 .recommendations-panel {
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
-  background: var(--card-bg, var(--card));
+  background: var(--surface);
   padding: 12px;
   display: grid;
   gap: 10px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .recommendations-header {
@@ -7598,14 +7562,12 @@ label small.muted {
 }
 
 .recommendation-card {
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
-  background: var(--card-bg, var(--card));
+  background: var(--surface-soft);
   padding: 10px;
   display: grid;
   gap: 7px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .recommendation-badges {
@@ -7692,14 +7654,12 @@ label small.muted {
 
 /* Reminders Card */
 .reminders-card {
-  background: var(--card-bg, var(--card));
+  background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 16px;
   display: grid;
   gap: 14px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .reminders-card-header {
