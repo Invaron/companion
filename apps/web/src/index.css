@@ -2727,7 +2727,7 @@ body.keyboard-open .chat-overlay-backdrop {
   max-height: 100%;
   min-height: 0;
   width: 100%;
-  background: var(--surface-soft);
+  background: var(--chat-mood-bg, var(--surface-soft));
   border-radius: 16px;
   overflow: hidden;
   position: relative;
@@ -2737,32 +2737,38 @@ body.keyboard-open .chat-overlay-backdrop {
 /* Chat mood backgrounds — gradient shifts driven by Gemini response tone */
 .app-shell.chat-mood-neutral,
 .chat-view.chat-mood-neutral {
-  background: var(--surface-soft);
+  --chat-mood-bg: var(--surface-soft);
+  background: var(--chat-mood-bg);
 }
 
 .app-shell.chat-mood-encouraging,
 .chat-view.chat-mood-encouraging {
-  background: linear-gradient(160deg, rgba(125, 211, 168, 0.18) 0%, rgba(125, 211, 168, 0.06) 50%, var(--surface-soft) 85%);
+  --chat-mood-bg: linear-gradient(160deg, rgba(125, 211, 168, 0.18) 0%, rgba(125, 211, 168, 0.06) 50%, var(--surface-soft) 85%);
+  background: var(--chat-mood-bg);
 }
 
 .app-shell.chat-mood-focused,
 .chat-view.chat-mood-focused {
-  background: linear-gradient(160deg, rgba(100, 160, 240, 0.18) 0%, rgba(100, 160, 240, 0.06) 50%, var(--surface-soft) 85%);
+  --chat-mood-bg: linear-gradient(160deg, rgba(100, 160, 240, 0.18) 0%, rgba(100, 160, 240, 0.06) 50%, var(--surface-soft) 85%);
+  background: var(--chat-mood-bg);
 }
 
 .app-shell.chat-mood-celebratory,
 .chat-view.chat-mood-celebratory {
-  background: linear-gradient(160deg, rgba(246, 195, 127, 0.22) 0%, rgba(125, 211, 168, 0.10) 50%, var(--surface-soft) 100%);
+  --chat-mood-bg: linear-gradient(160deg, rgba(246, 195, 127, 0.22) 0%, rgba(125, 211, 168, 0.10) 50%, var(--surface-soft) 100%);
+  background: var(--chat-mood-bg);
 }
 
 .app-shell.chat-mood-empathetic,
 .chat-view.chat-mood-empathetic {
-  background: linear-gradient(160deg, rgba(180, 140, 220, 0.18) 0%, rgba(180, 140, 220, 0.06) 50%, var(--surface-soft) 85%);
+  --chat-mood-bg: linear-gradient(160deg, rgba(180, 140, 220, 0.18) 0%, rgba(180, 140, 220, 0.06) 50%, var(--surface-soft) 85%);
+  background: var(--chat-mood-bg);
 }
 
 .app-shell.chat-mood-urgent,
 .chat-view.chat-mood-urgent {
-  background: linear-gradient(160deg, rgba(255, 138, 128, 0.18) 0%, rgba(255, 138, 128, 0.06) 50%, var(--surface-soft) 85%);
+  --chat-mood-bg: linear-gradient(160deg, rgba(255, 138, 128, 0.18) 0%, rgba(255, 138, 128, 0.06) 50%, var(--surface-soft) 85%);
+  background: var(--chat-mood-bg);
 }
 
 /* Mood burst particle overlay */
@@ -5599,19 +5605,20 @@ body.keyboard-open.chat-tab-active .app-shell-chat-active .chat-messages {
   padding-bottom: 8px;
   margin-bottom: 54px;
   scroll-padding-bottom: 54px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 12px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 12px), transparent 100%);
 }
 
-/* Keyboard-up chat tab should use the same dark "void" surface as the keyboard gap area. */
-body.keyboard-open.chat-tab-active {
-  background: #0b1118;
+/* Keyboard-up chat tab: keep one continuous mood backdrop behind composer and keyboard gap. */
+body.keyboard-open.chat-tab-active .app-shell-chat-active {
+  background: var(--chat-mood-bg, var(--surface-soft));
 }
 
-body.keyboard-open.chat-tab-active .app-shell-chat-active,
 body.keyboard-open.chat-tab-active .app-shell-chat-active .tab-content-area,
 body.keyboard-open.chat-tab-active .app-shell-chat-active .chat-tab,
 body.keyboard-open.chat-tab-active .app-shell-chat-active .chat-view,
 body.keyboard-open.chat-tab-active .app-shell-chat-active .chat-messages {
-  background: #0b1118 !important;
+  background: transparent !important;
 }
 
 body.keyboard-open .chat-bubble {
