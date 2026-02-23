@@ -33,6 +33,7 @@ interface ConnectorMeta {
   label: string;
   icon: { src: string; alt: string };
   description: string;
+  readMoreItems: string[];
   type: "token" | "oauth" | "config" | "url";
   placeholder?: string;
   configFields?: { key: string; label: string; placeholder: string; type?: "text" | "password" | "url" }[];
@@ -43,6 +44,7 @@ interface GeminiCard {
   label: string;
   icon: { src: string; alt: string };
   description: string;
+  readMoreItems: string[];
 }
 
 interface ConnectorsViewProps {
@@ -68,6 +70,11 @@ const CONNECTORS: ConnectorMeta[] = [
     label: "Canvas LMS",
     icon: { src: iconPath("icons/integrations/canvas.svg"), alt: "Canvas" },
     description: "Courses, assignments, deadlines, and grades from your Canvas instance.",
+    readMoreItems: [
+      "Import assignments and due dates into your schedule and deadline tracking.",
+      "Sync course names and modules to improve planning and chat context.",
+      "Set Canvas course scope so only selected courses are tracked."
+    ],
     type: "token",
     placeholder: "Paste your Canvas access token"
   },
@@ -75,7 +82,12 @@ const CONNECTORS: ConnectorMeta[] = [
     service: "mcp",
     label: "Connected Apps",
     icon: { src: iconPath("icons/integrations/connected-apps-custom.svg"), alt: "Connected apps" },
-    description: "Connect trusted external apps like GitHub.",
+    description: "Connect trusted external apps like GitHub and Notion.",
+    readMoreItems: [
+      "Connect external tools so Gemini can pull context from services you already use.",
+      "Use connected app data in chat, then write outcomes back into Companion schedules and deadlines.",
+      "Tool exposure is budgeted automatically and scales with how many apps you connect."
+    ],
     type: "config"
   },
   {
@@ -83,6 +95,11 @@ const CONNECTORS: ConnectorMeta[] = [
     label: "Withings Health",
     icon: { src: iconPath("icons/integrations/withings.png"), alt: "Withings" },
     description: "Sleep, weight, and health data from Withings devices.",
+    readMoreItems: [
+      "Sync sleep, weight, and body metrics for trend-aware coaching.",
+      "Use health context in Gemini summaries and nudges.",
+      "Disconnect anytime to stop future sync."
+    ],
     type: "oauth"
   },
   {
@@ -90,6 +107,11 @@ const CONNECTORS: ConnectorMeta[] = [
     label: "TP EduCloud Schedule",
     icon: { src: iconPath("icons/integrations/tp.svg"), alt: "TP EduCloud" },
     description: "Lecture schedule via iCal subscription from TP.",
+    readMoreItems: [
+      "Import lecture events from TP into your schedule timeline.",
+      "Keep schedule blocks refreshed when the iCal feed changes.",
+      "Use course context from TP when importing external deadlines."
+    ],
     type: "url",
     placeholder: "Paste your TP iCal URL here"
   }
@@ -99,10 +121,16 @@ const GEMINI_CARD: GeminiCard = {
   service: "gemini",
   label: "Gemini AI",
   icon: { src: iconPath("icons/integrations/gemini.svg"), alt: "Gemini" },
-  description: "Conversational AI, summaries, coaching"
+  description: "Conversational AI, summaries, coaching",
+  readMoreItems: [
+    "Ask Gemini to create or update schedule blocks, deadlines, habits, and food logs.",
+    "Get summaries and coaching from your recent activity.",
+    "Live hydration refreshes affected tabs after tool-driven updates."
+  ]
 };
 
 const GITHUB_MCP_ICON = { src: iconPath("icons/integrations/github.svg"), alt: "GitHub" };
+const NOTION_MCP_ICON = { src: iconPath("icons/integrations/notion.svg"), alt: "Notion" };
 
 const FREE_TIER_SERVICES: ConnectorService[] = ["canvas", "tp_schedule"];
 const CONNECTED_APPS_SERVICES: ConnectorService[] = ["mcp"];
@@ -141,7 +169,14 @@ function isGithubMcpText(value: string): boolean {
   return /github/i.test(value);
 }
 
+function isNotionMcpText(value: string): boolean {
+  return /notion/i.test(value);
+}
+
 function getMcpTemplateIcon(template: McpServerTemplate): { src: string; alt: string } | null {
+  if (isNotionMcpText(template.provider) || isNotionMcpText(template.label)) {
+    return NOTION_MCP_ICON;
+  }
   if (isGithubMcpText(template.provider) || isGithubMcpText(template.label)) {
     return GITHUB_MCP_ICON;
   }
@@ -149,10 +184,37 @@ function getMcpTemplateIcon(template: McpServerTemplate): { src: string; alt: st
 }
 
 function getMcpServerIcon(server: McpServerConfig): { src: string; alt: string } | null {
+  if (isNotionMcpText(server.label) || isNotionMcpText(server.serverUrl)) {
+    return NOTION_MCP_ICON;
+  }
   if (isGithubMcpText(server.label) || isGithubMcpText(server.serverUrl)) {
     return GITHUB_MCP_ICON;
   }
   return null;
+}
+
+function getMcpTemplateReadMoreItems(template: McpServerTemplate): string[] {
+  if (isGithubMcpText(template.provider) || isGithubMcpText(template.label)) {
+    return [
+      "Search repositories and read files for course and project context.",
+      "Extract deadlines from docs and migrate them into your Companion schedule.",
+      "Read-only template by default to avoid unintended repository writes."
+    ];
+  }
+
+  if (isNotionMcpText(template.provider) || isNotionMcpText(template.label)) {
+    return [
+      "Search Notion pages and databases from your workspace.",
+      "Read Notion docs in chat context for planning and study support.",
+      "Use server-exposed create or update tools when available."
+    ];
+  }
+
+  return [
+    "Expose selected external tools to Gemini inside chat.",
+    "Use app context in planning flows and task execution.",
+    "Remove the app at any time from Connected Apps."
+  ];
 }
 
 export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JSX.Element {
@@ -515,6 +577,15 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
           </div>
         </div>
 
+        <details className="connector-read-more">
+          <summary>{t("Read more")}</summary>
+          <ul className="connector-read-more-list">
+            {connector.readMoreItems.map((item) => (
+              <li key={item}>{t(item)}</li>
+            ))}
+          </ul>
+        </details>
+
         {connected && (
           <div className="connector-actions">
             {connector.service !== "mcp" && (
@@ -645,6 +716,14 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                 </div>
                                 <p className="connector-mcp-template-title">{template.label}</p>
                                 <p className="connector-mcp-template-description">{template.description}</p>
+                                <details className="connector-read-more connector-read-more-compact">
+                                  <summary>{t("Read more")}</summary>
+                                  <ul className="connector-read-more-list">
+                                    {getMcpTemplateReadMoreItems(template).map((item) => (
+                                      <li key={item}>{t(item)}</li>
+                                    ))}
+                                  </ul>
+                                </details>
                                 <div className="connector-mcp-template-actions">
                                   <button
                                     type="button"
@@ -725,6 +804,14 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                           )}
                         </div>
                         <p className="connector-help-text">{t(withingsConnector.description)}</p>
+                        <details className="connector-read-more connector-read-more-compact">
+                          <summary>{t("Read more")}</summary>
+                          <ul className="connector-read-more-list">
+                            {withingsConnector.readMoreItems.map((item) => (
+                              <li key={item}>{t(item)}</li>
+                            ))}
+                          </ul>
+                        </details>
                         {withingsConnected ? (
                           <button
                             className="connector-disconnect-btn"
@@ -867,14 +954,19 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
               )}
             </div>
           </div>
+          <details className="connector-read-more">
+            <summary>{t("Read more")}</summary>
+            <ul className="connector-read-more-list">
+              {GEMINI_CARD.readMoreItems.map((item) => (
+                <li key={item}>{t(item)}</li>
+              ))}
+            </ul>
+          </details>
         </div>
         {freeTierConnectors.map(renderConnectorCard)}
       </section>
 
       <section className="connector-section">
-        <div className="connector-section-head">
-          <h4 className="connector-section-title">{t("Connected Apps")}</h4>
-        </div>
         {isPaidPlan ? (
           connectedAppConnectors.map(renderConnectorCard)
         ) : (
@@ -883,7 +975,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
               <span className="connector-icon">🔒</span>
               <div className="connector-info">
                 <span className="connector-label">{t("Upgrade to unlock Connected Apps")}</span>
-                <span className="connector-desc">{t("Connect external apps like GitHub and Withings.")}</span>
+                <span className="connector-desc">{t("Connect external apps like GitHub, Notion, and Withings.")}</span>
               </div>
               <div className="connector-status">
                 <span className="connector-badge connector-badge-disconnected">{t("Paid plan")}</span>

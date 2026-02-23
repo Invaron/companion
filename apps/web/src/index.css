@@ -4954,6 +4954,52 @@ body.keyboard-open .chat-overlay-backdrop {
   flex-shrink: 0;
 }
 
+.connector-read-more {
+  margin: 0;
+  padding: 0 16px 12px;
+}
+
+.connector-read-more summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.connector-read-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.connector-read-more summary::before {
+  content: "▸";
+  font-size: 0.7rem;
+  opacity: 0.9;
+  transition: transform 0.15s ease;
+}
+
+.connector-read-more[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.connector-read-more-list {
+  margin: 8px 0 0;
+  padding: 0 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.connector-read-more-compact {
+  padding: 2px 0 4px;
+}
+
 .connector-badge {
   font-size: 0.72rem;
   font-weight: 600;

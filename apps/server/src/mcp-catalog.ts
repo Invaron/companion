@@ -39,6 +39,21 @@ const MCP_SERVER_TEMPLATES: readonly McpServerTemplate[] = [
       "list_releases",
       "get_latest_release"
     ]
+  },
+  {
+    id: "notion_workspace",
+    provider: "Notion",
+    label: "Notion Workspace",
+    description: "Search and work with your Notion pages and databases.",
+    serverUrl: "https://mcp.notion.com/mcp",
+    docsUrl: "https://www.notion.com/help/notion-mcp-server",
+    verified: true,
+    authType: "bearer",
+    tokenLabel: "Notion integration token",
+    tokenPlaceholder: "ntn_xxx",
+    tokenHelp:
+      "Create a Notion integration at notion.so/my-integrations, grant access to the pages or databases you want, then paste its token.",
+    suggestedToolAllowlist: []
   }
 ];
 

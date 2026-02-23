@@ -6,6 +6,7 @@ describe("mcp catalog", () => {
     const templates = getMcpServerTemplates();
     expect(templates.length).toBeGreaterThanOrEqual(1);
     expect(templates.some((template) => template.id === "github_repos_readonly")).toBe(true);
+    expect(templates.some((template) => template.id === "notion_workspace")).toBe(true);
 
     const seenIds = new Set<string>();
     templates.forEach((template) => {
