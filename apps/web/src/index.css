@@ -2672,13 +2672,13 @@ body.keyboard-open .chat-overlay-panel .chat-input-container {
   bottom: var(--keyboard-gap);
   z-index: 6;
   padding: 4px 6px 4px;
-  border-top: 1px solid var(--border-soft);
-  background: var(--surface-strong);
+  border-top: none;
+  background: transparent;
 }
 
 body.keyboard-open .chat-overlay-panel .chat-messages {
   padding-bottom: calc(72px + var(--keyboard-gap));
-  background: var(--surface-soft);
+  background: transparent;
 }
 
 /* Blur all background content when overlay keyboard is open */
@@ -5508,23 +5508,30 @@ body.keyboard-open .chat-input-container {
   bottom: var(--keyboard-gap);
   z-index: 6;
   padding: 4px 6px 4px;
-  border-top: 1px solid var(--border-soft);
-  background: var(--surface-strong);
+  border-top: none;
+  background: transparent;
 }
 
 body.keyboard-open .chat-messages {
   padding: 8px 8px calc(72px + var(--keyboard-gap));
-  background: var(--surface-soft);
+  background: transparent;
 }
 
-/* Match overlay keyboard surfaces with full chat keyboard surfaces. */
+/* Keep overlay keyboard surfaces transparent in overlay mode. */
 body.keyboard-open .chat-overlay-panel .chat-input-container {
-  background: var(--surface-strong);
-  border-top: 1px solid var(--border-soft);
+  background: transparent;
+  border-top: none;
 }
 
 body.keyboard-open .chat-overlay-panel .chat-messages {
-  background: var(--surface-soft);
+  background: transparent;
+}
+
+/* Chat tab + schedule quick-chat: extend composer into keyboard gap for continuous backdrop. */
+body.keyboard-open.chat-tab-active .app-shell-chat-active .chat-input-container,
+body.keyboard-open.chat-overlay-active[data-active-tab="schedule"] .chat-overlay-panel .chat-input-container {
+  bottom: 0;
+  padding-bottom: calc(4px + var(--keyboard-gap));
 }
 
 body.keyboard-open .chat-bubble {
