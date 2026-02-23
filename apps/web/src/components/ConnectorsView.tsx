@@ -627,11 +627,11 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                           </button>
                         ) : (
                           <button
-                            className="connector-connect-btn"
+                            className="connector-sync-btn"
                             onClick={() => void handleConnect(withingsConnector)}
                             disabled={busy}
                           >
-                            {submitting === "withings" ? "Redirecting..." : "Connect Withings"}
+                            {submitting === "withings" ? "Connecting..." : "Connect"}
                           </button>
                         )}
                       </div>
