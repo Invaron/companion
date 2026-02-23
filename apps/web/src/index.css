@@ -3283,7 +3283,7 @@ body.keyboard-open .chat-overlay-backdrop {
 }
 
 body.chat-tab-active:not(.keyboard-open) .app-shell-chat-active .chat-input-container {
-  bottom: 4px;
+  bottom: calc(var(--tab-bar-safe-space) + 4px);
   padding: 6px 8px;
   background: var(--footer-glass-bg);
   backdrop-filter: blur(var(--footer-glass-blur));
@@ -3292,7 +3292,7 @@ body.chat-tab-active:not(.keyboard-open) .app-shell-chat-active .chat-input-cont
 }
 
 body.chat-tab-active:not(.keyboard-open) .app-shell-chat-active .tab-content-area {
-  padding-bottom: calc(var(--tab-bar-safe-space) + 1px);
+  padding-bottom: 0;
 }
 
 .chat-input-row {
