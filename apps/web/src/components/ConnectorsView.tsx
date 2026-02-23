@@ -253,6 +253,14 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
     setError(null);
   };
 
+  const handleMcpTemplatePrimaryAction = (template: McpServerTemplate): void => {
+    if (template.authType === "oauth" && template.oauthEnabled !== false) {
+      void handleConnectMcpTemplate(template);
+      return;
+    }
+    handleApplyMcpTemplate(template);
+  };
+
   const extractErrorMessage = (err: unknown, fallback: string): string => {
     const message = err instanceof Error ? err.message : fallback;
     try {
@@ -632,10 +640,10 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                   <button
                                     type="button"
                                     className="connector-sync-btn"
-                                    onClick={() => handleApplyMcpTemplate(template)}
+                                    onClick={() => handleMcpTemplatePrimaryAction(template)}
                                     disabled={busy}
                                   >
-                                    {selected ? "Selected" : "Connect"}
+                                    Connect
                                   </button>
                                 </div>
                               </div>
