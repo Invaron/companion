@@ -3,8 +3,6 @@ import { confirmDeadlineStatus, getDeadlines } from "../lib/api";
 import { hapticSuccess } from "../lib/haptics";
 import { useI18n } from "../lib/i18n";
 import { Deadline } from "../types";
-import { usePullToRefresh } from "../hooks/usePullToRefresh";
-import { PullToRefreshIndicator } from "./PullToRefreshIndicator";
 
 interface DeadlineListProps {
   focusDeadlineId?: string;
@@ -35,23 +33,6 @@ export function DeadlineList({ focusDeadlineId }: DeadlineListProps): JSX.Elemen
   const [isOnline, setIsOnline] = useState<boolean>(() => navigator.onLine);
   const [syncMessage, setSyncMessage] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const handleRefresh = async (): Promise<void> => {
-    setRefreshing(true);
-    try {
-      const next = await getDeadlines();
-      setDeadlines(next);
-      setSyncMessage(t("Deadlines refreshed"));
-      setTimeout(() => setSyncMessage(""), 2000);
-    } catch { /* keep current state */ }
-    setRefreshing(false);
-  };
-
-  const { containerRef, isPulling, pullDistance, isRefreshing } = usePullToRefresh<HTMLDivElement>({
-    onRefresh: handleRefresh,
-    threshold: 80
-  });
 
   useEffect(() => {
     let disposed = false;
@@ -189,17 +170,7 @@ export function DeadlineList({ focusDeadlineId }: DeadlineListProps): JSX.Elemen
 
       {syncMessage && <p className="deadline-sync-toast">{syncMessage}</p>}
 
-      <div 
-        ref={containerRef}
-        className="pull-to-refresh-container"
-      >
-        {(isPulling || isRefreshing) && (
-          <PullToRefreshIndicator
-            pullDistance={pullDistance}
-            threshold={80}
-            isRefreshing={isRefreshing}
-          />
-        )}
+      <div className="deadline-list-container">
         {loading ? (
           <div className="deadline-loading">
             <span className="deadline-loading-dot" />

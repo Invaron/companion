@@ -579,6 +579,10 @@ button:disabled {
   gap: 14px;
 }
 
+.schedule-card-swipeable {
+  touch-action: pan-y;
+}
+
 .schedule-card-header {
   display: flex;
   align-items: center;
@@ -590,6 +594,11 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.schedule-card-title-group {
+  display: grid;
+  gap: 2px;
 }
 
 .schedule-card-icon {
@@ -610,6 +619,13 @@ button:disabled {
   text-transform: none;
   letter-spacing: 0;
   color: var(--text);
+}
+
+.schedule-card-subtitle {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
 }
 
 .schedule-card-meta {
@@ -638,6 +654,35 @@ button:disabled {
   background: var(--warn-surface);
   color: var(--warn-text, var(--muted));
   border-color: var(--warn-border-strong);
+}
+
+.schedule-day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.schedule-day-nav-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.schedule-day-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0;
 }
 
 
@@ -845,6 +890,7 @@ button:disabled {
   padding: 0;
   display: grid;
   gap: 8px;
+  touch-action: pan-y;
 }
 
 .dl-item {
@@ -853,6 +899,7 @@ button:disabled {
   padding: 10px 12px;
   background: var(--surface);
   transition: opacity 0.2s, transform 0.15s;
+  touch-action: pan-y;
 }
 
 .dl-item--focused {
@@ -3002,7 +3049,10 @@ body.keyboard-open .chat-overlay-backdrop {
 }
 
 .chat-bubble-user .chat-bubble-content {
-  background: linear-gradient(135deg, rgba(246, 195, 127, 0.95), rgba(236, 172, 85, 0.92));
+  background: linear-gradient(135deg, rgba(246, 195, 127, 0.42), rgba(236, 172, 85, 0.34));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(246, 195, 127, 0.38);
   color: #0f172a;
   border-bottom-right-radius: 4px;
   box-shadow: 0 1px 6px rgba(246, 195, 127, 0.15);
@@ -4069,6 +4119,7 @@ body:not(.keyboard-open) .app-shell-chat-active .chat-messages {
 .schedule-tab-container {
   display: grid;
   gap: 16px;
+  touch-action: pan-y;
 }
 
 .schedule-grid {
@@ -4197,9 +4248,11 @@ body:not(.keyboard-open) .app-shell-chat-active .chat-messages {
 /* Pull-to-refresh */
 .pull-to-refresh-container {
   position: relative;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  max-height: min(600px, calc(var(--app-viewport-height) - 260px));
+}
+
+.deadline-list-container {
+  position: relative;
+  touch-action: pan-y;
 }
 
 .pull-to-refresh-indicator {

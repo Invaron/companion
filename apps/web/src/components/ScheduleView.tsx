@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { TouchEvent } from "react";
 import { getDeadlines, getSchedule, getScheduleSuggestionMutes } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { Deadline, LectureEvent, ScheduleSuggestionMute } from "../types";
@@ -21,6 +22,24 @@ function isSameLocalDate(left: Date, right: Date): boolean {
 
 function minutesBetween(start: Date, end: Date): number {
   return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+}
+
+function startOfDay(date: Date): Date {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function dayOffsetFromToday(targetDate: Date): number {
+  const today = startOfDay(new Date());
+  const target = startOfDay(targetDate);
+  return Math.round((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
 }
 
 function formatDuration(minutes: number): string {
@@ -223,8 +242,13 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
   const [schedule, setSchedule] = useState<LectureEvent[]>([]);
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
   const [suggestionMutes, setSuggestionMutes] = useState<ScheduleSuggestionMute[]>([]);
+  const [dayOffset, setDayOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState<boolean>(() => navigator.onLine);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeCurrentRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeAxisRef = useRef<"x" | "y" | null>(null);
+  const referenceDate = useMemo(() => addDays(startOfDay(new Date()), dayOffset), [dayOffset]);
 
   useEffect(() => {
     let disposed = false;
@@ -262,6 +286,11 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
   useEffect(() => {
     if (!focusLectureId) {
       return;
+    }
+
+    const focusedLecture = schedule.find((lecture) => lecture.id === focusLectureId);
+    if (focusedLecture) {
+      setDayOffset(dayOffsetFromToday(new Date(focusedLecture.startTime)));
     }
 
     const timer = window.setTimeout(() => {
@@ -332,33 +361,112 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
     .sort((left, right) => left.dueDateMs - right.dueDateMs)
     .slice(0, 8)
     .map((item) => item.label);
-  const today = new Date();
-  const todayBlocks = sortedSchedule.filter((block) => isSameLocalDate(new Date(block.startTime), today));
+  const dayBlocks = sortedSchedule.filter((block) => isSameLocalDate(new Date(block.startTime), referenceDate));
   // Only build gap-filler suggestions when there are real schedule events;
   // on a fresh account with no events, show the empty state instead
-  const dayTimeline = todayBlocks.length > 0
-    ? buildDayTimeline(todayBlocks, today, deadlineSuggestions, suggestionMutes, t)
+  const dayTimeline = dayBlocks.length > 0
+    ? buildDayTimeline(dayBlocks, referenceDate, deadlineSuggestions, suggestionMutes, t)
     : [];
+  const scheduleTitle =
+    dayOffset === 0
+      ? t("Today's Schedule")
+      : dayOffset === 1
+        ? t("Tomorrow's Schedule")
+        : dayOffset === -1
+          ? t("Yesterday's Schedule")
+          : t("Schedule");
+  const scheduleDateLabel = referenceDate.toLocaleDateString(localeTag, {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  });
+
+  const handleScheduleTouchStart = (event: TouchEvent<HTMLElement>): void => {
+    if (event.touches.length === 0) {
+      return;
+    }
+    const touch = event.touches[0];
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+    swipeCurrentRef.current = { x: touch.clientX, y: touch.clientY };
+    swipeAxisRef.current = null;
+  };
+
+  const handleScheduleTouchMove = (event: TouchEvent<HTMLElement>): void => {
+    if (event.touches.length === 0 || !swipeStartRef.current) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - swipeStartRef.current.x;
+    const deltaY = touch.clientY - swipeStartRef.current.y;
+
+    if (swipeAxisRef.current === null) {
+      if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
+        return;
+      }
+      swipeAxisRef.current = Math.abs(deltaX) > Math.abs(deltaY) ? "x" : "y";
+    }
+
+    swipeCurrentRef.current = { x: touch.clientX, y: touch.clientY };
+
+    if (swipeAxisRef.current === "x") {
+      event.preventDefault();
+    }
+  };
+
+  const resetScheduleSwipe = (): void => {
+    swipeStartRef.current = null;
+    swipeCurrentRef.current = null;
+    swipeAxisRef.current = null;
+  };
+
+  const handleScheduleTouchEnd = (): void => {
+    if (swipeAxisRef.current === "x" && swipeStartRef.current && swipeCurrentRef.current) {
+      const deltaX = swipeCurrentRef.current.x - swipeStartRef.current.x;
+      if (Math.abs(deltaX) >= 56) {
+        setDayOffset((current) => current + (deltaX < 0 ? 1 : -1));
+      }
+    }
+    resetScheduleSwipe();
+  };
 
   return (
-    <section className="schedule-card">
+    <section
+      className="schedule-card schedule-card-swipeable"
+      onTouchStart={handleScheduleTouchStart}
+      onTouchMove={handleScheduleTouchMove}
+      onTouchEnd={handleScheduleTouchEnd}
+      onTouchCancel={resetScheduleSwipe}
+    >
       <div className="schedule-card-header">
         <div className="schedule-card-title-row">
           <span className="schedule-card-icon schedule-card-icon-svg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
-          <h2>{t("Today's Schedule")}</h2>
+          <div className="schedule-card-title-group">
+            <h2>{scheduleTitle}</h2>
+            <p className="schedule-card-subtitle">{scheduleDateLabel}</p>
+          </div>
         </div>
         <div className="schedule-card-meta">
-          {todayBlocks.length > 0 ? (
+          {dayBlocks.length > 0 ? (
             <span className="schedule-badge">
-              {todayBlocks.length === 1
-                ? t("{count} session", { count: todayBlocks.length })
-                : t("{count} sessions", { count: todayBlocks.length })}
+              {dayBlocks.length === 1
+                ? t("{count} session", { count: dayBlocks.length })
+                : t("{count} sessions", { count: dayBlocks.length })}
             </span>
           ) : (
             <span className="schedule-badge schedule-badge-empty">{t("Free day")}</span>
           )}
           {!isOnline && <span className="schedule-badge schedule-badge-offline">{t("Offline")}</span>}
         </div>
+      </div>
+      <div className="schedule-day-nav" aria-label={t("Browse days")}>
+        <button type="button" className="schedule-day-nav-btn" onClick={() => setDayOffset((current) => current - 1)}>
+          ‹
+        </button>
+        <span className="schedule-day-nav-label">{scheduleDateLabel}</span>
+        <button type="button" className="schedule-day-nav-btn" onClick={() => setDayOffset((current) => current + 1)}>
+          ›
+        </button>
       </div>
 
       {loading ? (
@@ -395,7 +503,7 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
       ) : (
         <div className="schedule-empty-state">
           <span className="schedule-empty-icon">🌤️</span>
-          <p>{t("No fixed sessions today")}</p>
+          <p>{dayOffset === 0 ? t("No fixed sessions today") : t("No fixed sessions this day")}</p>
           <p className="schedule-empty-hint">{t("Ask Gemini to build your day plan")}</p>
         </div>
       )}
