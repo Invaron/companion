@@ -192,7 +192,6 @@ body {
 
 html {
   background: #091019;
-  background: var(--surface-strong);
 }
 
 body.chat-tab-active {
@@ -2547,12 +2546,10 @@ button:disabled {
 .chat-overlay-backdrop {
   position: fixed;
   inset: 0;
-  background: var(--chat-overlay-backdrop);
+  background: rgba(0, 0, 0, 0.3);
   z-index: 101;
   animation: chat-overlay-fade-in 0.2s ease both;
   -webkit-tap-highlight-color: transparent;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
 }
 
 @keyframes chat-overlay-fade-in {
@@ -2575,9 +2572,7 @@ button:disabled {
   overflow: hidden;
   display: flex !important;
   flex-direction: column;
-  background: var(--chat-overlay-panel-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: transparent;
 }
 
 /* Header bar at top of overlay with close button */
@@ -2587,7 +2582,7 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   padding: 8px 8px 8px 16px;
-  background: var(--chat-overlay-header-bg);
+  background: transparent;
   -webkit-tap-highlight-color: transparent;
   min-height: 40px;
   position: relative;
@@ -2710,14 +2705,11 @@ body.keyboard-open .chat-overlay-backdrop {
   max-height: 100%;
   min-height: 0;
   width: 100%;
-  background: var(--chat-view-surface, var(--surface-soft));
+  background: var(--surface-soft);
   border-radius: 16px;
   overflow: hidden;
   position: relative;
   transition: background 1.2s ease;
-  border: 1px solid var(--card-border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 /* Chat mood backgrounds — gradient shifts driven by Gemini response tone */
@@ -2794,7 +2786,6 @@ body.keyboard-open .chat-overlay-backdrop {
   height: auto;
   max-height: none;
   border-radius: 0;
-  border: none;
 }
 
 .chat-messages {
