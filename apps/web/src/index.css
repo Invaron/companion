@@ -5531,9 +5531,10 @@ body.keyboard-open .chat-overlay-panel .chat-messages {
 body.keyboard-open.chat-tab-active .app-shell-chat-active .chat-input-container,
 body.keyboard-open.chat-overlay-active[data-active-tab="schedule"] .chat-overlay-panel .chat-input-container {
   bottom: 0;
-  padding-bottom: calc(4px + var(--keyboard-gap));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  padding-bottom: calc(5px + var(--keyboard-gap));
+  background: transparent;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 body.keyboard-open .chat-bubble {
