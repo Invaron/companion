@@ -55,6 +55,16 @@ function minuteOfDay(value: Date): number {
   return value.getHours() * 60 + value.getMinutes();
 }
 
+function toDayTrackPosition(start: Date, end: Date): { startPercent: number; widthPercent: number } {
+  const startMinutes = Math.max(0, Math.min(DAY_TOTAL_MINUTES, minuteOfDay(start)));
+  const rawEnd = Math.max(startMinutes + 5, Math.min(DAY_TOTAL_MINUTES, minuteOfDay(end)));
+  const endMinutes = rawEnd <= startMinutes ? Math.min(DAY_TOTAL_MINUTES, startMinutes + 30) : rawEnd;
+  return {
+    startPercent: (startMinutes / DAY_TOTAL_MINUTES) * 100,
+    widthPercent: Math.max(1.2, ((endMinutes - startMinutes) / DAY_TOTAL_MINUTES) * 100)
+  };
+}
+
 function formatDuration(minutes: number): string {
   if (minutes < 60) {
     return `${minutes}m`;
@@ -537,6 +547,13 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
 
         <div className="schedule-day-track-wrap">
           <div className="schedule-day-track">
+            {isReferenceToday && (
+              <span
+                className="schedule-day-track-progress"
+                style={{ width: `${nowPercent}%` }}
+                aria-hidden="true"
+              />
+            )}
             {DAY_TRACK_TICKS.map((tickHour) => (
               <span
                 key={`tick-${tickHour}`}
@@ -580,28 +597,40 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
           </div>
         ) : dayTimeline.length > 0 ? (
           <ul className="timeline-list">
-            {dayTimeline.map((segment, index) => (
-              <li
-                key={`${segment.type}-${segment.start.toISOString()}-${index}`}
-                className={`timeline-item ${segment.type === "event" ? "timeline-item--lecture" : "timeline-item--gap"}`}
-              >
-                <div className="timeline-item-content">
-                  <div className="timeline-item-time-row">
-                    <span className="timeline-time">
-                      {segment.start.toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit", hour12: false })}
-                      {" – "}
-                      {segment.end.toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit", hour12: false })}
-                    </span>
-                    <span className="timeline-item-duration">
-                      {formatDuration(minutesBetween(segment.start, segment.end))}
-                    </span>
+            {dayTimeline.map((segment, index) => {
+              const track = toDayTrackPosition(segment.start, segment.end);
+              const segmentTypeClass = segment.type === "event" ? "timeline-item--lecture" : "timeline-item--gap";
+              return (
+                <li
+                  key={`${segment.type}-${segment.start.toISOString()}-${index}`}
+                  className={`timeline-item ${segmentTypeClass}`}
+                >
+                  <div className="timeline-item-track" aria-hidden="true">
+                    <span
+                      className={`timeline-item-track-fill ${
+                        segment.type === "event" ? "timeline-item-track-fill-lecture" : "timeline-item-track-fill-gap"
+                      }`}
+                      style={{ left: `${track.startPercent}%`, width: `${track.widthPercent}%` }}
+                    />
                   </div>
-                  <p className="timeline-item-label">
-                    {formatDayTimelineLabel(segment, t)}
-                  </p>
-                </div>
-              </li>
-            ))}
+                  <div className="timeline-item-content">
+                    <div className="timeline-item-time-row">
+                      <span className="timeline-time">
+                        {segment.start.toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit", hour12: false })}
+                        {" – "}
+                        {segment.end.toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit", hour12: false })}
+                      </span>
+                      <span className="timeline-item-duration">
+                        {formatDuration(minutesBetween(segment.start, segment.end))}
+                      </span>
+                    </div>
+                    <p className="timeline-item-label">
+                      {formatDayTimelineLabel(segment, t)}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <div className="schedule-empty-state">
