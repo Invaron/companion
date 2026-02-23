@@ -94,6 +94,15 @@ const CHAT_MOOD_BACKGROUNDS: Record<ChatMood, string> = {
   urgent: "linear-gradient(160deg, rgba(255, 138, 128, 0.18) 0%, rgba(255, 138, 128, 0.06) 50%, var(--surface-soft) 85%)"
 };
 
+const CHAT_MOOD_FLAT_BACKGROUNDS: Record<ChatMood, string> = {
+  neutral: "#243b59",
+  encouraging: "#25564f",
+  focused: "#265078",
+  celebratory: "#4b4a67",
+  empathetic: "#4f486a",
+  urgent: "#6a3d43"
+};
+
 function parseApiErrorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof Error)) {
     return fallback;
@@ -243,6 +252,7 @@ export default function App(): JSX.Element {
 
   useEffect(() => {
     document.documentElement.style.setProperty("--chat-mood-active-bg", CHAT_MOOD_BACKGROUNDS[chatMood]);
+    document.documentElement.style.setProperty("--chat-mood-active-flat-bg", CHAT_MOOD_FLAT_BACKGROUNDS[chatMood]);
   }, [chatMood]);
 
   // Set up background sync listeners

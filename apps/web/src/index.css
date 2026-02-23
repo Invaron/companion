@@ -202,18 +202,9 @@ html {
 }
 
 body.chat-tab-active {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  min-height: var(--app-viewport-height);
-  height: var(--app-viewport-height);
-  max-height: var(--app-viewport-height);
   overflow: hidden;
   overscroll-behavior: none;
-  background: var(--chat-mood-active-bg, var(--chat-mood-bg, var(--surface-soft)));
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
+  touch-action: none;
 }
 
 .app-shell {
@@ -5631,14 +5622,14 @@ body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-input-container
 /* Chat tab keyboard layout: keep messages clear of fixed composer. */
 body.keyboard-open.chat-tab-active .app-shell-chat-active .chat-messages {
   padding-bottom: 8px;
-  margin-bottom: 54px;
-  scroll-padding-bottom: 54px;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 12px), transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 12px), transparent 100%);
+  margin-bottom: 64px;
+  scroll-padding-bottom: 64px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 18px), transparent 100%);
 }
 
 body.keyboard-open.chat-tab-active {
-  background: var(--chat-mood-active-bg, var(--chat-mood-bg, var(--surface-soft)));
+  background: var(--chat-mood-active-flat-bg, var(--chat-mood-active-bg, var(--chat-mood-bg, var(--surface-soft))));
 }
 
 /* Keyboard-up chat tab: keep one continuous mood backdrop behind composer and keyboard gap. */
@@ -5670,6 +5661,10 @@ body.chat-tab-active .app-shell-chat-active .chat-tab,
 body.chat-tab-active .app-shell-chat-active .chat-view,
 body.chat-tab-active .app-shell-chat-active .chat-messages {
   overscroll-behavior: none;
+}
+
+body.chat-tab-active .app-shell-chat-active .chat-messages {
+  touch-action: pan-y;
 }
 
 body.keyboard-open .pull-to-refresh-container {
