@@ -3284,8 +3284,8 @@ body.keyboard-open .chat-overlay-backdrop {
 
 body.chat-tab-active:not(.keyboard-open) .app-shell-chat-active .chat-input-container {
   position: relative;
-  bottom: auto;
-  margin-bottom: calc(var(--tab-bar-safe-space) + 3px);
+  bottom: 4px;
+  margin-bottom: 0;
   padding: 6px 8px;
   background: var(--footer-glass-bg);
   backdrop-filter: blur(var(--footer-glass-blur));
@@ -3294,7 +3294,7 @@ body.chat-tab-active:not(.keyboard-open) .app-shell-chat-active .chat-input-cont
 }
 
 body.chat-tab-active:not(.keyboard-open) .app-shell-chat-active .tab-content-area {
-  padding-bottom: 0;
+  padding-bottom: calc(var(--tab-bar-safe-space) + 1px);
 }
 
 .chat-input-row {
