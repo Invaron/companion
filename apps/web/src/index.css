@@ -2672,13 +2672,13 @@ body.keyboard-open .chat-overlay-panel .chat-input-container {
   bottom: var(--keyboard-gap);
   z-index: 6;
   padding: 4px 6px 4px;
-  border-top: none;
-  background: transparent;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-strong);
 }
 
 body.keyboard-open .chat-overlay-panel .chat-messages {
   padding-bottom: calc(72px + var(--keyboard-gap));
-  background: transparent;
+  background: var(--surface-soft);
 }
 
 /* Blur all background content when overlay keyboard is open */
@@ -5508,23 +5508,23 @@ body.keyboard-open .chat-input-container {
   bottom: var(--keyboard-gap);
   z-index: 6;
   padding: 4px 6px 4px;
-  border-top: none;
-  background: transparent;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-strong);
 }
 
 body.keyboard-open .chat-messages {
   padding: 8px 8px calc(72px + var(--keyboard-gap));
-  background: transparent;
+  background: var(--surface-soft);
 }
 
-/* Override: overlay input + messages stay transparent when keyboard open */
+/* Match overlay keyboard surfaces with full chat keyboard surfaces. */
 body.keyboard-open .chat-overlay-panel .chat-input-container {
-  background: transparent;
-  border-top: none;
+  background: var(--surface-strong);
+  border-top: 1px solid var(--border-soft);
 }
 
 body.keyboard-open .chat-overlay-panel .chat-messages {
-  background: transparent;
+  background: var(--surface-soft);
 }
 
 body.keyboard-open .chat-bubble {
