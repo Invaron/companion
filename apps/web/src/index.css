@@ -2954,14 +2954,16 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
 body.keyboard-open .chat-overlay-panel,
 body.chat-overlay-active.chat-input-focused .chat-overlay-panel,
 body.chat-overlay-active .chat-overlay-panel:focus-within {
-  bottom: 0;
-  height: min(56dvh, calc(100dvh - 6px));
-  max-height: calc(100dvh - 6px);
-  border-radius: 16px 16px 0 0;
+  inset: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
   animation: none;
-  background: var(--chat-overlay-panel-bg);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 body.keyboard-open .chat-overlay-panel .chat-view,
@@ -2981,16 +2983,17 @@ body.chat-overlay-active .chat-overlay-panel:focus-within .chat-overlay-header {
 body.keyboard-open .chat-overlay-panel .chat-input-container,
 body.chat-overlay-active.chat-input-focused .chat-overlay-panel .chat-input-container,
 body.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container {
-  position: sticky;
-  left: auto;
-  right: auto;
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: 0;
   z-index: 6;
-  padding: 6px 8px 8px;
+  padding: 4px 6px 8px;
   border-top: none;
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  touch-action: pan-x;
 }
 
 body.chat-overlay-active .tab-bar {
@@ -3002,14 +3005,19 @@ body.keyboard-open .chat-overlay-panel .chat-messages,
 body.chat-overlay-active.chat-input-focused .chat-overlay-panel .chat-messages,
 body.chat-overlay-active .chat-overlay-panel:focus-within .chat-messages {
   padding-bottom: 8px;
-  margin-bottom: 0;
-  scroll-padding-bottom: 12px;
+  margin-bottom: 72px;
+  scroll-padding-bottom: 72px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 24px), transparent 100%);
   background: transparent;
 }
 
 /* Blur all background content when overlay keyboard is open */
 body.keyboard-open.chat-overlay-active .tab-content-area,
-body.keyboard-open.chat-overlay-active .tab-bar {
+body.keyboard-open.chat-overlay-active .tab-bar,
+body.chat-overlay-active.chat-input-focused .tab-content-area,
+body.chat-overlay-active.chat-input-focused .tab-bar,
+body.chat-overlay-active .chat-overlay-panel:focus-within ~ .tab-content-area {
   filter: none;
   pointer-events: none;
 }
