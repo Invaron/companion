@@ -424,17 +424,84 @@ export default function App(): JSX.Element {
       return;
     }
 
+    const isFormControl = (
+      element: HTMLElement
+    ): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement =>
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLTextAreaElement ||
+      element instanceof HTMLSelectElement ||
+      element instanceof HTMLButtonElement;
+
+    const lockFocusableTree = (root: HTMLElement): void => {
+      const focusables = root.querySelectorAll<HTMLElement>("input, textarea, select, button, [tabindex], [contenteditable='true']");
+      focusables.forEach((element) => {
+        if (element.hasAttribute("data-overlay-focus-lock")) {
+          return;
+        }
+        element.setAttribute("data-overlay-focus-lock", "1");
+
+        const previousTabIndex = element.getAttribute("tabindex");
+        element.setAttribute("data-overlay-prev-tabindex", previousTabIndex ?? "");
+        element.setAttribute("tabindex", "-1");
+
+        if (isFormControl(element)) {
+          element.setAttribute("data-overlay-prev-disabled", element.disabled ? "1" : "0");
+          element.disabled = true;
+        }
+
+        if (element.hasAttribute("contenteditable")) {
+          element.setAttribute("data-overlay-prev-contenteditable", element.getAttribute("contenteditable") ?? "");
+          element.setAttribute("contenteditable", "false");
+        }
+      });
+    };
+
+    const unlockFocusableTree = (root: HTMLElement): void => {
+      const locked = root.querySelectorAll<HTMLElement>("[data-overlay-focus-lock='1']");
+      locked.forEach((element) => {
+        const previousTabIndex = element.getAttribute("data-overlay-prev-tabindex");
+        if (previousTabIndex === "") {
+          element.removeAttribute("tabindex");
+        } else if (previousTabIndex) {
+          element.setAttribute("tabindex", previousTabIndex);
+        }
+        element.removeAttribute("data-overlay-prev-tabindex");
+
+        if (isFormControl(element)) {
+          const previousDisabled = element.getAttribute("data-overlay-prev-disabled");
+          element.disabled = previousDisabled === "1";
+          element.removeAttribute("data-overlay-prev-disabled");
+        }
+
+        if (element.hasAttribute("data-overlay-prev-contenteditable")) {
+          const previousContentEditable = element.getAttribute("data-overlay-prev-contenteditable");
+          if (previousContentEditable === "") {
+            element.removeAttribute("contenteditable");
+          } else if (previousContentEditable) {
+            element.setAttribute("contenteditable", previousContentEditable);
+          }
+          element.removeAttribute("data-overlay-prev-contenteditable");
+        }
+
+        element.removeAttribute("data-overlay-focus-lock");
+      });
+    };
+
     const shouldIsolateOverlay = chatOverlayOpen && activeTab !== "chat";
     if (shouldIsolateOverlay) {
       tabContent.setAttribute("inert", "");
       tabContent.setAttribute("aria-hidden", "true");
       tabBar.setAttribute("inert", "");
       tabBar.setAttribute("aria-hidden", "true");
+      lockFocusableTree(tabContent);
+      lockFocusableTree(tabBar);
     } else {
       tabContent.removeAttribute("inert");
       tabContent.removeAttribute("aria-hidden");
       tabBar.removeAttribute("inert");
       tabBar.removeAttribute("aria-hidden");
+      unlockFocusableTree(tabContent);
+      unlockFocusableTree(tabBar);
     }
 
     return () => {
@@ -442,6 +509,8 @@ export default function App(): JSX.Element {
       tabContent.removeAttribute("aria-hidden");
       tabBar.removeAttribute("inert");
       tabBar.removeAttribute("aria-hidden");
+      unlockFocusableTree(tabContent);
+      unlockFocusableTree(tabBar);
     };
   }, [chatOverlayOpen, activeTab]);
 
