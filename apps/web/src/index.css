@@ -2988,7 +2988,7 @@ body.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container 
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0 !important;
+  bottom: var(--overlay-composer-lift, 0px) !important;
   z-index: 6;
   padding: 4px 6px 0;
   border-top: none;

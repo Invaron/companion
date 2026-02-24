@@ -536,6 +536,76 @@ export default function App(): JSX.Element {
   }, [chatOverlayOpen, activeTab]);
 
   useEffect(() => {
+    const root = document.documentElement;
+    if (!chatOverlayOpen || activeTab === "chat") {
+      root.style.setProperty("--overlay-composer-lift", "0px");
+      return;
+    }
+
+    let rafId: number | null = null;
+    let timerA: number | null = null;
+    let timerB: number | null = null;
+
+    const calibrateOverlayComposerLift = (): void => {
+      const panel = document.querySelector(".chat-overlay-panel");
+      const composer = panel?.querySelector(".chat-input-container");
+      const viewport = window.visualViewport;
+      if (!(composer instanceof HTMLElement) || !viewport) {
+        return;
+      }
+
+      const keyboardLikelyOpen =
+        document.body.classList.contains("keyboard-open") ||
+        document.body.classList.contains("chat-input-focused");
+
+      if (!keyboardLikelyOpen) {
+        root.style.setProperty("--overlay-composer-lift", "0px");
+        return;
+      }
+
+      const composerRect = composer.getBoundingClientRect();
+      const viewportBottom = viewport.height;
+      // If composer bottom is flush with visual viewport bottom, Safari is usually
+      // drawing the iOS prev/next/done strip over it. Lift by strip height.
+      const isUnderAccessoryStrip = composerRect.bottom > viewportBottom - 8;
+      root.style.setProperty("--overlay-composer-lift", isUnderAccessoryStrip ? "44px" : "0px");
+    };
+
+    const scheduleCalibration = (): void => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      rafId = window.requestAnimationFrame(calibrateOverlayComposerLift);
+    };
+
+    scheduleCalibration();
+    timerA = window.setTimeout(scheduleCalibration, 140);
+    timerB = window.setTimeout(scheduleCalibration, 320);
+
+    window.addEventListener("focusin", scheduleCalibration);
+    window.addEventListener("focusout", scheduleCalibration);
+    window.visualViewport?.addEventListener("resize", scheduleCalibration);
+    window.visualViewport?.addEventListener("scroll", scheduleCalibration);
+
+    return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      if (timerA !== null) {
+        window.clearTimeout(timerA);
+      }
+      if (timerB !== null) {
+        window.clearTimeout(timerB);
+      }
+      window.removeEventListener("focusin", scheduleCalibration);
+      window.removeEventListener("focusout", scheduleCalibration);
+      window.visualViewport?.removeEventListener("resize", scheduleCalibration);
+      window.visualViewport?.removeEventListener("scroll", scheduleCalibration);
+      root.style.setProperty("--overlay-composer-lift", "0px");
+    };
+  }, [chatOverlayOpen, activeTab]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
