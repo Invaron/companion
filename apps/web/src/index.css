@@ -224,11 +224,6 @@ body.chat-tab-active {
   overscroll-behavior: none;
 }
 
-body.chat-overlay-active {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
 .app-shell {
   max-width: 980px;
   margin: 0 auto;
