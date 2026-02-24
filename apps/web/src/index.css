@@ -2965,9 +2965,9 @@ body.keyboard-open.chat-overlay-active .chat-overlay-panel {
   box-shadow: none;
   animation: none;
   transform: none;
-  background: var(--chat-overlay-panel-bg);
-  backdrop-filter: blur(var(--chat-overlay-keyboard-blur)) saturate(var(--chat-overlay-keyboard-saturate));
-  -webkit-backdrop-filter: blur(var(--chat-overlay-keyboard-blur)) saturate(var(--chat-overlay-keyboard-saturate));
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-view {
@@ -3037,19 +3037,14 @@ body.keyboard-open.chat-overlay-active .tab-content-area {
    keyboard; blur the underlying tab layer itself to keep the visual surface
    continuous even where overlay/backdrop cannot render. */
 body.ios-touch.keyboard-open.chat-overlay-active .tab-content-area {
-  filter: blur(var(--chat-overlay-keyboard-blur)) saturate(var(--chat-overlay-keyboard-saturate));
+  filter: none;
 }
 
 body.keyboard-open.chat-overlay-active .chat-overlay-backdrop {
   display: block;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(10, 19, 30, 0.34) 0%,
-      rgba(10, 19, 30, 0.28) 100%
-    );
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: var(--chat-overlay-panel-bg);
+  backdrop-filter: blur(var(--chat-overlay-keyboard-blur)) saturate(var(--chat-overlay-keyboard-saturate));
+  -webkit-backdrop-filter: blur(var(--chat-overlay-keyboard-blur)) saturate(var(--chat-overlay-keyboard-saturate));
   pointer-events: none;
   animation: none;
 }
