@@ -2903,6 +2903,10 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
   max-height: none;
 }
 
+.chat-overlay-panel-docked .chat-messages {
+  justify-content: flex-end;
+}
+
 .chat-overlay-panel-docked .chat-overlay-header {
   display: none;
 }
@@ -3147,7 +3151,12 @@ body.keyboard-open.chat-overlay-active .tab-content-area {
 }
 
 body.keyboard-open.chat-overlay-docked .tab-content-area {
-  pointer-events: auto;
+  pointer-events: none;
+}
+
+body.chat-overlay-docked .tab-content-area {
+  overflow: hidden !important;
+  overscroll-behavior: none;
 }
 
 /* iOS keyboard accessory chrome can reveal underlying page content through a
@@ -3155,8 +3164,7 @@ body.keyboard-open.chat-overlay-docked .tab-content-area {
    pre-blur and tint the base app surface so revealed content stays unreadable. */
 body.ios-touch.keyboard-open.chat-overlay-docked .app-shell {
   filter: blur(11px) saturate(86%) brightness(0.72);
-  transform: scale(1.008);
-  transform-origin: center top;
+  transform: none;
 }
 
 body.ios-touch.keyboard-open.chat-overlay-docked .app-shell::after {
