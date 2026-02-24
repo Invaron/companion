@@ -40,6 +40,7 @@
   --chat-overlay-panel-bg: linear-gradient(180deg, rgba(7, 14, 20, 0.58) 0%, rgba(7, 14, 20, 0.4) 100%);
   --chat-overlay-header-bg: rgba(7, 14, 20, 0.24);
   --chat-view-surface: rgba(7, 14, 20, 0.26);
+  --chat-overlay-keyboard-scrim: rgba(8, 18, 30, 0.52);
   --chat-overlay-keyboard-blur: 10px;
   --chat-overlay-keyboard-saturate: 112%;
   --chat-mood-active-bg: var(--surface-soft);
@@ -2968,6 +2969,13 @@ body.keyboard-open.chat-overlay-active .chat-overlay-panel {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  /* Single-source visual treatment: tint/blur comes only from backdrop layer. */
+  --card-bg: transparent;
+  --card: transparent;
+  --surface: transparent;
+  --surface-soft: transparent;
+  --input-bg: transparent;
+  --chat-mood-bg: transparent;
 }
 
 /* iOS PWA can shift fixed overlays upward when keyboard opens; pull the entire
@@ -3049,7 +3057,7 @@ body.ios-touch.keyboard-open.chat-overlay-active .tab-content-area {
 
 body.keyboard-open.chat-overlay-active .chat-overlay-backdrop {
   display: block;
-  background: var(--chat-overlay-panel-bg);
+  background: var(--chat-overlay-keyboard-scrim);
   backdrop-filter: blur(var(--chat-overlay-keyboard-blur)) saturate(var(--chat-overlay-keyboard-saturate));
   -webkit-backdrop-filter: blur(var(--chat-overlay-keyboard-blur)) saturate(var(--chat-overlay-keyboard-saturate));
   pointer-events: none;
@@ -3059,15 +3067,25 @@ body.keyboard-open.chat-overlay-active .chat-overlay-backdrop {
 /* iOS PWA keyboard can shift fixed overlays upward; extend backdrop into the
    reported keyboard gap so blur remains continuous behind the lifted composer. */
 body.ios-touch.keyboard-open.chat-overlay-active .chat-overlay-backdrop {
-  /* Apply tint only at backdrop level so chat/composer stay untinted. */
-  background: rgba(8, 18, 30, 0.52);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   bottom: calc(-1 * var(--keyboard-gap));
 }
 
-body.ios-touch.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-bubble-assistant .chat-bubble-content,
-body.ios-touch.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-bubble-user .chat-bubble-content {
+body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-bubble-assistant .chat-bubble-content,
+body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-bubble-user .chat-bubble-content,
+body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-citation-chip,
+body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-pending-action-card {
+  background: transparent;
+  border-color: var(--border-soft);
+  color: var(--text);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-input,
+body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-attach-button,
+body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-voice-button {
+  background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   box-shadow: none;
