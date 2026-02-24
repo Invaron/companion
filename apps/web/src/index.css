@@ -2884,7 +2884,7 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
 }
 
 .chat-overlay-panel-docked {
-  position: absolute !important;
+  position: fixed !important;
   inset: 0;
   z-index: 103;
   animation: none;
