@@ -2960,6 +2960,7 @@ body.chat-overlay-active .chat-overlay-panel:focus-within {
   inset: 0;
   height: auto;
   max-height: none;
+  --overlay-composer-offset: 0px;
   border-radius: 0;
   border: none;
   box-shadow: none;
@@ -2987,13 +2988,21 @@ body.chat-overlay-active .chat-overlay-panel:focus-within .chat-overlay-header {
 body.keyboard-open .chat-overlay-panel .chat-input-container,
 body.chat-overlay-active.chat-input-focused .chat-overlay-panel .chat-input-container,
 body.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container {
-  bottom: 0 !important;
+  bottom: var(--overlay-composer-offset, 0px) !important;
   padding: 4px 6px 8px;
   border-top: none;
   background: rgba(10, 19, 30, 0.34);
   backdrop-filter: blur(12px) saturate(120%);
   -webkit-backdrop-filter: blur(12px) saturate(120%);
   touch-action: pan-x;
+}
+
+/* iOS keyboard accessory strip (prev/next/done) sits above the keyboard.
+   Lift overlay composer above that strip so it doesn't look like a half sheet. */
+body.ios-touch.keyboard-open .chat-overlay-panel,
+body.ios-touch.chat-overlay-active.chat-input-focused .chat-overlay-panel,
+body.ios-touch.chat-overlay-active .chat-overlay-panel:focus-within {
+  --overlay-composer-offset: 44px;
 }
 
 body.chat-overlay-active .tab-bar {
@@ -3005,8 +3014,8 @@ body.keyboard-open .chat-overlay-panel .chat-messages,
 body.chat-overlay-active.chat-input-focused .chat-overlay-panel .chat-messages,
 body.chat-overlay-active .chat-overlay-panel:focus-within .chat-messages {
   padding-bottom: 8px;
-  margin-bottom: 72px;
-  scroll-padding-bottom: 72px;
+  margin-bottom: calc(72px + var(--overlay-composer-offset, 0px));
+  scroll-padding-bottom: calc(72px + var(--overlay-composer-offset, 0px));
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 34px), transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 34px), transparent 100%);
   background: transparent;
