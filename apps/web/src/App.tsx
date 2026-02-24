@@ -144,13 +144,12 @@ export default function App(): JSX.Element {
   const [upgradeFeatureLabel, setUpgradeFeatureLabel] = useState<string | undefined>(undefined);
   const [chatOverlayOpen, setChatOverlayOpen] = useState(false);
   const [isIosTouchDevice, setIsIosTouchDevice] = useState(false);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const overlayLaunchSourceTabRef = useRef<TabId | null>(null);
   const overlayLaunchGuardUntilRef = useRef(0);
   const seenCriticalNotifications = useRef<Set<string>>(new Set());
   const { planInfo, hasFeature } = usePlan(authState === "ready");
   const isChatTab = activeTab === "chat";
-  const isOverlayDocked = chatOverlayOpen && !isChatTab && isIosTouchDevice && isKeyboardOpen;
+  const isOverlayDocked = chatOverlayOpen && !isChatTab && isIosTouchDevice;
 
   useEffect(() => {
     let disposed = false;
@@ -334,7 +333,6 @@ export default function App(): JSX.Element {
       }
       root.style.setProperty("--overlay-panel-shift-comp", `${overlayPanelShiftComp}px`);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
-      setIsKeyboardOpen(keyboardOpen);
     };
 
     const handleFocusEvent = (): void => {
@@ -369,7 +367,6 @@ export default function App(): JSX.Element {
       root.style.removeProperty("--overlay-panel-shift-comp");
       document.body.classList.remove("keyboard-open");
       document.body.classList.remove("ios-touch");
-      setIsKeyboardOpen(false);
       setIsIosTouchDevice(false);
     };
   }, []);

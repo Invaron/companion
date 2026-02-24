@@ -2890,10 +2890,6 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
   animation: none;
 }
 
-.chat-overlay-panel-docked .chat-overlay-header {
-  display: none;
-}
-
 /* Header bar at top of overlay with close button */
 .chat-overlay-header {
   flex-shrink: 0;
