@@ -2993,30 +2993,14 @@ body.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container 
   position: fixed;
   left: 0;
   right: 0;
-  bottom: var(--overlay-composer-offset, 0px) !important;
+  bottom: 0 !important;
   z-index: 6;
-  padding: 4px 6px 0;
+  padding: 4px 6px var(--overlay-composer-offset, 0px);
   border-top: none;
   background: rgba(10, 19, 30, 0.34);
   backdrop-filter: blur(12px) saturate(120%);
   -webkit-backdrop-filter: blur(12px) saturate(120%);
   touch-action: pan-x;
-}
-
-/* Extend composer glass down to keyboard/accessory strip to avoid hard contrast. */
-body.keyboard-open .chat-overlay-panel .chat-input-container::after,
-body.chat-overlay-active.chat-input-focused .chat-overlay-panel .chat-input-container::after,
-body.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: var(--overlay-composer-offset, 0px);
-  background: rgba(10, 19, 30, 0.34);
-  backdrop-filter: blur(12px) saturate(120%);
-  -webkit-backdrop-filter: blur(12px) saturate(120%);
-  pointer-events: none;
 }
 
 body.ios-touch.keyboard-open .chat-overlay-panel,
@@ -3030,7 +3014,7 @@ body.ios-touch.chat-overlay-active .chat-overlay-panel:focus-within {
 body.ios-touch.keyboard-open .chat-overlay-panel .chat-input-container,
 body.ios-touch.chat-overlay-active.chat-input-focused .chat-overlay-panel .chat-input-container,
 body.ios-touch.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container {
-  bottom: var(--overlay-composer-offset, 44px) !important;
+  bottom: 0 !important;
 }
 
 body.chat-overlay-active .tab-bar {
