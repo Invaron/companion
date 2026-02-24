@@ -3059,9 +3059,9 @@ body.keyboard-open.chat-overlay-active .chat-overlay-backdrop {
 /* iOS PWA keyboard can shift fixed overlays upward; extend backdrop into the
    reported keyboard gap so blur remains continuous behind the lifted composer. */
 body.ios-touch.keyboard-open.chat-overlay-active .chat-overlay-backdrop {
-  /* iOS accessory/utility bar applies native compositing we cannot style directly.
-     Use one uniform tint layer with no CSS blur to avoid visible intensity seams. */
-  background: rgba(8, 18, 30, 0.56);
+  /* iOS keyboard-up quick chat: remove remaining glass layer so chat body and
+     composer surfaces stay fully transparent. */
+  background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   bottom: calc(-1 * var(--keyboard-gap));
