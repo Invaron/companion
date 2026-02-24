@@ -2951,7 +2951,8 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
 }
 
 /* Keep quick-chat as a bottom sheet when keyboard is open. */
-body.keyboard-open .chat-overlay-panel {
+body.keyboard-open .chat-overlay-panel,
+body.chat-overlay-active .chat-overlay-panel:focus-within {
   bottom: var(--keyboard-gap);
   height: min(56dvh, calc(100dvh - var(--keyboard-gap) - 6px));
   max-height: calc(100dvh - var(--keyboard-gap) - 6px);
@@ -2962,17 +2963,20 @@ body.keyboard-open .chat-overlay-panel {
   -webkit-backdrop-filter: blur(6px);
 }
 
-body.keyboard-open .chat-overlay-panel .chat-view {
+body.keyboard-open .chat-overlay-panel .chat-view,
+body.chat-overlay-active .chat-overlay-panel:focus-within .chat-view {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
-body.keyboard-open .chat-overlay-header {
+body.keyboard-open .chat-overlay-header,
+body.chat-overlay-active .chat-overlay-panel:focus-within .chat-overlay-header {
   display: none;
 }
 
-body.keyboard-open .chat-overlay-panel .chat-input-container {
+body.keyboard-open .chat-overlay-panel .chat-input-container,
+body.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container {
   position: sticky;
   left: auto;
   right: auto;
@@ -2990,7 +2994,8 @@ body.chat-overlay-active .tab-bar {
   -webkit-backdrop-filter: none;
 }
 
-body.keyboard-open .chat-overlay-panel .chat-messages {
+body.keyboard-open .chat-overlay-panel .chat-messages,
+body.chat-overlay-active .chat-overlay-panel:focus-within .chat-messages {
   padding-bottom: 8px;
   margin-bottom: 0;
   scroll-padding-bottom: 12px;
@@ -3002,6 +3007,14 @@ body.keyboard-open.chat-overlay-active .tab-content-area,
 body.keyboard-open.chat-overlay-active .tab-bar {
   filter: none;
   pointer-events: none;
+}
+
+/* Fallback for iOS states where keyboard-open class lags/misses during overlay input focus. */
+body.chat-overlay-active .chat-overlay-panel:focus-within ~ .tab-bar {
+  transform: translateY(130%);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 body.keyboard-open .chat-overlay-backdrop {
