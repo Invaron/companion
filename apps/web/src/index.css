@@ -2801,7 +2801,7 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
   position: fixed;
   bottom: calc(var(--tab-bar-safe-space) + 16px);
   right: 16px;
-  z-index: 95;
+  z-index: 130;
   width: 52px;
   height: 52px;
   border-radius: 50%;

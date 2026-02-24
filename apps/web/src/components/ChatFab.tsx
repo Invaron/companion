@@ -1,3 +1,4 @@
+import type { MouseEvent, SyntheticEvent } from "react";
 import { useI18n } from "../lib/i18n";
 
 interface ChatFabProps {
@@ -10,11 +11,24 @@ export function ChatFab({ visible, onClick, hasUnread }: ChatFabProps): JSX.Elem
   const { t } = useI18n();
   if (!visible) return null;
 
+  const swallowPointer = (event: SyntheticEvent): void => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    onClick();
+  };
+
   return (
     <button
       type="button"
       className="chat-fab"
-      onClick={onClick}
+      onPointerDown={swallowPointer}
+      onTouchStart={swallowPointer}
+      onClick={handleClick}
       aria-label={t("Open chat overlay")}
     >
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
