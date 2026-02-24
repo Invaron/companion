@@ -3163,11 +3163,14 @@ body.keyboard-open.chat-overlay-docked .chat-overlay-panel-docked .chat-messages
   scroll-padding-bottom: 72px;
 }
 
-/* iOS-style bottom anchoring: keep conversation parked near the composer when
-   content is shorter than the viewport, without moving the root page layer. */
-body.chat-overlay-docked .chat-overlay-panel-docked .chat-messages > .chat-bubble:first-of-type,
-body.chat-overlay-docked .chat-overlay-panel-docked .chat-messages > .chat-welcome:first-child {
+/* iOS-style bottom anchoring: add a flexible top spacer inside the message
+   scroller so short conversations sit near the composer. This avoids brittle
+   first-child selectors (chat-load-more and other divs break :first-of-type). */
+body.chat-overlay-docked .chat-overlay-panel-docked .chat-messages::before {
+  content: "";
+  display: block;
   margin-top: auto;
+  flex: 0 0 auto;
 }
 
 /* Blur all background content when overlay keyboard is open */
