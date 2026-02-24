@@ -2995,26 +2995,12 @@ body.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container 
   right: 0;
   bottom: 0 !important;
   z-index: 6;
-  padding: 4px 6px var(--overlay-composer-offset, 0px);
+  padding: 4px 6px 8px;
   border-top: none;
   background: rgba(10, 19, 30, 0.34);
   backdrop-filter: blur(12px) saturate(120%);
   -webkit-backdrop-filter: blur(12px) saturate(120%);
   touch-action: pan-x;
-}
-
-body.ios-touch.keyboard-open .chat-overlay-panel,
-body.ios-touch.chat-overlay-active.chat-input-focused .chat-overlay-panel,
-body.ios-touch.chat-overlay-active .chat-overlay-panel:focus-within {
-  --overlay-composer-offset: 44px;
-}
-
-/* iOS PWA/Safari keyboard accessory strip (prev/next/done) sits above the keyboard.
-   Keep quick overlay composer above that strip consistently across tabs. */
-body.ios-touch.keyboard-open .chat-overlay-panel .chat-input-container,
-body.ios-touch.chat-overlay-active.chat-input-focused .chat-overlay-panel .chat-input-container,
-body.ios-touch.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container {
-  bottom: 0 !important;
 }
 
 body.chat-overlay-active .tab-bar {
@@ -3026,8 +3012,8 @@ body.keyboard-open .chat-overlay-panel .chat-messages,
 body.chat-overlay-active.chat-input-focused .chat-overlay-panel .chat-messages,
 body.chat-overlay-active .chat-overlay-panel:focus-within .chat-messages {
   padding-bottom: 8px;
-  margin-bottom: calc(72px + var(--overlay-composer-offset, 0px));
-  scroll-padding-bottom: calc(72px + var(--overlay-composer-offset, 0px));
+  margin-bottom: 72px;
+  scroll-padding-bottom: 72px;
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 34px), transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 34px), transparent 100%);
   background: transparent;
