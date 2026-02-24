@@ -2890,6 +2890,19 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
   animation: none;
 }
 
+.chat-overlay-panel-docked .chat-tab {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+.chat-overlay-panel-docked .chat-view {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+}
+
 /* Header bar at top of overlay with close button */
 .chat-overlay-header {
   flex-shrink: 0;
@@ -3002,9 +3015,9 @@ body.ios-touch.keyboard-open.chat-overlay-docked .chat-overlay-panel-docked {
   bottom: 0;
   height: auto;
   transform: none !important;
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: var(--chat-overlay-keyboard-scrim);
+  backdrop-filter: blur(calc(var(--chat-overlay-keyboard-blur) + 2px)) saturate(var(--chat-overlay-keyboard-saturate));
+  -webkit-backdrop-filter: blur(calc(var(--chat-overlay-keyboard-blur) + 2px)) saturate(var(--chat-overlay-keyboard-saturate));
 }
 
 body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-view {
