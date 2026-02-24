@@ -3066,9 +3066,14 @@ body.chat-overlay-active .chat-overlay-panel:focus-within ~ .tab-bar {
 body.keyboard-open.chat-overlay-active .chat-overlay-backdrop,
 body.chat-overlay-active.chat-input-focused .chat-overlay-backdrop {
   display: block;
-  background: rgba(7, 14, 20, 0.18);
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(10, 19, 30, 0.34) 0%,
+      rgba(10, 19, 30, 0.28) 100%
+    );
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
   pointer-events: none;
   animation: none;
 }
