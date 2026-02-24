@@ -421,8 +421,7 @@ export default function App(): JSX.Element {
 
   useLayoutEffect(() => {
     const tabContent = document.querySelector(".tab-content-area");
-    const tabBar = document.querySelector(".tab-bar");
-    if (!(tabContent instanceof HTMLElement) || !(tabBar instanceof HTMLElement)) {
+    if (!(tabContent instanceof HTMLElement)) {
       return;
     }
 
@@ -503,6 +502,9 @@ export default function App(): JSX.Element {
         if (overlayPanel.contains(element)) {
           return;
         }
+        if (element.closest(".tab-bar")) {
+          return;
+        }
         if (element.hasAttribute("data-overlay-global-focus-lock")) {
           return;
         }
@@ -559,28 +561,19 @@ export default function App(): JSX.Element {
     if (shouldIsolateOverlay) {
       tabContent.setAttribute("inert", "");
       tabContent.setAttribute("aria-hidden", "true");
-      tabBar.setAttribute("inert", "");
-      tabBar.setAttribute("aria-hidden", "true");
       lockFocusableTree(tabContent);
-      lockFocusableTree(tabBar);
       lockFocusableOutsideOverlay();
     } else {
       tabContent.removeAttribute("inert");
       tabContent.removeAttribute("aria-hidden");
-      tabBar.removeAttribute("inert");
-      tabBar.removeAttribute("aria-hidden");
       unlockFocusableTree(tabContent);
-      unlockFocusableTree(tabBar);
       unlockFocusableOutsideOverlay();
     }
 
     return () => {
       tabContent.removeAttribute("inert");
       tabContent.removeAttribute("aria-hidden");
-      tabBar.removeAttribute("inert");
-      tabBar.removeAttribute("aria-hidden");
       unlockFocusableTree(tabContent);
-      unlockFocusableTree(tabBar);
       unlockFocusableOutsideOverlay();
     };
   }, [chatOverlayOpen, activeTab]);
@@ -655,13 +648,96 @@ export default function App(): JSX.Element {
     setPushMessage(result.message ?? "");
   };
 
-  const handleTabChange = (tab: TabId): void => {
-    setActiveTab(tab);
-
-    // Close chat overlay when switching to the chat tab directly
-    if (tab === "chat") {
-      setChatOverlayOpen(false);
+  const closeChatOverlay = useCallback((): void => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) {
+      active.blur();
     }
+    document.body.classList.remove("chat-input-focused");
+    document.body.classList.remove("keyboard-open");
+    document.documentElement.style.setProperty("--keyboard-gap", "0px");
+
+    const tabContent = document.querySelector(".tab-content-area");
+    const tabBar = document.querySelector(".tab-bar");
+    tabContent?.removeAttribute("inert");
+    tabContent?.removeAttribute("aria-hidden");
+    tabBar?.removeAttribute("inert");
+    tabBar?.removeAttribute("aria-hidden");
+
+    const lockedScoped = document.querySelectorAll<HTMLElement>("[data-overlay-focus-lock='1']");
+    lockedScoped.forEach((element) => {
+      const previousTabIndex = element.getAttribute("data-overlay-prev-tabindex");
+      if (previousTabIndex === "") {
+        element.removeAttribute("tabindex");
+      } else if (previousTabIndex) {
+        element.setAttribute("tabindex", previousTabIndex);
+      }
+      element.removeAttribute("data-overlay-prev-tabindex");
+
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement ||
+        element instanceof HTMLSelectElement ||
+        element instanceof HTMLButtonElement
+      ) {
+        const previousDisabled = element.getAttribute("data-overlay-prev-disabled");
+        element.disabled = previousDisabled === "1";
+        element.removeAttribute("data-overlay-prev-disabled");
+      }
+
+      if (element.hasAttribute("data-overlay-prev-contenteditable")) {
+        const previousContentEditable = element.getAttribute("data-overlay-prev-contenteditable");
+        if (previousContentEditable === "") {
+          element.removeAttribute("contenteditable");
+        } else if (previousContentEditable) {
+          element.setAttribute("contenteditable", previousContentEditable);
+        }
+        element.removeAttribute("data-overlay-prev-contenteditable");
+      }
+
+      element.removeAttribute("data-overlay-focus-lock");
+    });
+
+    const lockedGlobal = document.querySelectorAll<HTMLElement>("[data-overlay-global-focus-lock='1']");
+    lockedGlobal.forEach((element) => {
+      const previousTabIndex = element.getAttribute("data-overlay-global-prev-tabindex");
+      if (previousTabIndex === "") {
+        element.removeAttribute("tabindex");
+      } else if (previousTabIndex) {
+        element.setAttribute("tabindex", previousTabIndex);
+      }
+      element.removeAttribute("data-overlay-global-prev-tabindex");
+
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement ||
+        element instanceof HTMLSelectElement ||
+        element instanceof HTMLButtonElement
+      ) {
+        const previousDisabled = element.getAttribute("data-overlay-global-prev-disabled");
+        element.disabled = previousDisabled === "1";
+        element.removeAttribute("data-overlay-global-prev-disabled");
+      }
+
+      if (element.hasAttribute("data-overlay-global-prev-contenteditable")) {
+        const previousContentEditable = element.getAttribute("data-overlay-global-prev-contenteditable");
+        if (previousContentEditable === "") {
+          element.removeAttribute("contenteditable");
+        } else if (previousContentEditable) {
+          element.setAttribute("contenteditable", previousContentEditable);
+        }
+        element.removeAttribute("data-overlay-global-prev-contenteditable");
+      }
+
+      element.removeAttribute("data-overlay-global-focus-lock");
+    });
+
+    setChatOverlayOpen(false);
+  }, []);
+
+  const handleTabChange = (tab: TabId): void => {
+    closeChatOverlay();
+    setActiveTab(tab);
 
     if (tab !== "schedule") {
       setFocusDeadlineId(null);
@@ -820,7 +896,7 @@ export default function App(): JSX.Element {
           {/* Chat overlay — floating bottom sheet on non-chat tabs */}
           {chatOverlayOpen && !isChatTab && (
             <>
-              <div className="chat-overlay-backdrop" onClick={() => setChatOverlayOpen(false)} />
+              <div className="chat-overlay-backdrop" onClick={closeChatOverlay} />
               <div
                 className="chat-overlay-panel"
                 onFocus={() => {
@@ -844,7 +920,7 @@ export default function App(): JSX.Element {
                   <button
                     type="button"
                     className="chat-overlay-close-btn"
-                    onClick={() => setChatOverlayOpen(false)}
+                    onClick={closeChatOverlay}
                     aria-label={t("Close chat overlay")}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

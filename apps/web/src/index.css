@@ -2860,22 +2860,21 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
   position: fixed !important;
   left: 0;
   right: 0;
-  bottom: calc(var(--tab-bar-safe-space) - 2px);
-  top: auto;
-  height: min(52dvh, 560px);
-  max-height: calc(100dvh - var(--tab-bar-safe-space) - 18px);
+  top: 0;
+  bottom: var(--tab-bar-safe-space);
+  height: auto;
+  max-height: none;
   z-index: 102;
-  border-radius: 16px 16px 0 0;
-  border: 1px solid var(--card-border);
-  border-bottom: none;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
-  animation: chat-overlay-slide-up 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  animation: chat-overlay-fade-in 0.2s ease both;
   overflow: hidden;
   display: flex !important;
   flex-direction: column;
-  background: var(--chat-overlay-panel-bg);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* Header bar at top of overlay with close button */
@@ -2884,7 +2883,7 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 8px 8px 16px;
+  padding: calc(6px + env(safe-area-inset-top)) 8px 8px 16px;
   background: var(--chat-overlay-header-bg);
   -webkit-tap-highlight-color: transparent;
   min-height: 40px;
@@ -2939,28 +2938,31 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
 }
 
 .chat-overlay-panel .chat-input-container {
-  position: relative;
-  bottom: auto;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--tab-bar-safe-space);
   border-radius: 0;
   flex-shrink: 0;
-  padding: 6px 8px 8px;
+  padding: 6px 8px 6px;
+  z-index: 6;
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-top: none;
+  touch-action: pan-x;
 }
 
-/* Keep quick-chat as a bottom sheet when keyboard is open. */
+/* Quick-chat keyboard-up: keep full-frame layout and pin composer to keyboard edge. */
 body.keyboard-open .chat-overlay-panel,
 body.chat-overlay-active.chat-input-focused .chat-overlay-panel,
 body.chat-overlay-active .chat-overlay-panel:focus-within {
-  inset: auto 0 0 0;
-  height: min(56dvh, calc(100dvh - 6px));
-  max-height: calc(100dvh - 6px);
-  border-radius: 16px 16px 0 0;
-  border: 1px solid var(--card-border);
-  border-bottom: none;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
+  inset: 0;
+  height: auto;
+  max-height: none;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
   animation: none;
   transform: none;
   background: transparent;
@@ -2985,11 +2987,7 @@ body.chat-overlay-active .chat-overlay-panel:focus-within .chat-overlay-header {
 body.keyboard-open .chat-overlay-panel .chat-input-container,
 body.chat-overlay-active.chat-input-focused .chat-overlay-panel .chat-input-container,
 body.chat-overlay-active .chat-overlay-panel:focus-within .chat-input-container {
-  position: fixed;
-  left: 0;
-  right: 0;
   bottom: 0 !important;
-  z-index: 6;
   padding: 4px 6px 8px;
   border-top: none;
   background: rgba(10, 19, 30, 0.34);
@@ -3014,11 +3012,16 @@ body.chat-overlay-active .chat-overlay-panel:focus-within .chat-messages {
   background: transparent;
 }
 
+body:not(.keyboard-open) .chat-overlay-panel .chat-messages {
+  margin-bottom: calc(56px + var(--tab-bar-safe-space));
+  scroll-padding-bottom: calc(56px + var(--tab-bar-safe-space));
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 20px), transparent 100%);
+}
+
 /* Blur all background content when overlay keyboard is open */
 body.keyboard-open.chat-overlay-active .tab-content-area,
-body.keyboard-open.chat-overlay-active .tab-bar,
 body.chat-overlay-active.chat-input-focused .tab-content-area,
-body.chat-overlay-active.chat-input-focused .tab-bar,
 body.chat-overlay-active .chat-overlay-panel:focus-within ~ .tab-content-area {
   filter: none;
   pointer-events: none;
