@@ -2883,6 +2883,17 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
   -webkit-backdrop-filter: blur(8px) saturate(108%);
 }
 
+.chat-overlay-panel-docked {
+  position: absolute !important;
+  inset: 0;
+  z-index: 103;
+  animation: none;
+}
+
+.chat-overlay-panel-docked .chat-overlay-header {
+  display: none;
+}
+
 /* Header bar at top of overlay with close button */
 .chat-overlay-header {
   flex-shrink: 0;
@@ -2990,6 +3001,16 @@ body.ios-touch.keyboard-open.chat-overlay-active .chat-overlay-panel {
   transform: translate3d(0, var(--overlay-panel-shift-comp), 0);
 }
 
+body.ios-touch.keyboard-open.chat-overlay-docked .chat-overlay-panel-docked {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  transform: none !important;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-view {
   background: transparent;
   backdrop-filter: none;
@@ -3054,6 +3075,10 @@ body.keyboard-open.chat-overlay-active .tab-content-area {
   pointer-events: none;
 }
 
+body.keyboard-open.chat-overlay-docked .tab-content-area {
+  pointer-events: auto;
+}
+
 /* iOS utility/accessory bar can expose raw tab content between composer and
    keyboard; blur the underlying tab layer itself to keep the visual surface
    continuous even where overlay/backdrop cannot render. */
@@ -3074,6 +3099,10 @@ body.ios-touch.keyboard-open.chat-overlay-active .chat-overlay-backdrop {
   top: var(--visual-viewport-offset-top);
   bottom: 0;
   height: auto;
+}
+
+body.chat-overlay-docked .chat-overlay-backdrop {
+  display: none !important;
 }
 
 body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-bubble-assistant .chat-bubble-content,
@@ -5870,6 +5899,7 @@ body:not(.keyboard-open) .app-shell-chat-active .chat-messages {
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
 }
 
 .tab-panel {

@@ -143,10 +143,14 @@ export default function App(): JSX.Element {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeatureLabel, setUpgradeFeatureLabel] = useState<string | undefined>(undefined);
   const [chatOverlayOpen, setChatOverlayOpen] = useState(false);
+  const [isIosTouchDevice, setIsIosTouchDevice] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const overlayLaunchSourceTabRef = useRef<TabId | null>(null);
   const overlayLaunchGuardUntilRef = useRef(0);
   const seenCriticalNotifications = useRef<Set<string>>(new Set());
   const { planInfo, hasFeature } = usePlan(authState === "ready");
+  const isChatTab = activeTab === "chat";
+  const isOverlayDocked = chatOverlayOpen && !isChatTab && isIosTouchDevice && isKeyboardOpen;
 
   useEffect(() => {
     let disposed = false;
@@ -262,6 +266,7 @@ export default function App(): JSX.Element {
       /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     document.body.classList.toggle("ios-touch", isIOS);
+    setIsIosTouchDevice(isIOS);
 
     const hasEditableFocus = (): boolean => {
       const active = document.activeElement;
@@ -329,6 +334,7 @@ export default function App(): JSX.Element {
       }
       root.style.setProperty("--overlay-panel-shift-comp", `${overlayPanelShiftComp}px`);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
+      setIsKeyboardOpen(keyboardOpen);
     };
 
     const handleFocusEvent = (): void => {
@@ -363,6 +369,8 @@ export default function App(): JSX.Element {
       root.style.removeProperty("--overlay-panel-shift-comp");
       document.body.classList.remove("keyboard-open");
       document.body.classList.remove("ios-touch");
+      setIsKeyboardOpen(false);
+      setIsIosTouchDevice(false);
     };
   }, []);
 
@@ -444,6 +452,13 @@ export default function App(): JSX.Element {
       document.body.classList.remove("chat-overlay-active");
     };
   }, [chatOverlayOpen]);
+
+  useEffect(() => {
+    document.body.classList.toggle("chat-overlay-docked", isOverlayDocked);
+    return () => {
+      document.body.classList.remove("chat-overlay-docked");
+    };
+  }, [isOverlayDocked]);
 
   useEffect(() => {
     if (!chatOverlayOpen) {
@@ -598,7 +613,7 @@ export default function App(): JSX.Element {
       });
     };
 
-    const shouldIsolateOverlay = chatOverlayOpen && activeTab !== "chat";
+    const shouldIsolateOverlay = chatOverlayOpen && activeTab !== "chat" && !isOverlayDocked;
     if (shouldIsolateOverlay) {
       tabContent.setAttribute("inert", "");
       tabContent.setAttribute("aria-hidden", "true");
@@ -617,7 +632,7 @@ export default function App(): JSX.Element {
       unlockFocusableTree(tabContent);
       unlockFocusableOutsideOverlay();
     };
-  }, [chatOverlayOpen, activeTab]);
+  }, [chatOverlayOpen, activeTab, isOverlayDocked]);
 
   useEffect(() => {
     if (!chatOverlayOpen || activeTab === "chat") {
@@ -897,7 +912,21 @@ export default function App(): JSX.Element {
     return <ConsentGate onAccepted={() => setAuthState("ready")} />;
   }
 
-  const isChatTab = activeTab === "chat";
+  const handleOverlayPanelFocus = (): void => {
+    // When the input inside the overlay gets focus, scroll messages to bottom
+    // so the composer remains visible during iOS keyboard animation.
+    const scrollOverlayMessages = (): void => {
+      const panel = document.querySelector(".chat-overlay-panel");
+      const msgs = panel?.querySelector(".chat-messages");
+      if (msgs) {
+        msgs.scrollTo({ top: msgs.scrollHeight, behavior: "auto" });
+      }
+    };
+
+    requestAnimationFrame(scrollOverlayMessages);
+    setTimeout(scrollOverlayMessages, 150);
+    setTimeout(scrollOverlayMessages, 400);
+  };
 
   return (
     <main className={`app-shell chat-mood-${chatMood} ${isChatTab ? "app-shell-chat-active" : ""}`}>
@@ -952,29 +981,21 @@ export default function App(): JSX.Element {
                 pushMessage={pushMessage}
               />
             )}
+
+            {isOverlayDocked && (
+              <div className="chat-overlay-panel chat-overlay-panel-docked" onFocus={handleOverlayPanelFocus}>
+                <ChatTab mood={chatMood} onMoodChange={handleMoodChange} onDataMutated={handleDataMutated} />
+              </div>
+            )}
           </div>
 
           {/* Chat overlay — floating bottom sheet on non-chat tabs */}
-          {chatOverlayOpen && !isChatTab && (
+          {chatOverlayOpen && !isChatTab && !isOverlayDocked && (
             <>
               <div className="chat-overlay-backdrop" onClick={closeChatOverlay} />
               <div
                 className="chat-overlay-panel"
-                onFocus={() => {
-                  // When the input inside the overlay gets focus, scroll messages
-                  // to the bottom so the input stays visible above the keyboard.
-                  const scrollOverlayMessages = (): void => {
-                    const panel = document.querySelector(".chat-overlay-panel");
-                    const msgs = panel?.querySelector(".chat-messages");
-                    if (msgs) {
-                      msgs.scrollTo({ top: msgs.scrollHeight, behavior: "auto" });
-                    }
-                  };
-                  // Immediate + delayed — keyboard animation on iOS takes ~300ms
-                  requestAnimationFrame(scrollOverlayMessages);
-                  setTimeout(scrollOverlayMessages, 150);
-                  setTimeout(scrollOverlayMessages, 400);
-                }}
+                onFocus={handleOverlayPanelFocus}
               >
                 <div className="chat-overlay-header">
                   <span className="chat-overlay-title">{t("Chat")}</span>
