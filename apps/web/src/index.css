@@ -3028,30 +3028,6 @@ body.chat-overlay-active .chat-overlay-panel:focus-within .chat-messages {
   background: transparent;
 }
 
-/* Bridge blur for the iOS keyboard accessory strip area so the composer-to-keyboard
-   transition matches the overlay mood tint instead of cutting to a hard void.
-   Attach to body, above overlay panel, and only show while keyboard is active. */
-body.ios-touch.chat-overlay-active::after {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--overlay-composer-offset, 44px);
-  background: rgba(10, 19, 30, 0.34);
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  pointer-events: none;
-  z-index: 103;
-  opacity: 0;
-  transition: opacity 140ms ease;
-}
-
-body.ios-touch.keyboard-open.chat-overlay-active::after,
-body.ios-touch.chat-overlay-active.chat-input-focused::after {
-  opacity: 1;
-}
-
 /* Blur all background content when overlay keyboard is open */
 body.keyboard-open.chat-overlay-active .tab-content-area,
 body.keyboard-open.chat-overlay-active .tab-bar,
@@ -3071,8 +3047,14 @@ body.chat-overlay-active .chat-overlay-panel:focus-within ~ .tab-bar {
   visibility: hidden;
 }
 
-body.keyboard-open .chat-overlay-backdrop {
-  display: none;
+body.keyboard-open.chat-overlay-active .chat-overlay-backdrop,
+body.chat-overlay-active.chat-input-focused .chat-overlay-backdrop {
+  display: block;
+  background: rgba(7, 14, 20, 0.18);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  pointer-events: none;
+  animation: none;
 }
 
 @keyframes chat-overlay-slide-up {
