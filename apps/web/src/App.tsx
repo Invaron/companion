@@ -419,7 +419,7 @@ export default function App(): JSX.Element {
     };
   }, [chatOverlayOpen]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const tabContent = document.querySelector(".tab-content-area");
     const tabBar = document.querySelector(".tab-bar");
     if (!(tabContent instanceof HTMLElement) || !(tabBar instanceof HTMLElement)) {
@@ -489,6 +489,72 @@ export default function App(): JSX.Element {
       });
     };
 
+    const lockFocusableOutsideOverlay = (): void => {
+      const overlayPanel = document.querySelector(".chat-overlay-panel");
+      if (!(overlayPanel instanceof HTMLElement)) {
+        return;
+      }
+
+      const focusables = document.body.querySelectorAll<HTMLElement>(
+        "input, textarea, select, button, [tabindex], [contenteditable='true']"
+      );
+
+      focusables.forEach((element) => {
+        if (overlayPanel.contains(element)) {
+          return;
+        }
+        if (element.hasAttribute("data-overlay-global-focus-lock")) {
+          return;
+        }
+        element.setAttribute("data-overlay-global-focus-lock", "1");
+
+        const previousTabIndex = element.getAttribute("tabindex");
+        element.setAttribute("data-overlay-global-prev-tabindex", previousTabIndex ?? "");
+        element.setAttribute("tabindex", "-1");
+
+        if (isFormControl(element)) {
+          element.setAttribute("data-overlay-global-prev-disabled", element.disabled ? "1" : "0");
+          element.disabled = true;
+        }
+
+        if (element.hasAttribute("contenteditable")) {
+          element.setAttribute("data-overlay-global-prev-contenteditable", element.getAttribute("contenteditable") ?? "");
+          element.setAttribute("contenteditable", "false");
+        }
+      });
+    };
+
+    const unlockFocusableOutsideOverlay = (): void => {
+      const locked = document.body.querySelectorAll<HTMLElement>("[data-overlay-global-focus-lock='1']");
+      locked.forEach((element) => {
+        const previousTabIndex = element.getAttribute("data-overlay-global-prev-tabindex");
+        if (previousTabIndex === "") {
+          element.removeAttribute("tabindex");
+        } else if (previousTabIndex) {
+          element.setAttribute("tabindex", previousTabIndex);
+        }
+        element.removeAttribute("data-overlay-global-prev-tabindex");
+
+        if (isFormControl(element)) {
+          const previousDisabled = element.getAttribute("data-overlay-global-prev-disabled");
+          element.disabled = previousDisabled === "1";
+          element.removeAttribute("data-overlay-global-prev-disabled");
+        }
+
+        if (element.hasAttribute("data-overlay-global-prev-contenteditable")) {
+          const previousContentEditable = element.getAttribute("data-overlay-global-prev-contenteditable");
+          if (previousContentEditable === "") {
+            element.removeAttribute("contenteditable");
+          } else if (previousContentEditable) {
+            element.setAttribute("contenteditable", previousContentEditable);
+          }
+          element.removeAttribute("data-overlay-global-prev-contenteditable");
+        }
+
+        element.removeAttribute("data-overlay-global-focus-lock");
+      });
+    };
+
     const shouldIsolateOverlay = chatOverlayOpen && activeTab !== "chat";
     if (shouldIsolateOverlay) {
       tabContent.setAttribute("inert", "");
@@ -497,6 +563,7 @@ export default function App(): JSX.Element {
       tabBar.setAttribute("aria-hidden", "true");
       lockFocusableTree(tabContent);
       lockFocusableTree(tabBar);
+      lockFocusableOutsideOverlay();
     } else {
       tabContent.removeAttribute("inert");
       tabContent.removeAttribute("aria-hidden");
@@ -504,6 +571,7 @@ export default function App(): JSX.Element {
       tabBar.removeAttribute("aria-hidden");
       unlockFocusableTree(tabContent);
       unlockFocusableTree(tabBar);
+      unlockFocusableOutsideOverlay();
     }
 
     return () => {
@@ -513,6 +581,7 @@ export default function App(): JSX.Element {
       tabBar.removeAttribute("aria-hidden");
       unlockFocusableTree(tabContent);
       unlockFocusableTree(tabBar);
+      unlockFocusableOutsideOverlay();
     };
   }, [chatOverlayOpen, activeTab]);
 
