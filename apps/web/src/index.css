@@ -2953,8 +2953,8 @@ body:not(.chat-tab-active):not(.keyboard-open) .tab-content-area {
 /* Keep quick-chat as a bottom sheet when keyboard is open. */
 body.keyboard-open .chat-overlay-panel {
   bottom: 0;
-  height: min(56dvh, calc(100dvh - var(--keyboard-gap) - 6px));
-  max-height: calc(100dvh - var(--keyboard-gap) - 6px);
+  height: min(56dvh, calc(100dvh - 6px));
+  max-height: calc(100dvh - 6px);
   border-radius: 16px 16px 0 0;
   animation: none;
   background: var(--chat-overlay-panel-bg);
@@ -2976,7 +2976,7 @@ body.keyboard-open .chat-overlay-panel .chat-input-container {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: var(--keyboard-gap);
+  bottom: 0;
   z-index: 6;
   padding: 6px 8px 8px;
   border-top: none;
