@@ -143,6 +143,8 @@ export default function App(): JSX.Element {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeatureLabel, setUpgradeFeatureLabel] = useState<string | undefined>(undefined);
   const [chatOverlayOpen, setChatOverlayOpen] = useState(false);
+  const overlayLaunchSourceTabRef = useRef<TabId | null>(null);
+  const overlayLaunchGuardUntilRef = useRef(0);
   const seenCriticalNotifications = useRef<Set<string>>(new Set());
   const { planInfo, hasFeature } = usePlan(authState === "ready");
 
@@ -418,6 +420,21 @@ export default function App(): JSX.Element {
       document.body.classList.remove("chat-overlay-active");
     };
   }, [chatOverlayOpen]);
+
+  useEffect(() => {
+    if (!chatOverlayOpen) {
+      overlayLaunchSourceTabRef.current = null;
+      overlayLaunchGuardUntilRef.current = 0;
+      return;
+    }
+
+    const originTab = overlayLaunchSourceTabRef.current;
+    const guardUntil = overlayLaunchGuardUntilRef.current;
+    const guardStillActive = guardUntil > Date.now();
+    if (originTab && originTab !== "chat" && activeTab === "chat" && guardStillActive) {
+      setActiveTab(originTab);
+    }
+  }, [activeTab, chatOverlayOpen]);
 
   useLayoutEffect(() => {
     const tabContent = document.querySelector(".tab-content-area");
@@ -736,6 +753,19 @@ export default function App(): JSX.Element {
   }, []);
 
   const handleTabChange = (tab: TabId): void => {
+    const guardStillActive = overlayLaunchGuardUntilRef.current > Date.now();
+    const overlayOriginTab = overlayLaunchSourceTabRef.current;
+    const leakedOverlayLaunchToChatTab =
+      tab === "chat" &&
+      guardStillActive &&
+      overlayOriginTab !== null &&
+      overlayOriginTab !== "chat" &&
+      activeTab === overlayOriginTab;
+    if (leakedOverlayLaunchToChatTab) {
+      setChatOverlayOpen(true);
+      return;
+    }
+
     closeChatOverlay();
     setActiveTab(tab);
 
@@ -747,6 +777,12 @@ export default function App(): JSX.Element {
       setSettingsSection(null);
     }
   };
+
+  const openChatOverlayFromFab = useCallback((): void => {
+    overlayLaunchSourceTabRef.current = activeTab;
+    overlayLaunchGuardUntilRef.current = Date.now() + 1500;
+    setChatOverlayOpen(true);
+  }, [activeTab]);
 
   const openUpgradeModal = useCallback((featureLabel?: string) => {
     setUpgradeFeatureLabel(featureLabel);
@@ -937,7 +973,7 @@ export default function App(): JSX.Element {
           {/* Floating chat button — visible on non-chat tabs when overlay is closed */}
           <ChatFab
             visible={!isChatTab && !chatOverlayOpen}
-            onClick={() => setChatOverlayOpen(true)}
+            onClick={openChatOverlayFromFab}
           />
 
           {/* Bottom tab bar */}

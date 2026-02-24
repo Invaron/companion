@@ -1,4 +1,4 @@
-import type { MouseEvent, SyntheticEvent } from "react";
+import type { MouseEvent, SyntheticEvent, TouchEvent } from "react";
 import { useI18n } from "../lib/i18n";
 
 interface ChatFabProps {
@@ -16,10 +16,20 @@ export function ChatFab({ visible, onClick, hasUnread }: ChatFabProps): JSX.Elem
     event.stopPropagation();
   };
 
+  const activate = (): void => {
+    onClick();
+  };
+
   const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
     event.preventDefault();
     event.stopPropagation();
-    onClick();
+    activate();
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLButtonElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    activate();
   };
 
   return (
@@ -28,6 +38,7 @@ export function ChatFab({ visible, onClick, hasUnread }: ChatFabProps): JSX.Elem
       className="chat-fab"
       onPointerDown={swallowPointer}
       onTouchStart={swallowPointer}
+      onTouchEnd={handleTouchEnd}
       onClick={handleClick}
       aria-label={t("Open chat overlay")}
     >
