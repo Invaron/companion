@@ -105,7 +105,14 @@ function toCitationTarget(citation: ChatCitation): CitationLinkTarget {
 }
 
 function formatCitationChipLabel(citation: ChatCitation): string {
-  const label = citation.label.trim();
+  let label = citation.label.trim();
+
+  // Strip trailing ISO timestamps like "(2026-02-25T07:15:00.000Z)" or "(due 2026-03-05T22:59:00Z)"
+  label = label.replace(/\s*\((?:due\s*)?\d{4}-\d{2}-\d{2}T[\d:.]+Z?\)\s*$/, "");
+
+  // Strip trailing slashes from lecture titles
+  label = label.replace(/\s*\/\s*$/, "");
+
   return label.length > 56 ? `${label.slice(0, 56)}...` : label;
 }
 
