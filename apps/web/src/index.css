@@ -9407,17 +9407,3 @@ label small.muted {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-
-.chat-bubble-assistant .chat-bubble-content {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--card-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.chat-bubble-user .chat-bubble-content {
-  background: linear-gradient(145deg, rgba(246, 195, 127, 0.36), rgba(223, 166, 78, 0.3));
-  border-color: rgba(246, 195, 127, 0.5);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
