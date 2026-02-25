@@ -2887,10 +2887,16 @@ body.chat-overlay-docked .tab-content-area {
 .chat-overlay-backdrop {
   position: fixed;
   inset: 0;
-  background: var(--chat-overlay-backdrop);
+  background: transparent;
   z-index: 99;
   animation: chat-overlay-fade-in 0.2s ease both;
   -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+
+/* When keyboard opens, dim backdrop to help focus on chat */
+body.keyboard-open .chat-overlay-backdrop {
+  background: var(--chat-overlay-backdrop);
 }
 
 @keyframes chat-overlay-fade-in {
@@ -2902,33 +2908,43 @@ body.chat-overlay-docked .tab-content-area {
   position: fixed !important;
   left: 0;
   right: 0;
-  top: 0;
+  top: 45%;
   bottom: 0;
   height: auto;
   max-height: none;
   z-index: 102;
-  border-radius: 0;
+  border-radius: 18px 18px 0 0;
   border: none;
-  box-shadow: none;
-  animation: chat-overlay-fade-in 0.2s ease both;
+  border-top: 1px solid var(--card-border);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+  animation: chat-overlay-slide-up 0.25s ease both;
   overflow: hidden;
   display: flex !important;
   flex-direction: column;
   padding-bottom: var(--tab-bar-safe-space);
-  background: var(--chat-overlay-panel-bg);
-  backdrop-filter: blur(8px) saturate(108%);
-  -webkit-backdrop-filter: blur(8px) saturate(108%);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-/* Keyboard open: drop the glass effect and use an opaque bg-solid fill.
-   Since bg-solid now equals the keyboard mid-tone, the panel and the html
-   background-color are the same from the very first frame — no transition
-   needed, no colour jump possible. */
+@keyframes chat-overlay-slide-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Keyboard open: expand to full viewport with opaque bg-solid fill.
+   Since bg-solid equals the keyboard mid-tone, the panel and the html
+   background-color are the same from the very first frame. */
 body.keyboard-open .chat-overlay-panel {
+  top: 0;
   padding-bottom: 0;
+  border-radius: 0;
+  border-top: none;
+  box-shadow: none;
   background: var(--bg-solid, #0c1824);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  animation: none;
   transition: none;
 }
 
@@ -2976,12 +2992,17 @@ body.keyboard-open .chat-overlay-panel-docked {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(6px + env(safe-area-inset-top)) 8px 8px 16px;
-  background: var(--chat-overlay-header-bg);
+  padding: 10px 8px 6px 16px;
+  background: transparent;
   -webkit-tap-highlight-color: transparent;
-  min-height: 40px;
+  min-height: 36px;
   position: relative;
   z-index: 2;
+}
+
+/* When keyboard is open, pad for safe area since panel goes full-screen */
+body.keyboard-open .chat-overlay-header {
+  padding-top: calc(6px + env(safe-area-inset-top));
 }
 
 .chat-overlay-title {
@@ -3076,9 +3097,8 @@ body.keyboard-open .chat-overlay-panel-docked {
   touch-action: pan-x;
 }
 
-/* Quick-chat keyboard-up: keep full-frame layout, composer is a flex child.
-   KEEP the same visual treatment (panel-bg + blur) as keyboard-down for
-   consistency — the html gradient behind is also unchanged. */
+/* Quick-chat keyboard-up: expand to full frame for typing.
+   Overrides the half-sheet positioning (top: 45%) to fill viewport. */
 body.keyboard-open.chat-overlay-active .chat-overlay-panel:not(.chat-overlay-panel-docked) {
   inset: 0;
   height: auto;
@@ -3088,7 +3108,6 @@ body.keyboard-open.chat-overlay-active .chat-overlay-panel:not(.chat-overlay-pan
   box-shadow: none;
   animation: none;
   transform: none;
-  /* Keep keyboard-down visual: panel-bg + blur (inherited from base rule) */
 }
 
 /* iOS keyboard: extend panel to layout viewport bottom so the scrim fills
