@@ -3942,8 +3942,8 @@ body:not(.keyboard-open) .app-shell-chat-active .chat-messages {
   padding-bottom: 8px;
   margin-bottom: 56px;
   scroll-padding-bottom: 56px;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 18px), transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 18px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 32px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 32px), transparent 100%);
 }
 
 .chat-input-row {
