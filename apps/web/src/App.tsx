@@ -316,24 +316,6 @@ export default function App(): JSX.Element {
       }
       root.style.setProperty("--keyboard-gap", `${effectiveKeyboardGap}px`);
 
-      let overlayPanelShiftComp = 0;
-      const chatOverlayDocked = document.body.classList.contains("chat-overlay-docked");
-      if (keyboardOpen && chatOverlayActive && isIOS && !chatOverlayDocked) {
-        const overlayPanel = document.querySelector(".chat-overlay-panel");
-        if (overlayPanel instanceof HTMLElement) {
-          const panelRect = overlayPanel.getBoundingClientRect();
-          const panelBottomInLayout = panelRect.bottom + viewportOffsetTop;
-          const rawShiftDelta = window.innerHeight - panelBottomInLayout;
-          const currentCompRaw = getComputedStyle(root).getPropertyValue("--overlay-panel-shift-comp");
-          const currentComp = Number.parseFloat(currentCompRaw) || 0;
-          const normalizedShift = rawShiftDelta + currentComp;
-          overlayPanelShiftComp = Math.min(
-            maximumReasonableKeyboardGap,
-            Math.max(0, Math.round(normalizedShift))
-          );
-        }
-      }
-      root.style.setProperty("--overlay-panel-shift-comp", `${overlayPanelShiftComp}px`);
       document.body.classList.toggle("keyboard-open", keyboardOpen);
     };
 
@@ -366,7 +348,6 @@ export default function App(): JSX.Element {
       root.style.removeProperty("--visual-viewport-height");
       root.style.removeProperty("--visual-viewport-offset-top");
       root.style.removeProperty("--keyboard-gap");
-      root.style.removeProperty("--overlay-panel-shift-comp");
       document.body.classList.remove("keyboard-open");
       document.body.classList.remove("ios-touch");
       setIsIosTouchDevice(false);
@@ -711,7 +692,6 @@ export default function App(): JSX.Element {
     document.body.classList.remove("chat-input-focused");
     document.body.classList.remove("keyboard-open");
     document.documentElement.style.setProperty("--keyboard-gap", "0px");
-    document.documentElement.style.setProperty("--overlay-panel-shift-comp", "0px");
 
     const tabContent = document.querySelector(".tab-content-area");
     const tabBar = document.querySelector(".tab-bar");
