@@ -1770,6 +1770,7 @@ export function NutritionView(): JSX.Element {
       )}
 
       {activeTab === "settings" && (
+        <>
         <article className="nutrition-card">
           <div>
             <h3>Plan settings</h3>
@@ -2229,6 +2230,7 @@ export function NutritionView(): JSX.Element {
               )}
             </section>
           </article>
+        </>
       )}
     </section>
   );
