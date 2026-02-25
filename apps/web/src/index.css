@@ -47,6 +47,18 @@
   --chat-overlay-keyboard-blur: 14px;
   --chat-overlay-keyboard-saturate: 104%;
   --chat-mood-active-bg: var(--surface-soft);
+  /* Chat bubble colors — user bubble uses accent tint, assistant is neutral glass */
+  --chat-user-bg: linear-gradient(135deg, rgba(246, 195, 127, 0.42), rgba(236, 172, 85, 0.34));
+  --chat-user-border: rgba(246, 195, 127, 0.38);
+  --chat-user-shadow: rgba(246, 195, 127, 0.15);
+  --chat-user-text: #0f172a;
+  --chat-ai-bg: rgba(255, 255, 255, 0.06);
+  --chat-ai-border: rgba(255, 255, 255, 0.1);
+  --chat-ai-shadow: rgba(0, 0, 0, 0.12);
+  --chat-ai-text: var(--text);
+  /* Overlay-mode opaque overrides */
+  --chat-user-bg-overlay: linear-gradient(135deg, rgba(246, 195, 127, 0.88), rgba(236, 172, 85, 0.82));
+  --chat-ai-bg-overlay: rgba(10, 18, 28, 0.88);
   /* Solid equivalent of --chat-overlay-keyboard-scrim composited over
      the dark body background (#091019). Used for html/body to fill any
      void between the overlay panel and the iOS keyboard/utility bar. */
@@ -89,6 +101,16 @@
   --chat-overlay-panel-bg: linear-gradient(180deg, rgba(7, 14, 20, 0.58) 0%, rgba(7, 14, 20, 0.4) 100%);
   --chat-overlay-header-bg: rgba(7, 14, 20, 0.24);
   --chat-view-surface: rgba(7, 14, 20, 0.26);
+  --chat-user-bg: linear-gradient(135deg, rgba(246, 195, 127, 0.42), rgba(236, 172, 85, 0.34));
+  --chat-user-border: rgba(246, 195, 127, 0.38);
+  --chat-user-shadow: rgba(246, 195, 127, 0.15);
+  --chat-user-text: #0f172a;
+  --chat-ai-bg: rgba(255, 255, 255, 0.06);
+  --chat-ai-border: rgba(255, 255, 255, 0.1);
+  --chat-ai-shadow: rgba(0, 0, 0, 0.12);
+  --chat-ai-text: var(--text);
+  --chat-user-bg-overlay: linear-gradient(135deg, rgba(246, 195, 127, 0.88), rgba(236, 172, 85, 0.82));
+  --chat-ai-bg-overlay: rgba(10, 18, 28, 0.88);
 }
 
 :root[data-color-theme="emerald-dusk"] {
@@ -127,6 +149,16 @@
   --chat-overlay-panel-bg: linear-gradient(180deg, rgba(8, 23, 21, 0.62) 0%, rgba(8, 23, 21, 0.46) 100%);
   --chat-overlay-header-bg: rgba(8, 23, 21, 0.28);
   --chat-view-surface: rgba(8, 23, 21, 0.3);
+  --chat-user-bg: linear-gradient(135deg, rgba(115, 228, 188, 0.36), rgba(86, 200, 160, 0.28));
+  --chat-user-border: rgba(115, 228, 188, 0.35);
+  --chat-user-shadow: rgba(115, 228, 188, 0.12);
+  --chat-user-text: #eefcf7;
+  --chat-ai-bg: rgba(232, 249, 245, 0.06);
+  --chat-ai-border: rgba(181, 232, 214, 0.12);
+  --chat-ai-shadow: rgba(0, 0, 0, 0.14);
+  --chat-ai-text: var(--text);
+  --chat-user-bg-overlay: linear-gradient(135deg, rgba(115, 228, 188, 0.85), rgba(86, 200, 160, 0.78));
+  --chat-ai-bg-overlay: rgba(8, 23, 21, 0.88);
 }
 
 :root[data-color-theme="sunset-indigo"] {
@@ -165,6 +197,16 @@
   --chat-overlay-panel-bg: linear-gradient(180deg, rgba(22, 13, 34, 0.66) 0%, rgba(22, 13, 34, 0.5) 100%);
   --chat-overlay-header-bg: rgba(22, 13, 34, 0.32);
   --chat-view-surface: rgba(22, 13, 34, 0.32);
+  --chat-user-bg: linear-gradient(135deg, rgba(255, 179, 138, 0.38), rgba(230, 150, 110, 0.30));
+  --chat-user-border: rgba(255, 179, 138, 0.36);
+  --chat-user-shadow: rgba(255, 179, 138, 0.14);
+  --chat-user-text: #f7f2ff;
+  --chat-ai-bg: rgba(244, 234, 255, 0.06);
+  --chat-ai-border: rgba(224, 194, 255, 0.12);
+  --chat-ai-shadow: rgba(0, 0, 0, 0.16);
+  --chat-ai-text: var(--text);
+  --chat-user-bg-overlay: linear-gradient(135deg, rgba(255, 179, 138, 0.86), rgba(230, 150, 110, 0.80));
+  --chat-ai-bg-overlay: rgba(22, 13, 34, 0.90);
 }
 
 :root[data-theme="light"] {
@@ -184,6 +226,16 @@
   --input-bg: rgba(255, 255, 255, 0.98);
   --text: #0f172a;
   --muted: #475569;
+  --chat-user-bg: linear-gradient(135deg, rgba(246, 195, 127, 0.50), rgba(236, 172, 85, 0.42));
+  --chat-user-border: rgba(236, 172, 85, 0.45);
+  --chat-user-shadow: rgba(236, 172, 85, 0.18);
+  --chat-user-text: #0f172a;
+  --chat-ai-bg: rgba(255, 255, 255, 0.85);
+  --chat-ai-border: rgba(15, 23, 42, 0.10);
+  --chat-ai-shadow: rgba(15, 23, 42, 0.08);
+  --chat-ai-text: #0f172a;
+  --chat-user-bg-overlay: linear-gradient(135deg, rgba(246, 195, 127, 0.80), rgba(236, 172, 85, 0.72));
+  --chat-ai-bg-overlay: rgba(255, 255, 255, 0.95);
 }
 
 @media (prefers-color-scheme: light) {
@@ -204,6 +256,16 @@
     --input-bg: rgba(255, 255, 255, 0.98);
     --text: #0f172a;
     --muted: #475569;
+    --chat-user-bg: linear-gradient(135deg, rgba(246, 195, 127, 0.50), rgba(236, 172, 85, 0.42));
+    --chat-user-border: rgba(236, 172, 85, 0.45);
+    --chat-user-shadow: rgba(236, 172, 85, 0.18);
+    --chat-user-text: #0f172a;
+    --chat-ai-bg: rgba(255, 255, 255, 0.85);
+    --chat-ai-border: rgba(15, 23, 42, 0.10);
+    --chat-ai-shadow: rgba(15, 23, 42, 0.08);
+    --chat-ai-text: #0f172a;
+    --chat-user-bg-overlay: linear-gradient(135deg, rgba(246, 195, 127, 0.80), rgba(236, 172, 85, 0.72));
+    --chat-ai-bg-overlay: rgba(255, 255, 255, 0.95);
   }
 }
 
@@ -2908,8 +2970,6 @@ body.chat-overlay-docked:not(.keyboard-open) .tab-content-area {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   animation: chat-fab-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -3628,36 +3688,36 @@ body.chat-tab-active .chat-view {
 }
 
 .chat-bubble-user .chat-bubble-content {
-  background: linear-gradient(135deg, rgba(246, 195, 127, 0.42), rgba(236, 172, 85, 0.34));
+  background: var(--chat-user-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(246, 195, 127, 0.38);
-  color: #0f172a;
+  border: 1px solid var(--chat-user-border);
+  color: var(--chat-user-text);
   border-bottom-right-radius: 4px;
-  box-shadow: 0 1px 6px rgba(246, 195, 127, 0.15);
+  box-shadow: 0 1px 6px var(--chat-user-shadow);
 }
 
 .chat-bubble-assistant .chat-bubble-content {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--chat-ai-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text);
+  border: 1px solid var(--chat-ai-border);
+  color: var(--chat-ai-text);
   border-bottom-left-radius: 4px;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 8px var(--chat-ai-shadow);
 }
 
 /* Stronger opaque backgrounds on bubbles in overlay mode for readability
    over background content (backdrop-filter can't blur through scroll containers) */
 .chat-overlay-panel .chat-bubble-user .chat-bubble-content,
 .chat-overlay-panel-docked .chat-bubble-user .chat-bubble-content {
-  background: linear-gradient(135deg, rgba(246, 195, 127, 0.88), rgba(236, 172, 85, 0.82));
+  background: var(--chat-user-bg-overlay);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
 
 .chat-overlay-panel .chat-bubble-assistant .chat-bubble-content,
 .chat-overlay-panel-docked .chat-bubble-assistant .chat-bubble-content {
-  background: rgba(10, 18, 28, 0.88);
+  background: var(--chat-ai-bg-overlay);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
 }
 

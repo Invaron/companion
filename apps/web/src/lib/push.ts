@@ -1,4 +1,5 @@
 import { apiUrl } from "./config";
+import { loadAuthToken } from "./storage";
 
 interface VapidPublicKeyResponse {
   publicKey: string;
@@ -93,11 +94,19 @@ async function requestPermission(): Promise<NotificationPermission> {
 
 async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const url = typeof input === "string" ? apiUrl(input) : input;
+  const token = loadAuthToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
   const response = await fetch(url, {
+    ...init,
     headers: {
-      "Content-Type": "application/json"
-    },
-    ...init
+      ...headers,
+      ...(init?.headers as Record<string, string> | undefined)
+    }
   });
 
   if (!response.ok) {
