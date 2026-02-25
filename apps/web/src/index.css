@@ -2950,18 +2950,29 @@ body.keyboard-open .chat-overlay-panel {
 
 .chat-overlay-panel-docked {
   position: fixed !important;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: 45%;
+  bottom: 0;
   z-index: 103;
-  border-radius: 0;
+  border-radius: 18px 18px 0 0;
+  border-top: 1px solid var(--card-border);
   padding-bottom: var(--tab-bar-safe-space);
-  animation: none;
+  animation: chat-overlay-slide-up 0.25s ease both;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 body.keyboard-open .chat-overlay-panel-docked {
+  top: 0;
   padding-bottom: 0;
+  border-radius: 0;
+  border-top: none;
   background: var(--bg-solid, #0c1824);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  animation: none;
   transition: none;
 }
 
@@ -3034,7 +3045,7 @@ body.keyboard-open .chat-overlay-header {
 
 .chat-overlay-docked-close-btn {
   position: fixed;
-  top: calc(env(safe-area-inset-top) + 8px);
+  top: calc(45% + 8px);
   right: max(10px, calc(10px + env(safe-area-inset-right)));
   z-index: 140;
   width: 34px;
@@ -3052,6 +3063,10 @@ body.keyboard-open .chat-overlay-header {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.15s ease, background 0.15s ease;
+}
+
+body.keyboard-open .chat-overlay-docked-close-btn {
+  top: calc(env(safe-area-inset-top) + 8px);
 }
 
 .chat-overlay-docked-close-btn:active {
@@ -3131,12 +3146,14 @@ body.ios-touch.keyboard-open.chat-overlay-active .chat-overlay-panel:not(.chat-o
 }
 
 body.ios-touch.keyboard-open.chat-overlay-docked .chat-overlay-panel-docked {
-  /* Extend to layout bottom; panel-bg + blur matches keyboard-down */
+  /* Full viewport for typing; override half-sheet */
   top: var(--visual-viewport-offset-top);
   bottom: 0;
   height: auto;
+  border-radius: 0;
+  border-top: none;
   transform: none !important;
-  /* Keep keyboard-down visual: panel-bg + blur inherited from base rule */
+  animation: none;
 }
 
 body.ios-touch.keyboard-open.chat-overlay-docked .chat-overlay-panel-docked .chat-tab {
@@ -9182,13 +9199,13 @@ label small.muted {
 .chat-bubble-assistant .chat-bubble-content {
   background: rgba(255, 255, 255, 0.06);
   border-color: var(--card-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .chat-bubble-user .chat-bubble-content {
   background: linear-gradient(145deg, rgba(246, 195, 127, 0.36), rgba(223, 166, 78, 0.3));
   border-color: rgba(246, 195, 127, 0.5);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
