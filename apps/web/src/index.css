@@ -6186,6 +6186,20 @@ body.keyboard-open.chat-tab-active {
   background-size: 100% 100%;
 }
 
+/* iOS chat tab: fill the void between composer and keyboard/utility bar.
+   Override html bg to a solid dark tone that matches the app's gradient
+   midpoint. The void is only ~15-20px between the composer and the iOS
+   utility bar; a solid colour blends seamlessly with the dark UI.
+   Uses the same variable as the overlay void fill. */
+html:has(body.ios-touch.keyboard-open.chat-tab-active) {
+  background: var(--ios-keyboard-void-fill, #070F18) !important;
+  transition: none !important;
+}
+
+body.ios-touch.keyboard-open.chat-tab-active {
+  background: var(--ios-keyboard-void-fill, #070F18) !important;
+}
+
 /* Keyboard-up chat tab: keep one continuous mood backdrop behind composer and keyboard gap. */
 body.keyboard-open.chat-tab-active .app-shell-chat-active {
   background: transparent;
