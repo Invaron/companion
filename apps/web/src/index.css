@@ -242,17 +242,19 @@ html {
   min-height: 100vh;
 }
 
-/* Keyboard-up: flatten the radial gradient to a uniform mid-tone so the
-   void area (below composer, above keyboard) matches the chat area.
-   Switch background-attachment to scroll so the mood tint maps to the html
-   element (min-height:100vh = layout viewport) instead of the visual viewport
-   (which shrinks when the keyboard opens).  Without this, backdrop-filter in
-   the void sees only the flat --bg-keyboard; with scroll the mood tint
-   extends through the void for a seamless glass appearance. */
+/* Keyboard-open: drop ALL gradients (radial bg + directional mood tint) so
+   the html element has a perfectly uniform flat color.  The overlay panel's
+   backdrop-filter sees the same flat --bg-keyboard everywhere — chat area
+   and void area both look identical through the glass.  The mood tint is a
+   directional gradient (160deg) that's more colourful at the top and fades
+   to transparent at the bottom; keeping it causes a visible tint mismatch
+   in the void (especially in standalone PWA where iOS widens the gap with
+   an origin label).  The glass panel's own semi-transparent bg provides
+   enough visual depth; the full gradient + mood tint return the instant
+   the keyboard closes. */
 html:has(body.keyboard-open) {
-  background-image: var(--chat-mood-active-bg, none);
+  background-image: none !important;
   background-color: var(--bg-keyboard, var(--bg-solid, #091019));
-  background-attachment: scroll;
 }
 
 body.chat-tab-active {
