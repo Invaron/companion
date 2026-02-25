@@ -234,6 +234,15 @@ html {
   background-repeat: no-repeat;
   background-size: 100% 100%;
   transition: background 1.2s ease;
+  min-height: 100vh;
+}
+
+/* Keyboard-up: switch from fixed to scroll attachment so the mood gradient
+   extends past the shrunken viewport into the keyboard void area.
+   Fixed attachment sizes backgrounds to the viewport; scroll attachment
+   sizes them to the html element (full-screen height). */
+html:has(body.keyboard-open) {
+  background-attachment: scroll;
 }
 
 body.chat-tab-active {
