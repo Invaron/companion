@@ -6300,6 +6300,13 @@ body:not(.keyboard-open) .app-shell-chat-active .chat-messages {
   animation: tab-fade-in 0.28s ease-out;
 }
 
+/* Chat tab: skip fade-in because the translateY(8px) in tab-fade-in
+   breaks position:fixed on the composer (.chat-input-container).
+   A parent transform makes fixed children relative to that parent. */
+.app-shell-chat-active .tab-panel {
+  animation: none;
+}
+
 @keyframes tab-fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
