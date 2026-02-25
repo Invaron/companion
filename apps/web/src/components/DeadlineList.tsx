@@ -28,6 +28,12 @@ function formatDeadlineTaskLabel(task: string): string {
   return task.replace(/^Assignment\s+Lab\b/i, "Lab");
 }
 
+/** Normalise course codes like "DAT600-1 26V" → "DAT600" */
+function normalizeCourseCode(course: string): string {
+  // Strip trailing section + semester suffix (e.g. "-1 26V", "-2 25H")
+  return course.replace(/[-–]\d+\s+\d{2}[VHvh]$/, "").trim();
+}
+
 export function DeadlineList({ focusDeadlineId }: DeadlineListProps): JSX.Element {
   const { locale, t } = useI18n();
   const localeTag = locale === "no" ? "nb-NO" : "en-US";
@@ -202,7 +208,7 @@ export function DeadlineList({ focusDeadlineId }: DeadlineListProps): JSX.Elemen
                 <li
                   key={deadline.id}
                   id={`deadline-${deadline.id}`}
-                  className={`dl-item ${urgency} ${deadline.completed ? "dl-item--done" : ""} ${focusDeadlineId === deadline.id ? "dl-item--focused" : ""}`}
+                  className={`dl-item ${deadline.completed ? "" : urgency} ${deadline.completed ? "dl-item--done" : ""} ${focusDeadlineId === deadline.id ? "dl-item--focused" : ""}`}
                 >
                   <div className="dl-item-row">
                     <label className="dl-checkbox-label">
@@ -219,11 +225,13 @@ export function DeadlineList({ focusDeadlineId }: DeadlineListProps): JSX.Elemen
                       <div className="dl-item-top">
                         <h3 className="dl-task">{formatDeadlineTaskLabel(deadline.task)}</h3>
                         <span className={`dl-time-badge ${urgency}`}>
-                          {formatTimeRemaining(deadline.dueDate)}
+                          {deadline.completed && urgency === "deadline-overdue"
+                            ? t("Completed")
+                            : formatTimeRemaining(deadline.dueDate)}
                         </span>
                       </div>
                       <div className="dl-item-bottom">
-                        <span className="dl-course">{deadline.course}</span>
+                        <span className="dl-course">{normalizeCourseCode(deadline.course)}</span>
                         <span className="dl-due">{formatDueDate(deadline.dueDate)}</span>
                       </div>
                     </div>

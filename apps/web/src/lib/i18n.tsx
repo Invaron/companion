@@ -281,6 +281,7 @@ const NORWEGIAN_TRANSLATIONS: Record<string, string> = {
   "Showing {shown} of {total}": "Viser {shown} av {total}",
   "Deadlines refreshed": "Frister oppdatert",
   "Overdue": "Forsinket",
+  "Completed": "Fullført",
   "{count}m left": "{count}m igjen",
   "{count}h left": "{count}t igjen",
   "1 day {hours}h left": "1 dag {hours}t igjen",
