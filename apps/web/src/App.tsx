@@ -317,15 +317,6 @@ export default function App(): JSX.Element {
       root.style.setProperty("--keyboard-gap", `${effectiveKeyboardGap}px`);
 
       document.body.classList.toggle("keyboard-open", keyboardOpen);
-
-      // iOS PWA: paint html bg so the area behind the keyboard matches the UI.
-      // Both chat overlay and chat tab get the solid void-fill colour.
-      if (keyboardOpen && isIOS && (chatOverlayActive || chatTabActive)) {
-        const voidFill = getComputedStyle(root).getPropertyValue("--ios-keyboard-void-fill").trim() || "#070F18";
-        root.style.setProperty("background", voidFill, "important");
-      } else {
-        root.style.removeProperty("background");
-      }
     };
 
     const handleFocusEvent = (): void => {

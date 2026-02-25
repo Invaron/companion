@@ -227,22 +227,8 @@ html {
   transition: background 1.2s ease;
 }
 
-/* iOS keyboard void fill — paint html/body so the area behind the keyboard
-   (between visual viewport bottom and actual keyboard top) matches the UI.
-
-   For the chat tab: html already layers mood-tint + --bg, so the void
-   naturally shows the correct mood background. No override needed.
-
-   For the chat overlay: override to solid scrim colour so the gap blends
-   with the translucent overlay panel. */
-html:has(body.ios-touch.keyboard-open.chat-overlay-active) {
-  background: var(--ios-keyboard-void-fill, #070F18) !important;
-  transition: none !important;
-}
-
-body.ios-touch.keyboard-open.chat-overlay-active {
-  background: var(--ios-keyboard-void-fill, #070F18) !important;
-}
+/* iOS keyboard void: html already layers mood-tint + --bg, so the void
+   naturally shows the correct mood background. No solid override needed. */
 
 body.chat-tab-active {
   overflow: hidden;
@@ -272,16 +258,15 @@ body.chat-tab-active {
   isolation: isolate;
 }
 
+/* Chat tab: html already paints the mood gradient; keep ::before
+   transparent so the footer and chat area see the same single mood layer. */
 .app-shell-chat-active::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: var(--chat-mood-active-bg, var(--chat-mood-bg, var(--surface-soft)));
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
+  background: transparent;
 }
 
 .app-shell-chat-active .tab-content-area {
@@ -3332,6 +3317,12 @@ body.keyboard-open.chat-overlay-active .chat-overlay-panel .chat-voice-button {
   transition: background 1.2s ease;
 }
 
+/* Chat tab: html provides the mood bg; make chat-view transparent
+   so the footer and chat area share the same single mood layer. */
+body.chat-tab-active .chat-view {
+  background: transparent !important;
+}
+
 /* Chat mood backgrounds — gradient shifts driven by Gemini response tone */
 .app-shell.chat-mood-neutral,
 .chat-view.chat-mood-neutral {
@@ -6197,19 +6188,8 @@ body.keyboard-open.chat-tab-active {
   background-size: 100% 100%;
 }
 
-/* iOS chat tab: fill the void between composer and keyboard/utility bar.
-   Override html bg to a solid dark tone that matches the app's gradient
-   midpoint. The void is only ~15-20px between the composer and the iOS
-   utility bar; a solid colour blends seamlessly with the dark UI.
-   Uses the same variable as the overlay void fill. */
-html:has(body.ios-touch.keyboard-open.chat-tab-active) {
-  background: var(--ios-keyboard-void-fill, #070F18) !important;
-  transition: none !important;
-}
-
-body.ios-touch.keyboard-open.chat-tab-active {
-  background: var(--ios-keyboard-void-fill, #070F18) !important;
-}
+/* iOS chat tab void: html mood-tinted background now shows through the
+   keyboard gap naturally — no solid override needed. */
 
 /* Keyboard-up chat tab: keep one continuous mood backdrop behind composer and keyboard gap. */
 body.keyboard-open.chat-tab-active .app-shell-chat-active {
