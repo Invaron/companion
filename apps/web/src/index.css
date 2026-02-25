@@ -2908,7 +2908,7 @@ body.keyboard-open .chat-overlay-backdrop {
   position: fixed !important;
   left: 0;
   right: 0;
-  top: 35%;
+  top: 40%;
   bottom: 0;
   height: auto;
   max-height: none;
@@ -2923,8 +2923,8 @@ body.keyboard-open .chat-overlay-backdrop {
   flex-direction: column;
   padding-bottom: var(--tab-bar-safe-space);
   background: var(--chat-overlay-panel-bg);
-  backdrop-filter: blur(20px) saturate(120%);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 @keyframes chat-overlay-slide-up {
@@ -2942,8 +2942,6 @@ body.keyboard-open .chat-overlay-panel {
   border-top: none;
   box-shadow: none;
   background: var(--bg-solid, #0c1824);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   animation: none;
   transition: none;
 }
@@ -2952,7 +2950,7 @@ body.keyboard-open .chat-overlay-panel {
   position: fixed !important;
   left: 0;
   right: 0;
-  top: 35%;
+  top: 40%;
   bottom: 0;
   z-index: 103;
   border-radius: 18px 18px 0 0;
@@ -2960,8 +2958,8 @@ body.keyboard-open .chat-overlay-panel {
   padding-bottom: var(--tab-bar-safe-space);
   animation: chat-overlay-slide-up 0.25s ease both;
   background: var(--chat-overlay-panel-bg);
-  backdrop-filter: blur(20px) saturate(120%);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 body.keyboard-open .chat-overlay-panel-docked {
@@ -2970,8 +2968,6 @@ body.keyboard-open .chat-overlay-panel-docked {
   border-radius: 0;
   border-top: none;
   background: var(--bg-solid, #0c1824);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   animation: none;
   transition: none;
 }
@@ -3045,7 +3041,7 @@ body.keyboard-open .chat-overlay-header {
 
 .chat-overlay-docked-close-btn {
   position: fixed;
-  top: calc(35% + 8px);
+  top: calc(40% + 8px);
   right: max(10px, calc(10px + env(safe-area-inset-right)));
   z-index: 140;
   width: 34px;
