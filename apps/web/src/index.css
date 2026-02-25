@@ -3045,25 +3045,38 @@ body.keyboard-open.chat-overlay-active .chat-overlay-panel:not(.chat-overlay-pan
   --chat-mood-bg: transparent;
 }
 
-/* iOS keyboard: size overlay to visual viewport so it sits exactly above keyboard+utility bar.
-   No void can appear because flexbox fills the measured rectangle exactly. */
+/* iOS keyboard: extend panel to layout viewport bottom so the scrim fills
+   the gap between the composer and the keyboard/utility bar (no black void).
+   Chat content is constrained to the visual viewport via max-height. */
 body.ios-touch.keyboard-open.chat-overlay-active .chat-overlay-panel:not(.chat-overlay-panel-docked) {
   top: var(--visual-viewport-offset-top);
-  bottom: auto;
-  height: var(--visual-viewport-height);
+  bottom: 0;
+  height: auto;
   transform: none;
+  /* Override transparent from generic keyboard rule — scrim fills the gap */
+  background: var(--chat-overlay-keyboard-scrim);
+}
+
+/* Constrain chat content to visual viewport so composer sits above keyboard */
+body.ios-touch.keyboard-open.chat-overlay-active .chat-overlay-panel:not(.chat-overlay-panel-docked) .chat-tab {
+  height: auto;
+  max-height: var(--visual-viewport-height);
 }
 
 body.ios-touch.keyboard-open.chat-overlay-docked .chat-overlay-panel-docked {
-  /* Match the visual viewport so iOS does not scroll the page layer.
-     Flexbox layout fills this rectangle: header → messages → composer. */
+  /* Extend to layout bottom; scrim fills the gap below visual viewport */
   top: var(--visual-viewport-offset-top);
-  bottom: auto;
-  height: var(--visual-viewport-height);
+  bottom: 0;
+  height: auto;
   transform: none !important;
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: var(--chat-overlay-keyboard-scrim);
+  backdrop-filter: blur(var(--chat-overlay-keyboard-blur)) saturate(var(--chat-overlay-keyboard-saturate));
+  -webkit-backdrop-filter: blur(var(--chat-overlay-keyboard-blur)) saturate(var(--chat-overlay-keyboard-saturate));
+}
+
+body.ios-touch.keyboard-open.chat-overlay-docked .chat-overlay-panel-docked .chat-tab {
+  height: auto;
+  max-height: var(--visual-viewport-height);
 }
 
 body.ios-touch.keyboard-open.chat-overlay-docked .chat-overlay-docked-close-btn {
@@ -3195,14 +3208,14 @@ body.keyboard-open.chat-overlay-docked .tab-content-area {
 }
 
 /* iOS keyboard accessory chrome can reveal underlying page content through a
-   translucent system layer. Since that region itself is not reliably paintable,
-   pre-blur and tint the base app surface so revealed content stays unreadable. */
-body.ios-touch.keyboard-open.chat-overlay-docked .app-shell {
+   translucent system layer. Pre-blur and tint the base app surface so revealed
+   content stays unreadable. Applies to both docked and non-docked overlay. */
+body.ios-touch.keyboard-open.chat-overlay-active .app-shell {
   filter: blur(11px) saturate(86%) brightness(0.72);
   transform: none;
 }
 
-body.ios-touch.keyboard-open.chat-overlay-docked .app-shell::after {
+body.ios-touch.keyboard-open.chat-overlay-active .app-shell::after {
   content: "";
   position: fixed;
   inset: 0;
