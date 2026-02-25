@@ -3438,7 +3438,7 @@ body.chat-tab-active .chat-view {
   flex-direction: column;
   gap: 12px;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: auto;
 }
 
 .chat-load-more {
@@ -6258,7 +6258,7 @@ body.chat-tab-active .app-shell-chat-active .tab-content-area,
 body.chat-tab-active .app-shell-chat-active .chat-tab,
 body.chat-tab-active .app-shell-chat-active .chat-view,
 body.chat-tab-active .app-shell-chat-active .chat-messages {
-  overscroll-behavior: none;
+  overscroll-behavior-y: auto;
 }
 
 body.chat-tab-active .app-shell-chat-active .chat-messages {
