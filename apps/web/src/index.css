@@ -10,10 +10,10 @@
   --footer-glass-blur: 20px;
   --bg: radial-gradient(circle at top right, #1f5a76 0%, #0f1f2f 35%, #091019 100%);
   --bg-solid: #0c1824;
-  --card: rgba(255, 255, 255, 0.08);
-  --card-bg: linear-gradient(148deg, rgba(24, 53, 78, 0.86), rgba(8, 24, 38, 0.9));
-  --card-border: rgba(255, 255, 255, 0.2);
-  --pill-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 6px 14px rgba(0, 0, 0, 0.14);
+  --card: rgba(255, 255, 255, 0.04);
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --card-border: rgba(255, 255, 255, 0.13);
+  --pill-surface-shadow: none;
   --surface: rgba(7, 14, 20, 0.3);
   --surface-strong: rgba(3, 7, 11, 0.45);
   --surface-soft: rgba(7, 14, 20, 0.2);
@@ -56,10 +56,10 @@
 :root[data-color-theme="ocean-gold"] {
   --bg: radial-gradient(circle at top right, #1f5a76 0%, #0f1f2f 35%, #091019 100%);
   --bg-solid: #0c1824;
-  --card: rgba(255, 255, 255, 0.08);
-  --card-bg: linear-gradient(148deg, rgba(24, 53, 78, 0.86), rgba(8, 24, 38, 0.9));
-  --card-border: rgba(255, 255, 255, 0.2);
-  --pill-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 6px 14px rgba(0, 0, 0, 0.14);
+  --card: rgba(255, 255, 255, 0.04);
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --card-border: rgba(255, 255, 255, 0.13);
+  --pill-surface-shadow: none;
   --surface: rgba(7, 14, 20, 0.3);
   --surface-strong: rgba(3, 7, 11, 0.45);
   --surface-soft: rgba(7, 14, 20, 0.2);
@@ -94,10 +94,10 @@
 :root[data-color-theme="emerald-dusk"] {
   --bg: radial-gradient(circle at top right, #165954 0%, #0e2227 40%, #081015 100%);
   --bg-solid: #0b191e;
-  --card: rgba(232, 249, 245, 0.08);
-  --card-bg: linear-gradient(148deg, rgba(20, 64, 58, 0.86), rgba(8, 32, 30, 0.9));
-  --card-border: rgba(190, 237, 223, 0.22);
-  --pill-surface-shadow: inset 0 1px 0 rgba(224, 255, 244, 0.04), 0 6px 14px rgba(2, 12, 11, 0.16);
+  --card: rgba(232, 249, 245, 0.04);
+  --card-bg: rgba(232, 249, 245, 0.03);
+  --card-border: rgba(190, 237, 223, 0.14);
+  --pill-surface-shadow: none;
   --surface: rgba(8, 23, 21, 0.32);
   --surface-strong: rgba(4, 13, 12, 0.52);
   --surface-soft: rgba(8, 23, 21, 0.24);
@@ -132,10 +132,10 @@
 :root[data-color-theme="sunset-indigo"] {
   --bg: radial-gradient(circle at top right, #4a2f67 0%, #181025 42%, #0c0b14 100%);
   --bg-solid: #12101d;
-  --card: rgba(244, 234, 255, 0.08);
-  --card-bg: linear-gradient(148deg, rgba(49, 36, 78, 0.86), rgba(20, 14, 32, 0.9));
-  --card-border: rgba(225, 198, 255, 0.24);
-  --pill-surface-shadow: inset 0 1px 0 rgba(248, 236, 255, 0.03), 0 6px 14px rgba(9, 6, 15, 0.18);
+  --card: rgba(244, 234, 255, 0.04);
+  --card-bg: rgba(244, 234, 255, 0.03);
+  --card-border: rgba(225, 198, 255, 0.15);
+  --pill-surface-shadow: none;
   --surface: rgba(22, 13, 34, 0.36);
   --surface-strong: rgba(11, 8, 18, 0.56);
   --surface-soft: rgba(22, 13, 34, 0.25);
@@ -171,10 +171,10 @@
   color-scheme: light;
   --bg: radial-gradient(circle at top right, #e2ecff 0%, #f7f9fd 45%, #ffffff 100%);
   --bg-solid: #f0f4fc;
-  --card: rgba(255, 255, 255, 0.9);
-  --card-bg: linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.94));
-  --card-border: rgba(15, 23, 42, 0.12);
-  --pill-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96), 0 4px 12px rgba(15, 23, 42, 0.06);
+  --card: rgba(255, 255, 255, 0.6);
+  --card-bg: rgba(255, 255, 255, 0.45);
+  --card-border: rgba(15, 23, 42, 0.1);
+  --pill-surface-shadow: none;
   --surface: rgba(255, 255, 255, 0.95);
   --surface-strong: rgba(255, 255, 255, 0.98);
   --surface-soft: rgba(255, 255, 255, 0.88);
@@ -191,10 +191,10 @@
     color-scheme: light;
     --bg: radial-gradient(circle at top right, #e2ecff 0%, #f7f9fd 45%, #ffffff 100%);
     --bg-solid: #f0f4fc;
-    --card: rgba(255, 255, 255, 0.9);
-    --card-bg: linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.94));
-    --card-border: rgba(15, 23, 42, 0.12);
-    --pill-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96), 0 4px 12px rgba(15, 23, 42, 0.06);
+    --card: rgba(255, 255, 255, 0.6);
+    --card-bg: rgba(255, 255, 255, 0.45);
+    --card-border: rgba(15, 23, 42, 0.1);
+    --pill-surface-shadow: none;
     --surface: rgba(255, 255, 255, 0.95);
     --surface-strong: rgba(255, 255, 255, 0.98);
     --surface-soft: rgba(255, 255, 255, 0.88);
