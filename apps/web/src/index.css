@@ -263,7 +263,6 @@ body.chat-tab-active {
     max(20px, calc(20px + env(safe-area-inset-left)));
   min-height: var(--app-viewport-height);
   transition: background 1.2s ease, filter 0.18s ease, transform 0.18s ease;
-  overflow-x: hidden;
 }
 
 .app-shell-chat-active {
@@ -2817,11 +2816,13 @@ body.chat-overlay-docked .tab-content-area {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scrollbar-width: none;
-  padding:
-    max(20px, calc(20px + env(safe-area-inset-top)))
-    max(20px, calc(20px + env(safe-area-inset-right)))
-    8px
-    max(20px, calc(20px + env(safe-area-inset-left)));
+  /* Use symmetric horizontal padding — a single expression for both sides
+     prevents any sub-pixel rounding divergence between left/right safe areas. */
+  --content-pad-x: max(20px, calc(20px + max(env(safe-area-inset-left), env(safe-area-inset-right))));
+  padding-top: max(20px, calc(20px + env(safe-area-inset-top)));
+  padding-right: var(--content-pad-x);
+  padding-bottom: 8px;
+  padding-left: var(--content-pad-x);
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 24px), transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 24px), transparent 100%);
 }
