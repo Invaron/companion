@@ -65,9 +65,9 @@ export function HabitsGoalsView(): JSX.Element {
   const handleHabitCheckIn = async (habit: Habit): Promise<void> => {
     const nextCompleted = !habit.todayCompleted;
     // Optimistic UI: update immediately so the checkmark appears on tap
+    setBusy({ type: "habit", id: habit.id });
     setHabits((prev) => prev.map((h) => (h.id === habit.id ? { ...h, todayCompleted: nextCompleted } : h)));
     hapticSuccess();
-    setBusy({ type: "habit", id: habit.id });
     const result = await toggleHabitCheckIn(habit.id, nextCompleted);
     if (result.item) {
       setHabits((prev) => prev.map((h) => (h.id === habit.id ? result.item! : h)));
@@ -81,9 +81,9 @@ export function HabitsGoalsView(): JSX.Element {
   const handleGoalCheckIn = async (goal: Goal): Promise<void> => {
     const nextCompleted = !goal.todayCompleted;
     // Optimistic UI: update immediately so the checkmark appears on tap
+    setBusy({ type: "goal", id: goal.id });
     setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, todayCompleted: nextCompleted } : g)));
     hapticSuccess();
-    setBusy({ type: "goal", id: goal.id });
     const result = await toggleGoalCheckIn(goal.id, nextCompleted);
     if (result.item) {
       setGoals((prev) => prev.map((g) => (g.id === goal.id ? result.item! : g)));
@@ -117,7 +117,7 @@ export function HabitsGoalsView(): JSX.Element {
             disabled={isBusy}
             aria-label={habit.todayCompleted ? t("Undo check-in") : t("Check in")}
           >
-            {isBusy ? "…" : habit.todayCompleted ? "✓" : "○"}
+            {habit.todayCompleted ? "✓" : isBusy ? "…" : "○"}
           </button>
         </header>
         <div className="habit-visual-progress">
@@ -154,7 +154,7 @@ export function HabitsGoalsView(): JSX.Element {
             disabled={isBusy}
             aria-label={goal.todayCompleted ? t("Undo check-in") : t("Check in")}
           >
-            {isBusy ? "…" : goal.todayCompleted ? "✓" : "○"}
+            {goal.todayCompleted ? "✓" : isBusy ? "…" : "○"}
           </button>
         </header>
         <div className="goal-progress">
