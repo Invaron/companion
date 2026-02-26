@@ -29,9 +29,12 @@ function formatHabitCadence(
 
 function formatHabitTarget(targetPerWeek: number): string {
   if (!Number.isFinite(targetPerWeek) || targetPerWeek <= UNBOUNDED_HABIT_TARGET) {
-    return "∞";
+    return "Anytime";
   }
-  return String(targetPerWeek);
+  if (targetPerWeek === 7) {
+    return "Daily";
+  }
+  return `${targetPerWeek}×/week`;
 }
 
 export function HabitsGoalsView(): JSX.Element {
@@ -105,7 +108,7 @@ export function HabitsGoalsView(): JSX.Element {
             <p className="eyebrow">{t("Habit")}</p>
             <h3>{habit.name}</h3>
             <p className="muted">
-              {formatHabitCadence(habit.cadence, t)} • {t("Target")} {formatHabitTarget(habit.targetPerWeek)}
+              {formatHabitTarget(habit.targetPerWeek)}
               {habit.streak > 0 ? t(" • {count} day streak", { count: habit.streak }) : ""}
             </p>
             {habit.motivation && <p className="muted">{habit.motivation}</p>}

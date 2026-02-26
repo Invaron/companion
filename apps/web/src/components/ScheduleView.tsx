@@ -513,8 +513,8 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
         ) : (
           <div className="schedule-empty-state">
             <img className="empty-state-illustration" src={EMPTY_SCHEDULE_SVG} alt="" width="120" height="120" />
-            <p>{dayOffset === 0 ? t("No fixed sessions today") : t("No fixed sessions this day")}</p>
-            <p className="schedule-empty-hint">{t("Ask Gemini to build your day plan")}</p>
+            <p>{dayOffset === 0 ? t("Nothing scheduled today") : t("Nothing scheduled this day")}</p>
+            <p className="schedule-empty-hint">{t("Enjoy your free time, or ask Gemini to plan something")}</p>
           </div>
         )}
       </div>

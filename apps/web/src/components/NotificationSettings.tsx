@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 
 const categoryLabels: Record<string, { label: string; icon: ReactNode; description: string }> = {
   notes: { label: "Notes Agent", icon: <IconNotes size={16} />, description: "Journal reflections and capture prompts" },
-  "lecture-plan": { label: "Lecture Planner", icon: <IconCalendar size={16} />, description: "Upcoming lectures and schedule changes" },
+  "lecture-plan": { label: "Schedule Planner", icon: <IconCalendar size={16} />, description: "Upcoming events and schedule changes" },
   "assignment-tracker": { label: "Assignments", icon: <IconBooks size={16} />, description: "Lab deadlines and progress alerts" },
   orchestrator: { label: "Smart Nudges", icon: <IconBrain size={16} />, description: "Proactive reminders and check-ins" }
 };

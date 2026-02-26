@@ -976,7 +976,7 @@ export function ChatView({ mood, onMoodChange, onDataMutated }: ChatViewProps): 
   const quickActions = [
     { label: "What's next?", prompt: "What's next on my schedule today?" },
     { label: "How's my week?", prompt: "How is my week looking? Any deadlines coming up?" },
-    { label: "Study tips", prompt: "Any tips for staying on top of my studies?" }
+    { label: "Motivation", prompt: "Give me a motivational boost to stay productive today." }
   ];
 
   // Track mood changes to trigger burst only on transitions
@@ -991,9 +991,25 @@ export function ChatView({ mood, onMoodChange, onDataMutated }: ChatViewProps): 
   }, [mood]);
 
   return (
-    <div className={`chat-view${historyLoaded ? " chat-view--ready" : ""}`}>
+    <div className={`chat-view${historyLoaded ? " chat-view--ready" : " chat-view--ready"}`}>
       <MoodBurst mood={burstMood} />
       <div className="chat-messages" ref={messagesContainerRef}>
+        {!historyLoaded && (
+          <div className="chat-skeleton">
+            <div className="chat-skeleton-bubble chat-skeleton-assistant">
+              <div className="skeleton-block" style={{ width: '70%', height: 14 }} />
+              <div className="skeleton-block" style={{ width: '50%', height: 14 }} />
+            </div>
+            <div className="chat-skeleton-bubble chat-skeleton-user">
+              <div className="skeleton-block" style={{ width: '45%', height: 14 }} />
+            </div>
+            <div className="chat-skeleton-bubble chat-skeleton-assistant">
+              <div className="skeleton-block" style={{ width: '80%', height: 14 }} />
+              <div className="skeleton-block" style={{ width: '60%', height: 14 }} />
+              <div className="skeleton-block" style={{ width: '40%', height: 14 }} />
+            </div>
+          </div>
+        )}
         {hasMore && (
           <div className="chat-load-more">
             <button

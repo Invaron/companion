@@ -111,6 +111,7 @@ export function AnalyticsDashboard(): JSX.Element {
 
       {loading && (
         <div className="daily-summary-skeleton analytics-fade-in">
+          <div className="skeleton-block skeleton-visual" />
           <div className="skeleton-block skeleton-text-lg" />
           <div className="skeleton-block skeleton-text-md" />
           <div className="skeleton-block skeleton-text-md" />
@@ -129,7 +130,7 @@ export function AnalyticsDashboard(): JSX.Element {
         <div className="analytics-fade-in">
           {dailySummary.visual && (
             <figure className="analytics-visual">
-              <img src={dailySummary.visual.dataUrl} alt={dailySummary.visual.alt} loading="lazy" />
+              <img src={dailySummary.visual.dataUrl} alt={dailySummary.visual.alt} loading="eager" />
             </figure>
           )}
           <section className="analytics-summary-card analytics-summary-hero">
@@ -177,7 +178,7 @@ export function AnalyticsDashboard(): JSX.Element {
           <section className="analytics-summary-card analytics-summary-hero">
             {insight.visual && (
               <figure className="analytics-visual">
-                <img src={insight.visual.dataUrl} alt={insight.visual.alt} loading="lazy" />
+                <img src={insight.visual.dataUrl} alt={insight.visual.alt} loading="eager" />
               </figure>
             )}
             <div className="analytics-summary-content">

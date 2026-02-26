@@ -107,9 +107,9 @@ const CONNECTORS: ConnectorMeta[] = [
     service: "tp_schedule",
     label: "TP EduCloud Schedule",
     icon: { src: iconPath("icons/integrations/tp.svg"), alt: "TP EduCloud" },
-    description: "Lecture schedule via iCal subscription from TP.",
+    description: "Event schedule via iCal subscription from TP.",
     readMoreItems: [
-      "Import lecture events from TP into your schedule timeline.",
+      "Import events from TP into your schedule timeline.",
       "Keep schedule blocks refreshed when the iCal feed changes.",
       "Use course context from TP when importing external deadlines."
     ],

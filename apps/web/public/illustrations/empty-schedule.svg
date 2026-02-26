@@ -1,28 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
   <style>
-    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
-    @keyframes fade-line { 0%,100%{opacity:0.12} 50%{opacity:0.25} }
-    .float{animation:float 3.5s ease-in-out infinite}
-    .line1{animation:fade-line 2.5s ease-in-out infinite}
-    .line2{animation:fade-line 2.5s ease-in-out 0.3s infinite}
-    .line3{animation:fade-line 2.5s ease-in-out 0.6s infinite}
+    @keyframes gentle-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+    @keyframes check-draw { 0%{stroke-dashoffset:24} 100%{stroke-dashoffset:0} }
+    @keyframes soft-pulse { 0%,100%{opacity:0.15} 50%{opacity:0.3} }
+    .cal-float{animation:gentle-float 4s ease-in-out infinite}
+    .check{stroke-dasharray:24;animation:check-draw 0.8s ease-out 0.5s forwards;stroke-dashoffset:24}
+    .glow{animation:soft-pulse 3s ease-in-out infinite}
   </style>
-  <g class="float">
-    <!-- Calendar icon -->
-    <rect x="55" y="45" width="90" height="90" rx="14" fill="rgba(96,165,250,0.06)" stroke="#60a5fa" stroke-width="1" stroke-opacity="0.25"/>
-    <!-- Header bar -->
-    <rect x="55" y="45" width="90" height="22" rx="14" fill="rgba(96,165,250,0.1)"/>
-    <rect x="55" y="53" width="90" height="14" fill="rgba(96,165,250,0.1)"/>
+  <g class="cal-float">
+    <!-- Calendar body -->
+    <rect x="55" y="50" width="90" height="85" rx="12" fill="rgba(96,165,250,0.04)" stroke="#60a5fa" stroke-width="1" stroke-opacity="0.2"/>
+    <!-- Header -->
+    <rect x="55" y="50" width="90" height="24" rx="12" fill="rgba(96,165,250,0.08)"/>
+    <rect x="55" y="62" width="90" height="12" fill="rgba(96,165,250,0.08)"/>
     <!-- Calendar pins -->
-    <rect x="75" y="40" width="3" height="12" rx="1.5" fill="#a1a1aa" opacity="0.3"/>
-    <rect x="122" y="40" width="3" height="12" rx="1.5" fill="#a1a1aa" opacity="0.3"/>
-    <!-- Empty rows -->
-    <g class="line1"><rect x="65" y="78" width="70" height="4" rx="2" fill="#a1a1aa" opacity="0.2"/></g>
-    <g class="line2"><rect x="65" y="92" width="50" height="4" rx="2" fill="#a1a1aa" opacity="0.2"/></g>
-    <g class="line3"><rect x="65" y="106" width="60" height="4" rx="2" fill="#a1a1aa" opacity="0.2"/></g>
-    <!-- Clock icon -->
-    <circle cx="100" cy="158" r="14" fill="none" stroke="#a1a1aa" stroke-width="1" stroke-opacity="0.2"/>
-    <line x1="100" y1="158" x2="100" y2="149" stroke="#a1a1aa" stroke-width="1" stroke-opacity="0.25" stroke-linecap="round"/>
-    <line x1="100" y1="158" x2="108" y2="162" stroke="#60a5fa" stroke-width="1" stroke-opacity="0.3" stroke-linecap="round"/>
+    <rect x="75" y="45" width="2.5" height="12" rx="1.25" fill="#a1a1aa" opacity="0.25"/>
+    <rect x="122" y="45" width="2.5" height="12" rx="1.25" fill="#a1a1aa" opacity="0.25"/>
+    <!-- Subtle grid dots -->
+    <circle cx="78" cy="90" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <circle cx="92" cy="90" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <circle cx="106" cy="90" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <circle cx="120" cy="90" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <circle cx="78" cy="104" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <circle cx="92" cy="104" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <circle cx="106" cy="104" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <circle cx="120" cy="104" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <circle cx="78" cy="118" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <circle cx="92" cy="118" r="2" fill="#a1a1aa" opacity="0.12"/>
+    <!-- Checkmark circle -->
+    <circle class="glow" cx="100" cy="155" r="16" fill="rgba(110,231,183,0.06)" stroke="#6ee7b7" stroke-width="1" stroke-opacity="0.2"/>
+    <!-- Checkmark -->
+    <path class="check" d="M92 155 l5 5 l11 -11" fill="none" stroke="#6ee7b7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.5"/>
   </g>
 </svg>

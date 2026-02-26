@@ -958,9 +958,9 @@ export default function App(): JSX.Element {
         <>
           {/* Tab content area */}
           <div className="tab-content-area">
-            {/* Chat panel — full tab mode */}
+            {/* Chat panel — always mounted to preserve messages across tab switches */}
             <div className={`tab-panel ${isChatTab ? "tab-panel-active" : "tab-panel-hidden"}`}>
-              {isChatTab && <ChatTab mood={chatMood} onMoodChange={handleMoodChange} onDataMutated={handleDataMutated} />}
+              <ChatTab mood={chatMood} onMoodChange={handleMoodChange} onDataMutated={handleDataMutated} />
             </div>
             {activeTab === "schedule" && (
               <div key="schedule" className="tab-panel tab-panel-active">

@@ -171,7 +171,7 @@ function TermsOfService(): JSX.Element {
       <h3>1. Introduction</h3>
       <p>
         These Terms of Service ("Terms") govern your use of Companion ("the Service"),
-        a personal AI assistant for university students, operated by Invaron AS,
+        a personal AI assistant operated by Invaron AS,
         a Norwegian company ("we", "us", "our").
       </p>
       <p>
@@ -183,7 +183,7 @@ function TermsOfService(): JSX.Element {
       <p>
         Companion is a mobile-first progressive web application that integrates with
         third-party services (Canvas LMS, TP EduCloud, MCP-connected services, Withings, and others)
-        to provide an AI-powered academic assistant. The AI component is powered by Google Gemini.
+        to provide an AI-powered personal assistant. The AI component is powered by Google Gemini.
       </p>
 
       <h3>3. Eligibility</h3>
@@ -213,7 +213,7 @@ function TermsOfService(): JSX.Element {
       <p>
         The Service uses AI to provide responses, summaries, and recommendations.
         AI outputs may be inaccurate, incomplete, or outdated. You should independently verify
-        important information, particularly academic deadlines and grading requirements.
+        important information, particularly deadlines and time-sensitive commitments.
         We are not liable for decisions made based on AI-generated content.
       </p>
 
@@ -296,8 +296,8 @@ function PrivacyPolicy(): JSX.Element {
             <td>Contract performance (Art. 6(1)(b))</td>
           </tr>
           <tr>
-            <td>Academic data</td>
-            <td>Course schedules, deadlines, grades, assignments (from Canvas LMS, TP EduCloud)</td>
+            <td>Schedule &amp; productivity data</td>
+            <td>Schedules, deadlines, tasks, assignments (from connected integrations)</td>
             <td>Consent (Art. 6(1)(a))</td>
           </tr>
           <tr>
@@ -321,7 +321,7 @@ function PrivacyPolicy(): JSX.Element {
       <h3>3. How We Use Your Data</h3>
       <ul>
         <li>To provide the core Service: AI conversations, schedule management, deadline tracking</li>
-        <li>To personalize AI responses with your academic and personal context</li>
+        <li>To personalize AI responses with your personal context</li>
         <li>To sync data from connected third-party services on your behalf</li>
         <li>To send notifications (push, email digests) about deadlines and reminders</li>
         <li>To improve the Service through aggregated, anonymized analytics</li>
@@ -337,7 +337,7 @@ function PrivacyPolicy(): JSX.Element {
           <tr>
             <td>Google (Vertex AI / Gemini)</td>
             <td>AI conversation processing</td>
-            <td>Chat messages, academic context sent per-request</td>
+            <td>Chat messages, personal context sent per-request</td>
           </tr>
           <tr>
             <td>Railway</td>

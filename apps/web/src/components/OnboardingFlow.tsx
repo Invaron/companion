@@ -15,23 +15,23 @@ interface Screen {
 const SCREENS: Screen[] = [
   {
     illustration: "onboarding-welcome.svg",
-    title: "Hey! I\u2019m your AI companion\u00a0for\u00a0university.",
+    title: "Hey! I\u2019m your AI\u00a0companion.",
     subtitle: "I know your schedule, deadlines, and goals \u2014 ask me anything.",
   },
   {
     screenshot: "schedule-preview.png",
-    title: "Your lectures, deadlines,\u00a0and\u00a0exams.",
-    subtitle: "Synced from Canvas & your calendar, always up to date.",
+    title: "Your events, deadlines,\u00a0and\u00a0goals.",
+    subtitle: "Synced from your calendar & integrations, always up to date.",
   },
   {
     screenshot: "chat-preview.png",
     title: "Ask anything, plan\u00a0your\u00a0week, or\u00a0just\u00a0vent.",
-    subtitle: "Powered by Gemini with full context about your academic life.",
+    subtitle: "Powered by Gemini with full context about your life.",
   },
   {
     illustration: "onboarding-confetti.svg",
     title: "You\u2019re all set!",
-    subtitle: "Let\u2019s make this semester your best one yet.",
+    subtitle: "Let\u2019s make every day count.",
     cta: true,
   },
 ];

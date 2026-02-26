@@ -3614,7 +3614,7 @@ body.chat-tab-active .chat-view {
 
 .chat-load-more {
   text-align: center;
-  padding: 8px 0 4px;
+  padding: max(env(safe-area-inset-top, 0px), 12px) 0 4px;
 }
 
 .chat-load-more-btn {
@@ -3636,6 +3636,37 @@ body.chat-tab-active .chat-view {
 .chat-load-more-btn:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* Chat skeleton loading */
+.chat-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.chat-skeleton-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  max-width: 75%;
+}
+
+.chat-skeleton-assistant {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.04);
+  border-radius: 16px 16px 16px 4px;
+}
+
+.chat-skeleton-user {
+  align-self: flex-end;
+  background: rgba(96,165,250,0.08);
+  border-radius: 16px 16px 4px 16px;
 }
 
 .chat-welcome {
