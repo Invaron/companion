@@ -8990,12 +8990,19 @@ label small.muted {
 
 .locked-feature-preview {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Stop the image at the safe-area boundary so the preview tab bar
+     aligns with the real tab bar (which has safe-area bottom padding).
+     On devices without a safe area this resolves to bottom:0 (no change). */
+  bottom: env(safe-area-inset-bottom, 0px);
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Anchor to bottom so the screenshot footer overlaps with the real tab bar */
-  object-position: center bottom;
+  /* Crop from the bottom — removes the extra safe-area padding that
+     was baked into Playwright screenshots (captured without safe area) */
+  object-position: center top;
   opacity: 0.28;
   filter: blur(2px);
   pointer-events: none;
