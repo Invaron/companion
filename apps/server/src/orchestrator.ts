@@ -157,10 +157,12 @@ export class OrchestratorRuntime {
       return;
     }
 
+    console.log(`[orchestrator] processing ${dueNotifications.length} due notification(s)`);
     const digestCandidates = dueNotifications.filter((scheduled) => isDigestCandidate(scheduled));
     const immediateNotifications = dueNotifications.filter((scheduled) => !isDigestCandidate(scheduled));
 
     for (const scheduled of immediateNotifications) {
+      console.log(`[orchestrator] delivering immediately: "${scheduled.notification.title}" (category=${scheduled.category ?? "none"})`);
       this.store.pushNotification(this.userId, scheduled.notification);
       this.rescheduleIfRecurring(scheduled);
       this.store.removeScheduledNotification(this.userId, scheduled.id);

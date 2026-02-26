@@ -2879,6 +2879,7 @@ store.onNotification((notification: Notification) => {
 
 async function broadcastNotification(notification: Notification): Promise<void> {
   if (!store.shouldDispatchNotification("", notification)) {
+    console.log(`[push] blocked by dispatch rules: source=${notification.source} priority=${notification.priority} title="${notification.title}"`);
     return;
   }
 
@@ -2886,9 +2887,11 @@ async function broadcastNotification(notification: Notification): Promise<void> 
 
 
   if (subscriptions.length === 0) {
+    console.log(`[push] no subscriptions — notification "${notification.title}" not delivered`);
     return;
   }
 
+  console.log(`[push] delivering "${notification.title}" to ${subscriptions.length} subscription(s)`);
   const deliveryResults = await Promise.all(
     subscriptions.map((subscription) => sendPushNotification(subscription, notification))
   );
@@ -2897,6 +2900,7 @@ async function broadcastNotification(notification: Notification): Promise<void> 
     const endpoint = subscriptions[i].endpoint;
     const result = deliveryResults[i];
 
+    console.log(`[push] result: delivered=${result.delivered} status=${result.statusCode ?? "n/a"} attempts=${result.attempts}${result.error ? ` error="${result.error}"` : ""}${result.shouldDropSubscription ? " (dropping subscription)" : ""}`);
     store.recordPushDeliveryResult(endpoint, notification, result);
 
     if (result.shouldDropSubscription) {
@@ -3982,6 +3986,7 @@ app.post("/api/push/subscribe", (req, res) => {
   }
 
   const subscription = store.addPushSubscription(userId, parsed.data);
+  console.log(`[push] new subscription registered for user=${userId || "(default)"}`);
   return res.status(201).json({ subscription });
 });
 
@@ -4526,6 +4531,10 @@ const server = app.listen(config.PORT, () => {
         ? ` restoredSnapshotAt=${persistenceContext.restoredSnapshotAt}`
         : "")
   );
+  // eslint-disable-next-line no-console
+  console.log(`[push] VAPID keys=${hasStaticVapidKeys() ? "configured" : "auto-generated (will rotate on restart!)"} subject=${config.VAPID_SUBJECT}`);
+  // eslint-disable-next-line no-console
+  console.log(`[push] subscriptions=${store.getPushSubscriptions("").length}`);
 });
 
 let shuttingDown = false;
