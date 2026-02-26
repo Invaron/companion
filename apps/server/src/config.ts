@@ -91,6 +91,7 @@ const schema = z.object({
     .default((process.env.NODE_ENV ?? "development") === "production"),
   AUTH_ADMIN_EMAIL: z.string().email().optional(),
   AUTH_ADMIN_PASSWORD: z.string().min(8).optional(),
+  PRO_WHITELIST_EMAILS: z.string().optional(),
   AUTH_SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 90).default(24 * 30),
   GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),

@@ -157,7 +157,8 @@ const authService = new AuthService(store, {
   required: config.AUTH_REQUIRED,
   adminEmail: config.AUTH_ADMIN_EMAIL,
   adminPassword: config.AUTH_ADMIN_PASSWORD,
-  sessionTtlHours: config.AUTH_SESSION_TTL_HOURS
+  sessionTtlHours: config.AUTH_SESSION_TTL_HOURS,
+  proWhitelistEmails: config.PRO_WHITELIST_EMAILS
 });
 const bootstrappedAdmin = authService.bootstrapAdminUser();
 if (config.AUTH_REQUIRED && bootstrappedAdmin) {
@@ -1023,6 +1024,10 @@ app.get("/api/auth/google/callback", async (req, res) => {
       provider: "google",
       role: isAdmin ? "admin" : undefined
     });
+    // Auto-promote whitelisted emails to pro plan
+    if (!isAdmin && user.plan !== "pro" && authService.isProWhitelisted(profile.email)) {
+      store.updateUserPlan(user.id, "pro");
+    }
     const session = createOAuthSession(user);
     return res.redirect(getOAuthFrontendRedirect(session.token));
   } catch (error) {
@@ -1084,6 +1089,10 @@ app.get("/api/auth/github/callback", async (req, res) => {
       provider: "github",
       role: isAdmin ? "admin" : undefined
     });
+    // Auto-promote whitelisted emails to pro plan
+    if (!isAdmin && user.plan !== "pro" && authService.isProWhitelisted(profile.email)) {
+      store.updateUserPlan(user.id, "pro");
+    }
     const session = createOAuthSession(user);
     return res.redirect(getOAuthFrontendRedirect(session.token));
   } catch (error) {

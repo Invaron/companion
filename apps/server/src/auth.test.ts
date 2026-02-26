@@ -44,4 +44,36 @@ describe("auth", () => {
     expect(service.logout(login!.token)).toBe(true);
     expect(service.authenticateToken(login!.token)).toBeNull();
   });
+
+  it("identifies pro-whitelisted emails", () => {
+    const store = new RuntimeStore(":memory:");
+    const service = new AuthService(store, {
+      required: true,
+      adminEmail: "admin@example.com",
+      adminPassword: "very-strong-password",
+      sessionTtlHours: 24,
+      proWhitelistEmails: "friend1@gmail.com, Friend2@Gmail.com ,friend3@example.com"
+    });
+
+    expect(service.isProWhitelisted("friend1@gmail.com")).toBe(true);
+    expect(service.isProWhitelisted("Friend1@Gmail.com")).toBe(true);
+    expect(service.isProWhitelisted("friend2@gmail.com")).toBe(true);
+    expect(service.isProWhitelisted("friend3@example.com")).toBe(true);
+    expect(service.isProWhitelisted("stranger@example.com")).toBe(false);
+
+    const emails = service.getProWhitelistEmails();
+    expect(emails.size).toBe(3);
+    expect(emails.has("friend1@gmail.com")).toBe(true);
+  });
+
+  it("returns empty whitelist when not configured", () => {
+    const store = new RuntimeStore(":memory:");
+    const service = new AuthService(store, {
+      required: false,
+      sessionTtlHours: 24
+    });
+
+    expect(service.isProWhitelisted("anyone@example.com")).toBe(false);
+    expect(service.getProWhitelistEmails().size).toBe(0);
+  });
 });

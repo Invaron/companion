@@ -7,6 +7,7 @@ export interface AuthServiceOptions {
   adminEmail?: string;
   adminPassword?: string;
   sessionTtlHours: number;
+  proWhitelistEmails?: string;
 }
 
 export interface AuthSessionResult {
@@ -95,6 +96,27 @@ export class AuthService {
    */
   getAdminEmail(): string | null {
     return this.options.adminEmail ? normalizeEmail(this.options.adminEmail) : null;
+  }
+
+  /**
+   * Returns the set of emails that should receive free Pro access.
+   * Parsed from the PRO_WHITELIST_EMAILS env var (comma-separated).
+   */
+  getProWhitelistEmails(): Set<string> {
+    if (!this.options.proWhitelistEmails) return new Set();
+    return new Set(
+      this.options.proWhitelistEmails
+        .split(",")
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.length > 0)
+    );
+  }
+
+  /**
+   * Check if an email is on the Pro whitelist.
+   */
+  isProWhitelisted(email: string): boolean {
+    return this.getProWhitelistEmails().has(normalizeEmail(email));
   }
 
   bootstrapAdminUser(): AuthUser | null {
