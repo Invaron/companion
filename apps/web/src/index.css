@@ -8980,9 +8980,9 @@ label small.muted {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    rgba(15, 23, 42, 0.55),
-    rgba(15, 23, 42, 0.35) 40%,
-    rgba(15, 23, 42, 0.55)
+    rgba(15, 23, 42, 0.45),
+    rgba(15, 23, 42, 0.25) 40%,
+    rgba(15, 23, 42, 0.45)
   );
   z-index: 1;
   pointer-events: none;
@@ -8996,8 +8996,8 @@ label small.muted {
   object-fit: cover;
   /* Anchor to bottom so the screenshot footer overlaps with the real tab bar */
   object-position: center bottom;
-  opacity: 0.22;
-  filter: blur(4px);
+  opacity: 0.28;
+  filter: blur(2px);
   pointer-events: none;
   user-select: none;
   z-index: 0;
