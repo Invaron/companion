@@ -50,10 +50,11 @@ export const PLAN_TIERS: Record<PlanId, PlanTier> = {
   free: {
     id: "free",
     name: "Free",
-    description: "10 AI messages/day, schedule & deadlines, Canvas + TP sync.",
+    description: "Gemini AI chat, Canvas + TP sync, schedule & deadlines.",
     priceMonthlyNok: 0,
     dailyChatLimit: 10,
     features: new Set<FeatureId>(["chat", "schedule", "connectors"]),
+    // 3 integrations: Gemini + Canvas + TP
     connectors: ["canvas", "tp_schedule"] as ConnectorService[],
     maxChatHistory: 50,
     trialDays: 0,
@@ -69,8 +70,8 @@ export const PLAN_TIERS: Record<PlanId, PlanTier> = {
       "chat", "schedule", "nutrition",
       "connectors", "gemini_tools", "chat_history", "custom_moods"
     ]),
-    // 3 integrations total: Gemini counts as 1, so 2 user-chosen slots
-    connectors: ["canvas", "mcp", "tp_schedule"] as ConnectorService[],
+    // Free integrations (Gemini + Canvas + TP) + 2 more from connected apps = 5 total
+    connectors: ["canvas", "mcp", "tp_schedule", "withings"] as ConnectorService[],
     maxChatHistory: 500,
     trialDays: 7,
     badge: "Plus"
@@ -130,6 +131,7 @@ const PLUS_TIER_TOOLS: ReadonlySet<string> = new Set([
   "createNutritionCustomFood",
   "updateNutritionCustomFood",
   "deleteNutritionCustomFood",
+  "getWithingsHealthSummary",
   "logMeal",
   "createNutritionMeal",
   "updateNutritionMeal",
@@ -141,9 +143,8 @@ const PLUS_TIER_TOOLS: ReadonlySet<string> = new Set([
   "deleteMeal"
 ]);
 
-/** Additional tools unlocked at Pro tier — habits, goals, withings */
+/** Additional tools unlocked at Pro tier — habits, goals */
 const PRO_TIER_TOOLS: ReadonlySet<string> = new Set([
-  "getWithingsHealthSummary",
   "getHabitsGoalsStatus",
   "updateHabitCheckIn",
   "checkInGym",
