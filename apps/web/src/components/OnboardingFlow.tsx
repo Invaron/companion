@@ -4,24 +4,32 @@ interface OnboardingFlowProps {
   onComplete: () => void;
 }
 
-const SCREENS = [
+interface Screen {
+  illustration?: string;
+  screenshot?: string;
+  title: string;
+  subtitle: string;
+  cta?: boolean;
+}
+
+const SCREENS: Screen[] = [
   {
-    illustration: "/onboarding/onboarding-welcome.svg",
+    illustration: "onboarding-welcome.svg",
     title: "Hey! I\u2019m your AI companion\u00a0for\u00a0university.",
     subtitle: "I know your schedule, deadlines, and goals \u2014 ask me anything.",
   },
   {
-    illustration: "/onboarding/onboarding-schedule.svg",
+    screenshot: "schedule-preview.png",
     title: "Your lectures, deadlines,\u00a0and\u00a0exams.",
     subtitle: "Synced from Canvas & your calendar, always up to date.",
   },
   {
-    illustration: "/onboarding/onboarding-chat.svg",
+    screenshot: "chat-preview.png",
     title: "Ask anything, plan\u00a0your\u00a0week, or\u00a0just\u00a0vent.",
     subtitle: "Powered by Gemini with full context about your academic life.",
   },
   {
-    illustration: "/onboarding/onboarding-confetti.svg",
+    illustration: "onboarding-confetti.svg",
     title: "You\u2019re all set!",
     subtitle: "Let\u2019s make this semester your best one yet.",
     cta: true,
@@ -84,15 +92,27 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps): JSX.Element
       <div ref={containerRef} className="onboarding-container">
         {SCREENS.map((screen, i) => (
           <div key={i} className="onboarding-screen">
-            <div className="onboarding-illustration">
-              <img
-                src={`${BASE_PATH}onboarding/${screen.illustration.split("/").pop()}`}
-                alt=""
-                width="280"
-                height="280"
-                loading={i === 0 ? "eager" : "lazy"}
-              />
-            </div>
+            {screen.illustration ? (
+              <div className="onboarding-illustration">
+                <img
+                  src={`${BASE_PATH}onboarding/${screen.illustration}`}
+                  alt=""
+                  width="280"
+                  height="280"
+                  loading={i === 0 ? "eager" : "lazy"}
+                />
+              </div>
+            ) : screen.screenshot ? (
+              <div className="onboarding-phone-frame">
+                <div className="onboarding-phone-notch" />
+                <img
+                  src={`${BASE_PATH}onboarding/${screen.screenshot}`}
+                  alt=""
+                  className="onboarding-phone-screenshot"
+                  loading="lazy"
+                />
+              </div>
+            ) : null}
             <h1 className="onboarding-title">{screen.title}</h1>
             <p className="onboarding-subtitle">{screen.subtitle}</p>
           </div>

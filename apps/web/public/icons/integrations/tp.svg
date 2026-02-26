@@ -1,18 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-label="TP EduCloud">
+  <style>
+    @keyframes orbit { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    @keyframes dot-pulse { 0%,100%{opacity:0.7;r:18} 50%{opacity:1;r:20} }
+    .ring{animation:orbit 30s linear infinite;transform-origin:256px 256px}
+    .dp{animation:dot-pulse 2s ease-in-out infinite}
+  </style>
   <rect width="512" height="512" fill="#000000"/>
-  <g fill="#f5f5f5">
-    <circle cx="256" cy="54" r="18"/>
-    <circle cx="357" cy="81" r="18"/>
-    <circle cx="431" cy="155" r="18"/>
-    <circle cx="458" cy="256" r="18"/>
-    <circle cx="431" cy="357" r="18"/>
-    <circle cx="357" cy="431" r="18"/>
-    <circle cx="256" cy="458" r="18"/>
-    <circle cx="155" cy="431" r="18"/>
-    <circle cx="81" cy="357" r="18"/>
-    <circle cx="54" cy="256" r="18"/>
-    <circle cx="81" cy="155" r="18"/>
-    <circle cx="155" cy="81" r="18"/>
+  <!-- Subtle orbital glow ring -->
+  <circle cx="256" cy="256" r="202" fill="none" stroke="#60a5fa" stroke-width="1" opacity="0.12"/>
+  <!-- Animated dot ring -->
+  <g class="ring">
+    <circle class="dp" cx="256" cy="54" r="18" fill="#f5f5f5" style="animation-delay:0s"/>
+    <circle class="dp" cx="357" cy="81" r="18" fill="#f5f5f5" style="animation-delay:0.17s"/>
+    <circle class="dp" cx="431" cy="155" r="18" fill="#f5f5f5" style="animation-delay:0.33s"/>
+    <circle class="dp" cx="458" cy="256" r="18" fill="#f5f5f5" style="animation-delay:0.5s"/>
+    <circle class="dp" cx="431" cy="357" r="18" fill="#f5f5f5" style="animation-delay:0.67s"/>
+    <circle class="dp" cx="357" cy="431" r="18" fill="#f5f5f5" style="animation-delay:0.83s"/>
+    <circle class="dp" cx="256" cy="458" r="18" fill="#f5f5f5" style="animation-delay:1s"/>
+    <circle class="dp" cx="155" cy="431" r="18" fill="#f5f5f5" style="animation-delay:1.17s"/>
+    <circle class="dp" cx="81" cy="357" r="18" fill="#f5f5f5" style="animation-delay:1.33s"/>
+    <circle class="dp" cx="54" cy="256" r="18" fill="#f5f5f5" style="animation-delay:1.5s"/>
+    <circle class="dp" cx="81" cy="155" r="18" fill="#f5f5f5" style="animation-delay:1.67s"/>
+    <circle class="dp" cx="155" cy="81" r="18" fill="#f5f5f5" style="animation-delay:1.83s"/>
   </g>
   <text
     x="256"

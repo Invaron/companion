@@ -3,7 +3,9 @@ import { confirmDeadlineStatus, getDeadlines } from "../lib/api";
 import { hapticSuccess } from "../lib/haptics";
 import { useI18n } from "../lib/i18n";
 import { Deadline } from "../types";
-import { IconTarget, IconCheckCircle } from "./Icons";
+import { IconTarget } from "./Icons";
+
+const EMPTY_DEADLINES_SVG = `${(import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "")}/illustrations/empty-deadlines.svg`;
 
 interface DeadlineListProps {
   focusDeadlineId?: string;
@@ -289,7 +291,7 @@ export function DeadlineList({ focusDeadlineId }: DeadlineListProps): JSX.Elemen
           </>
         ) : (
           <div className="deadline-empty-state">
-            <span className="deadline-empty-icon"><IconCheckCircle size={32} /></span>
+            <img className="empty-state-illustration" src={EMPTY_DEADLINES_SVG} alt="" width="120" height="120" />
             <p>{t("No deadlines tracked")}</p>
             <p className="deadline-empty-hint">{t("Add assignments to stay on top of your work")}</p>
           </div>

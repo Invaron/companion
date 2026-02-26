@@ -3,7 +3,8 @@ import type { TouchEvent } from "react";
 import { getSchedule } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { LectureEvent } from "../types";
-import { IconSunPartial } from "./Icons";
+
+const EMPTY_SCHEDULE_SVG = `${(import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "")}/illustrations/empty-schedule.svg`;
 
 interface DayTimelineSegment {
   type: "event" | "free";
@@ -511,7 +512,7 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
           </div>
         ) : (
           <div className="schedule-empty-state">
-            <span className="schedule-empty-icon"><IconSunPartial size={32} /></span>
+            <img className="empty-state-illustration" src={EMPTY_SCHEDULE_SVG} alt="" width="120" height="120" />
             <p>{dayOffset === 0 ? t("No fixed sessions today") : t("No fixed sessions this day")}</p>
             <p className="schedule-empty-hint">{t("Ask Gemini to build your day plan")}</p>
           </div>
