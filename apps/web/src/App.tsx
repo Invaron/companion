@@ -4,6 +4,7 @@ import { ChatFab } from "./components/ChatFab";
 import { ChatTab } from "./components/ChatTab";
 import { ConsentGate } from "./components/ConsentGate";
 import { LoginView } from "./components/LoginView";
+import { OnboardingFlow } from "./components/OnboardingFlow";
 import { ScheduleTab } from "./components/ScheduleTab";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { SettingsView } from "./components/SettingsView";
@@ -119,6 +120,7 @@ function parseApiErrorMessage(error: unknown, fallback: string): string {
 
 export default function App(): JSX.Element {
   const { t } = useI18n();
+  const [onboardingDone, setOnboardingDone] = useState(() => localStorage.getItem("onboarding-done") === "1");
   const initialDeepLink = parseDeepLink(typeof window === "undefined" ? "" : window.location.search);
   const [authState, setAuthState] = useState<AuthState>("checking");
   const [authRequired, setAuthRequired] = useState(false);
@@ -871,6 +873,10 @@ export default function App(): JSX.Element {
       setAuthSubmitting(false);
     }
   };
+
+  if (!onboardingDone) {
+    return <OnboardingFlow onComplete={() => setOnboardingDone(true)} />;
+  }
 
   if (authState === "checking") {
     return (

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" fill="none">
+  <style>
+    @keyframes hand-tick { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    @keyframes slide-in { 0%{opacity:0;transform:translateX(-12px)} 100%{opacity:1;transform:translateX(0)} }
+    @keyframes fade-pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+    .hour-hand{transform-origin:140px 125px;animation:hand-tick 8s linear infinite}
+    .min-hand{transform-origin:140px 125px;animation:hand-tick 60s linear infinite}
+    .event1{animation:slide-in 0.6s ease-out both}
+    .event2{animation:slide-in 0.6s ease-out 0.2s both}
+    .event3{animation:slide-in 0.6s ease-out 0.4s both}
+    .now-dot{animation:fade-pulse 2s ease-in-out infinite}
+  </style>
+  <!-- Clock face -->
+  <circle cx="140" cy="105" r="60" fill="rgba(96,165,250,0.06)" stroke="#60a5fa" stroke-width="1" stroke-opacity="0.3"/>
+  <circle cx="140" cy="105" r="55" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+  <!-- Hour marks -->
+  <line x1="140" y1="50" x2="140" y2="56" stroke="#e4e4e7" stroke-width="1.5" stroke-opacity="0.4"/>
+  <line x1="195" y1="105" x2="189" y2="105" stroke="#e4e4e7" stroke-width="1.5" stroke-opacity="0.4"/>
+  <line x1="140" y1="160" x2="140" y2="154" stroke="#e4e4e7" stroke-width="1.5" stroke-opacity="0.4"/>
+  <line x1="85" y1="105" x2="91" y2="105" stroke="#e4e4e7" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Clock hands -->
+  <line class="hour-hand" x1="140" y1="105" x2="140" y2="72" stroke="#e4e4e7" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+  <line class="min-hand" x1="140" y1="105" x2="165" y2="90" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+  <circle cx="140" cy="105" r="3" fill="#60a5fa"/>
+  <!-- Schedule events below -->
+  <g class="event1">
+    <rect x="50" y="182" width="180" height="24" rx="8" fill="rgba(96,165,250,0.15)" stroke="#60a5fa" stroke-width="0.8" stroke-opacity="0.4"/>
+    <circle class="now-dot" cx="62" cy="194" r="3" fill="#60a5fa"/>
+    <rect x="72" y="190" width="60" height="4" rx="2" fill="#e4e4e7" opacity="0.6"/>
+    <rect x="145" y="190" width="30" height="4" rx="2" fill="#60a5fa" opacity="0.4"/>
+  </g>
+  <g class="event2">
+    <rect x="50" y="214" width="180" height="24" rx="8" fill="rgba(110,231,183,0.1)" stroke="#6ee7b7" stroke-width="0.8" stroke-opacity="0.3"/>
+    <circle cx="62" cy="226" r="3" fill="#6ee7b7" opacity="0.5"/>
+    <rect x="72" y="222" width="45" height="4" rx="2" fill="#e4e4e7" opacity="0.6"/>
+    <rect x="130" y="222" width="35" height="4" rx="2" fill="#6ee7b7" opacity="0.4"/>
+  </g>
+  <g class="event3">
+    <rect x="50" y="246" width="180" height="24" rx="8" fill="rgba(251,191,36,0.08)" stroke="#fbbf24" stroke-width="0.8" stroke-opacity="0.3"/>
+    <circle cx="62" cy="258" r="3" fill="#fbbf24" opacity="0.5"/>
+    <rect x="72" y="254" width="55" height="4" rx="2" fill="#e4e4e7" opacity="0.6"/>
+    <rect x="140" y="254" width="25" height="4" rx="2" fill="#fbbf24" opacity="0.4"/>
+  </g>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <style>
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+    @keyframes fade-line { 0%,100%{opacity:0.12} 50%{opacity:0.25} }
+    .float{animation:float 3.5s ease-in-out infinite}
+    .line1{animation:fade-line 2.5s ease-in-out infinite}
+    .line2{animation:fade-line 2.5s ease-in-out 0.3s infinite}
+    .line3{animation:fade-line 2.5s ease-in-out 0.6s infinite}
+  </style>
+  <g class="float">
+    <!-- Calendar icon -->
+    <rect x="55" y="45" width="90" height="90" rx="14" fill="rgba(96,165,250,0.06)" stroke="#60a5fa" stroke-width="1" stroke-opacity="0.25"/>
+    <!-- Header bar -->
+    <rect x="55" y="45" width="90" height="22" rx="14" fill="rgba(96,165,250,0.1)"/>
+    <rect x="55" y="53" width="90" height="14" fill="rgba(96,165,250,0.1)"/>
+    <!-- Calendar pins -->
+    <rect x="75" y="40" width="3" height="12" rx="1.5" fill="#a1a1aa" opacity="0.3"/>
+    <rect x="122" y="40" width="3" height="12" rx="1.5" fill="#a1a1aa" opacity="0.3"/>
+    <!-- Empty rows -->
+    <g class="line1"><rect x="65" y="78" width="70" height="4" rx="2" fill="#a1a1aa" opacity="0.2"/></g>
+    <g class="line2"><rect x="65" y="92" width="50" height="4" rx="2" fill="#a1a1aa" opacity="0.2"/></g>
+    <g class="line3"><rect x="65" y="106" width="60" height="4" rx="2" fill="#a1a1aa" opacity="0.2"/></g>
+    <!-- Clock icon -->
+    <circle cx="100" cy="158" r="14" fill="none" stroke="#a1a1aa" stroke-width="1" stroke-opacity="0.2"/>
+    <line x1="100" y1="158" x2="100" y2="149" stroke="#a1a1aa" stroke-width="1" stroke-opacity="0.25" stroke-linecap="round"/>
+    <line x1="100" y1="158" x2="108" y2="162" stroke="#60a5fa" stroke-width="1" stroke-opacity="0.3" stroke-linecap="round"/>
+  </g>
+</svg>

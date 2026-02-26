@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" fill="none">
+  <style>
+    @keyframes msg-in-1 { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+    @keyframes msg-in-2 { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+    @keyframes msg-in-3 { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+    @keyframes typing { 0%,100%{opacity:0.3} 50%{opacity:1} }
+    .msg1{animation:msg-in-1 0.5s ease-out both}
+    .msg2{animation:msg-in-2 0.5s ease-out 0.3s both}
+    .msg3{animation:msg-in-3 0.5s ease-out 0.6s both}
+    .dot1{animation:typing 1.2s ease-in-out infinite}
+    .dot2{animation:typing 1.2s ease-in-out 0.2s infinite}
+    .dot3{animation:typing 1.2s ease-in-out 0.4s infinite}
+  </style>
+  <!-- Phone outline -->
+  <rect x="55" y="20" width="170" height="240" rx="20" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <!-- Status bar -->
+  <rect x="105" y="26" width="70" height="4" rx="2" fill="rgba(255,255,255,0.15)"/>
+  <!-- User message (right) -->
+  <g class="msg1">
+    <rect x="110" y="55" width="100" height="32" rx="12" fill="url(#userBubble)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.3"/>
+    <rect x="122" y="66" width="65" height="4" rx="2" fill="#e4e4e7" opacity="0.7"/>
+    <rect x="135" y="74" width="40" height="3" rx="1.5" fill="#e4e4e7" opacity="0.4"/>
+  </g>
+  <!-- AI message (left) -->
+  <g class="msg2">
+    <rect x="70" y="100" width="130" height="50" rx="12" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.09)" stroke-width="0.6"/>
+    <rect x="82" y="112" width="90" height="4" rx="2" fill="#e4e4e7" opacity="0.6"/>
+    <rect x="82" y="120" width="75" height="4" rx="2" fill="#e4e4e7" opacity="0.4"/>
+    <rect x="82" y="128" width="55" height="4" rx="2" fill="#e4e4e7" opacity="0.3"/>
+    <!-- Source pill -->
+    <rect x="82" y="137" width="44" height="8" rx="4" fill="rgba(96,165,250,0.15)" stroke="#60a5fa" stroke-width="0.4" stroke-opacity="0.3"/>
+  </g>
+  <!-- User message 2 (right) -->
+  <g class="msg3">
+    <rect x="125" y="165" width="85" height="28" rx="12" fill="url(#userBubble)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.3"/>
+    <rect x="137" y="175" width="50" height="4" rx="2" fill="#e4e4e7" opacity="0.7"/>
+  </g>
+  <!-- Typing indicator -->
+  <g transform="translate(70, 205)">
+    <rect width="60" height="28" rx="12" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.09)" stroke-width="0.6"/>
+    <circle class="dot1" cx="17" cy="14" r="3.5" fill="#a1a1aa"/>
+    <circle class="dot2" cx="30" cy="14" r="3.5" fill="#a1a1aa"/>
+    <circle class="dot3" cx="43" cy="14" r="3.5" fill="#a1a1aa"/>
+  </g>
+  <defs>
+    <linearGradient id="userBubble" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(96,165,250,0.32)"/>
+      <stop offset="100%" stop-color="rgba(59,130,246,0.24)"/>
+    </linearGradient>
+  </defs>
+</svg>

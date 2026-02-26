@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" fill="none">
+  <style>
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes sparkle1 { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:1;transform:scale(1)} }
+    @keyframes sparkle2 { 0%,100%{opacity:0;transform:scale(0.3)} 40%{opacity:1;transform:scale(1.1)} 60%{opacity:0.8;transform:scale(0.9)} }
+    @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+    .bubble{animation:float 3s ease-in-out infinite}
+    .s1{animation:sparkle1 2.4s ease-in-out infinite}
+    .s2{animation:sparkle2 2.8s ease-in-out 0.5s infinite}
+    .s3{animation:sparkle1 3.2s ease-in-out 1s infinite}
+    .s4{animation:sparkle2 2s ease-in-out 0.3s infinite}
+    .glow{animation:pulse 3s ease-in-out infinite}
+  </style>
+  <!-- Soft glow behind -->
+  <circle class="glow" cx="140" cy="140" r="90" fill="#60a5fa" opacity="0.08"/>
+  <!-- Main chat bubble -->
+  <g class="bubble">
+    <rect x="60" y="80" width="160" height="110" rx="24" fill="#60a5fa" opacity="0.18" stroke="#60a5fa" stroke-width="1.5" stroke-opacity="0.4"/>
+    <rect x="65" y="85" width="150" height="100" rx="20" fill="url(#bubbleGrad)" stroke="#60a5fa" stroke-width="0.5" stroke-opacity="0.3"/>
+    <!-- Tail -->
+    <path d="M90 185 L80 205 L110 185" fill="url(#bubbleGrad)" stroke="#60a5fa" stroke-width="0.5" stroke-opacity="0.3"/>
+    <!-- AI dots -->
+    <circle cx="110" cy="130" r="6" fill="#60a5fa" opacity="0.9"/>
+    <circle cx="140" cy="130" r="6" fill="#60a5fa" opacity="0.6"/>
+    <circle cx="170" cy="130" r="6" fill="#60a5fa" opacity="0.3"/>
+    <!-- Smiley face hint -->
+    <path d="M115 145 Q140 160 165 145" stroke="#e4e4e7" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.4"/>
+  </g>
+  <!-- Sparkles -->
+  <g class="s1"><path d="M55 60 L58 50 L61 60 L71 63 L61 66 L58 76 L55 66 L45 63Z" fill="#60a5fa" opacity="0.8"/></g>
+  <g class="s2"><path d="M210 55 L212 48 L214 55 L221 57 L214 59 L212 66 L210 59 L203 57Z" fill="#fbbf24" opacity="0.7"/></g>
+  <g class="s3"><path d="M230 160 L232 153 L234 160 L241 162 L234 164 L232 171 L230 164 L223 162Z" fill="#6ee7b7" opacity="0.6"/></g>
+  <g class="s4"><circle cx="40" cy="170" r="3" fill="#60a5fa" opacity="0.5"/></g>
+  <g class="s2"><circle cx="240" cy="100" r="2.5" fill="#fbbf24" opacity="0.4"/></g>
+  <g class="s1"><circle cx="190" cy="220" r="2" fill="#6ee7b7" opacity="0.5"/></g>
+  <defs>
+    <linearGradient id="bubbleGrad" x1="65" y1="85" x2="215" y2="185" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="rgba(96,165,250,0.22)"/>
+      <stop offset="100%" stop-color="rgba(59,130,246,0.12)"/>
+    </linearGradient>
+  </defs>
+</svg>

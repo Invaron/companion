@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" fill="none">
+  <style>
+    @keyframes confetti-fall-1 { 0%{transform:translateY(-20px) rotate(0deg);opacity:0} 10%{opacity:1} 100%{transform:translateY(280px) rotate(720deg);opacity:0} }
+    @keyframes confetti-fall-2 { 0%{transform:translateY(-30px) rotate(45deg);opacity:0} 15%{opacity:1} 100%{transform:translateY(290px) rotate(-540deg);opacity:0} }
+    @keyframes confetti-fall-3 { 0%{transform:translateY(-10px) rotate(-30deg);opacity:0} 8%{opacity:1} 100%{transform:translateY(270px) rotate(480deg);opacity:0} }
+    @keyframes check-draw { 0%{stroke-dashoffset:40} 50%{stroke-dashoffset:0} 100%{stroke-dashoffset:0} }
+    @keyframes ring-grow { 0%{transform:scale(0.5);opacity:0} 50%{transform:scale(1);opacity:1} 100%{transform:scale(1);opacity:1} }
+    @keyframes star-burst { 0%{transform:scale(0);opacity:0} 30%{transform:scale(1.2);opacity:1} 50%{transform:scale(1);opacity:0.8} 100%{transform:scale(1);opacity:0.8} }
+    .c1{animation:confetti-fall-1 3s ease-in infinite}
+    .c2{animation:confetti-fall-2 3.5s ease-in 0.3s infinite}
+    .c3{animation:confetti-fall-3 2.8s ease-in 0.6s infinite}
+    .c4{animation:confetti-fall-1 3.2s ease-in 0.9s infinite}
+    .c5{animation:confetti-fall-2 2.6s ease-in 1.2s infinite}
+    .c6{animation:confetti-fall-3 3.4s ease-in 0.4s infinite}
+    .c7{animation:confetti-fall-1 2.9s ease-in 0.7s infinite}
+    .c8{animation:confetti-fall-2 3.1s ease-in 1s infinite}
+    .ring{transform-origin:140px 130px;animation:ring-grow 1s ease-out both}
+    .check{stroke-dasharray:40;animation:check-draw 1.2s ease-out 0.3s both}
+    .star{animation:star-burst 1.5s ease-out both}
+  </style>
+  <!-- Central circle -->
+  <circle class="ring" cx="140" cy="130" r="50" fill="rgba(96,165,250,0.1)" stroke="#60a5fa" stroke-width="2" stroke-opacity="0.5"/>
+  <circle class="ring" cx="140" cy="130" r="42" fill="rgba(96,165,250,0.05)" stroke="#60a5fa" stroke-width="0.5" stroke-opacity="0.2"/>
+  <!-- Checkmark -->
+  <path class="check" d="M115 130 L132 147 L165 113" stroke="#6ee7b7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Stars around -->
+  <g class="star" style="animation-delay:0.5s"><path d="M60 70 L63 60 L66 70 L76 73 L66 76 L63 86 L60 76 L50 73Z" fill="#60a5fa" opacity="0.6"/></g>
+  <g class="star" style="animation-delay:0.7s"><path d="M210 85 L213 78 L216 85 L223 87 L216 89 L213 96 L210 89 L203 87Z" fill="#fbbf24" opacity="0.6"/></g>
+  <g class="star" style="animation-delay:0.9s"><path d="M55 180 L57 174 L59 180 L65 182 L59 184 L57 190 L55 184 L49 182Z" fill="#6ee7b7" opacity="0.5"/></g>
+  <g class="star" style="animation-delay:1.1s"><path d="M225 165 L227 160 L229 165 L234 167 L229 169 L227 174 L225 169 L220 167Z" fill="#fca5a5" opacity="0.5"/></g>
+  <!-- Confetti pieces -->
+  <rect class="c1" x="45" y="0" width="6" height="3" rx="1" fill="#60a5fa" opacity="0.7"/>
+  <rect class="c2" x="95" y="0" width="5" height="3" rx="1" fill="#fbbf24" opacity="0.7"/>
+  <rect class="c3" x="155" y="0" width="6" height="3" rx="1" fill="#6ee7b7" opacity="0.7"/>
+  <rect class="c4" x="205" y="0" width="5" height="3" rx="1" fill="#fca5a5" opacity="0.7"/>
+  <rect class="c5" x="70" y="0" width="4" height="6" rx="1" fill="#60a5fa" opacity="0.6"/>
+  <rect class="c6" x="130" y="0" width="4" height="5" rx="1" fill="#fbbf24" opacity="0.6"/>
+  <rect class="c7" x="180" y="0" width="5" height="4" rx="1" fill="#6ee7b7" opacity="0.6"/>
+  <rect class="c8" x="235" y="0" width="4" height="5" rx="1" fill="#60a5fa" opacity="0.5"/>
+  <!-- More confetti dots -->
+  <circle class="c3" cx="40" cy="0" r="2.5" fill="#fbbf24" opacity="0.6"/>
+  <circle class="c5" cx="115" cy="0" r="2" fill="#6ee7b7" opacity="0.5"/>
+  <circle class="c1" cx="230" cy="0" r="2.5" fill="#fca5a5" opacity="0.5"/>
+  <circle class="c7" cx="160" cy="0" r="2" fill="#60a5fa" opacity="0.6"/>
+  <!-- "Let's go" underline accent -->
+  <rect x="95" y="210" width="90" height="3" rx="1.5" fill="#60a5fa" opacity="0.3"/>
+  <rect x="105" y="210" width="70" height="3" rx="1.5" fill="#60a5fa" opacity="0.5"/>
+</svg>
