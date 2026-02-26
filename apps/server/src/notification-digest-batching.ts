@@ -40,6 +40,8 @@ export function resolveNextDigestWindow(
 }
 
 export function isDigestCandidate(notification: ScheduledNotification): boolean {
+  // User-created reminders are always delivered immediately, never batched into digests
+  if (notification.category === "user-reminder") return false;
   return notification.notification.priority === "low" || notification.notification.priority === "medium";
 }
 

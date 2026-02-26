@@ -6926,18 +6926,20 @@ export class RuntimeStore {
   }
 
   /**
-   * Get all upcoming (not yet due) scheduled notifications, ordered by scheduledFor
+   * Get all upcoming (future) scheduled notifications, ordered by scheduledFor.
+   * Excludes past-due notifications (those are handled by the orchestrator delivery loop).
    */
   getUpcomingScheduledNotifications(userId: string, category?: string): ScheduledNotification[] {
+    const now = new Date().toISOString();
     if (category) {
       const rows = this.db
-        .prepare("SELECT * FROM scheduled_notifications WHERE userId = ? AND category = ? ORDER BY scheduledFor ASC")
-        .all(userId, category) as Array<ScheduledNotificationRow>;
+        .prepare("SELECT * FROM scheduled_notifications WHERE userId = ? AND category = ? AND scheduledFor > ? ORDER BY scheduledFor ASC")
+        .all(userId, category, now) as Array<ScheduledNotificationRow>;
       return rows.map(mapScheduledNotificationRow);
     }
     const rows = this.db
-      .prepare("SELECT * FROM scheduled_notifications WHERE userId = ? ORDER BY scheduledFor ASC")
-      .all(userId) as Array<ScheduledNotificationRow>;
+      .prepare("SELECT * FROM scheduled_notifications WHERE userId = ? AND scheduledFor > ? ORDER BY scheduledFor ASC")
+      .all(userId, now) as Array<ScheduledNotificationRow>;
 
     return rows.map(mapScheduledNotificationRow);
   }
