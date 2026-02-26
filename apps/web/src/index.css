@@ -8947,19 +8947,20 @@ label small.muted {
 }
 
 .locked-feature-overlay {
-  /* Fill the entire tab-content-area via absolute positioning
-     (.tab-content-area already has position:relative) */
-  position: absolute;
+  /* Cover the full viewport including behind the transparent tab bar
+     so the preview image footer merges seamlessly with the real footer */
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2;
+  z-index: 50; /* below tab-bar (100) so tabs stay interactive */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2rem 1.5rem;
+  padding-bottom: calc(2rem + 62px); /* offset for tab bar so content is visually centered above it */
   text-align: center;
   overflow: hidden;
 }
