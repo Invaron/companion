@@ -965,7 +965,7 @@ export default function App(): JSX.Element {
             {activeTab === "schedule" && (
               <div key="schedule" className="tab-panel tab-panel-active">
                 {isTabLocked("schedule")
-                  ? <LockedFeatureOverlay featureName={t("Schedule")} onUpgradeClick={() => openUpgradeModal(t("Schedule"))} />
+                  ? <LockedFeatureOverlay featureName={t("Schedule")} onUpgradeClick={() => openUpgradeModal(t("Schedule"))} previewImage={`${import.meta.env.BASE_URL}onboarding/schedule-preview.png`} />
                   : <ScheduleTab
                       scheduleKey={`schedule-${scheduleRevision}`}
                       focusDeadlineId={focusDeadlineId ?? undefined}
@@ -977,7 +977,7 @@ export default function App(): JSX.Element {
             {activeTab === "nutrition" && (
               <div key="nutrition" className="tab-panel tab-panel-active">
                 {isTabLocked("nutrition")
-                  ? <LockedFeatureOverlay featureName={t("Food")} onUpgradeClick={() => openUpgradeModal(t("Food"))} />
+                  ? <LockedFeatureOverlay featureName={t("Food")} onUpgradeClick={() => openUpgradeModal(t("Food"))} previewImage={`${import.meta.env.BASE_URL}onboarding/food-preview.png`} />
                   : <NutritionView key={`nutrition-${nutritionRevision}`} />
                 }
               </div>
@@ -985,7 +985,7 @@ export default function App(): JSX.Element {
             {activeTab === "habits" && (
               <div key="habits" className="tab-panel tab-panel-active">
                 {isTabLocked("habits")
-                  ? <LockedFeatureOverlay featureName={t("Growth")} onUpgradeClick={() => openUpgradeModal(t("Growth"))} />
+                  ? <LockedFeatureOverlay featureName={t("Growth")} onUpgradeClick={() => openUpgradeModal(t("Growth"))} previewImage={`${import.meta.env.BASE_URL}onboarding/growth-preview.png`} />
                   : <div key={`habits-${habitsRevision}`} className="habits-tab-container habits-analytics-stack">
                       <HabitsGoalsView />
                       <AnalyticsDashboard />

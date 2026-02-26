@@ -233,13 +233,22 @@ export function UpgradePrompt({ feature, onDismiss }: UpgradePromptProps): JSX.E
 interface LockedFeatureOverlayProps {
   featureName: string;
   onUpgradeClick: () => void;
+  previewImage?: string;
 }
 
-export function LockedFeatureOverlay({ featureName, onUpgradeClick }: LockedFeatureOverlayProps): JSX.Element {
+export function LockedFeatureOverlay({ featureName, onUpgradeClick, previewImage }: LockedFeatureOverlayProps): JSX.Element {
   const { t } = useI18n();
 
   return (
-    <div className="locked-feature-overlay">
+    <div className={`locked-feature-overlay${previewImage ? " has-preview" : ""}`}>
+      {previewImage && (
+        <img
+          src={previewImage}
+          alt=""
+          className="locked-feature-preview"
+          draggable={false}
+        />
+      )}
       <div className="locked-feature-content">
         <div className="locked-feature-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
