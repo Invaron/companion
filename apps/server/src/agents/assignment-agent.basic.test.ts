@@ -24,7 +24,7 @@ describe("AssignmentTrackerAgent - Basic Functionality", () => {
     });
 
     it("should have correct interval", () => {
-      expect(agent.intervalMs).toBe(20_000);
+      expect(agent.intervalMs).toBe(60 * 60 * 1000);
     });
   });
 

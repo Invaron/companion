@@ -8,7 +8,7 @@ const lectureHints = [
 
 export class LecturePlanAgent extends BaseAgent {
   readonly name = "lecture-plan" as const;
-  readonly intervalMs = 35_000;
+  readonly intervalMs = 2 * 60 * 60 * 1000; // 2 hours — demo agent with placeholder data
 
   async run(ctx: AgentContext): Promise<void> {
     const next = lectureHints[Math.floor(Math.random() * lectureHints.length)];

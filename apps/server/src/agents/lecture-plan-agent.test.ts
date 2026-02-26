@@ -24,7 +24,7 @@ describe("LecturePlanAgent", () => {
     });
 
     it("should have correct interval", () => {
-      expect(agent.intervalMs).toBe(35_000);
+      expect(agent.intervalMs).toBe(2 * 60 * 60 * 1000);
     });
   });
 

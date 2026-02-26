@@ -24,7 +24,7 @@ describe("NotesAgent", () => {
     });
 
     it("should have correct interval", () => {
-      expect(agent.intervalMs).toBe(30_000);
+      expect(agent.intervalMs).toBe(3 * 60 * 60 * 1000);
     });
   });
 

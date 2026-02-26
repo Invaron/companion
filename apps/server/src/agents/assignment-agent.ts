@@ -8,7 +8,7 @@ const deadlines = [
 
 export class AssignmentTrackerAgent extends BaseAgent {
   readonly name = "assignment-tracker" as const;
-  readonly intervalMs = 20_000;
+  readonly intervalMs = 60 * 60 * 1000; // 1 hour — demo agent with placeholder data
 
   async run(ctx: AgentContext): Promise<void> {
     const next = deadlines[Math.floor(Math.random() * deadlines.length)];

@@ -8,7 +8,7 @@ const prompts = [
 
 export class NotesAgent extends BaseAgent {
   readonly name = "notes" as const;
-  readonly intervalMs = 30_000;
+  readonly intervalMs = 3 * 60 * 60 * 1000; // 3 hours — demo agent with placeholder data
 
   async run(ctx: AgentContext): Promise<void> {
     const pick = prompts[Math.floor(Math.random() * prompts.length)];
