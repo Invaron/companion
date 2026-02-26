@@ -92,6 +92,7 @@ import { makeId, nowIso } from "./utils.js";
 
 interface ScheduledNotificationRow {
   id: string;
+  userId: string;
   source: string;
   title: string;
   message: string;
@@ -6225,6 +6226,26 @@ export class RuntimeStore {
     }));
   }
 
+  /**
+   * Get distinct non-empty userIds from the database.
+   * Used by orchestrator to process data for all users without hardcoding.
+   */
+  getActiveUserIds(): string[] {
+    const rows = this.db
+      .prepare(
+        `SELECT DISTINCT userId FROM (
+          SELECT userId FROM deadlines WHERE userId != ''
+          UNION
+          SELECT userId FROM scheduled_notifications WHERE userId != ''
+          UNION
+          SELECT userId FROM push_subscriptions WHERE userId != ''
+        )`
+      )
+      .all() as Array<{ userId: string }>;
+
+    return rows.map((r) => r.userId);
+  }
+
   getAllPushSubscriptions(): PushSubscriptionRecord[] {
     const rows = this.db.prepare("SELECT * FROM push_subscriptions").all() as Array<{
       endpoint: string;
@@ -6944,6 +6965,18 @@ export class RuntimeStore {
   }
 
   /**
+   * Get all due scheduled notifications across ALL users (for orchestrator).
+   * Single-user app: avoids userId mismatch between orchestrator and OAuth userId.
+   */
+  getAllDueScheduledNotifications(currentTime: Date = new Date()): Array<ScheduledNotification & { userId: string }> {
+    const rows = this.db
+      .prepare("SELECT * FROM scheduled_notifications WHERE scheduledFor <= ? ORDER BY scheduledFor ASC")
+      .all(currentTime.toISOString()) as Array<ScheduledNotificationRow>;
+
+    return rows.map((row) => ({ ...mapScheduledNotificationRow(row), userId: row.userId }));
+  }
+
+  /**
    * Get all upcoming (future) scheduled notifications, ordered by scheduledFor.
    * Excludes past-due notifications (those are handled by the orchestrator delivery loop).
    */
@@ -6967,6 +7000,15 @@ export class RuntimeStore {
    */
   removeScheduledNotification(userId: string, id: string): boolean {
     const result = this.db.prepare("DELETE FROM scheduled_notifications WHERE id = ? AND userId = ?").run(id, userId);
+    return result.changes > 0;
+  }
+
+  /**
+   * Remove a scheduled notification by id only (no userId filter).
+   * Used by orchestrator which doesn't know the userId at startup.
+   */
+  removeScheduledNotificationById(id: string): boolean {
+    const result = this.db.prepare("DELETE FROM scheduled_notifications WHERE id = ?").run(id);
     return result.changes > 0;
   }
 

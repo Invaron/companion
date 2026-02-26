@@ -6172,6 +6172,19 @@ body:not(.keyboard-open) .app-shell-chat-active .chat-messages {
   background: rgba(246, 195, 127, 0.07);
 }
 
+.connector-mcp-template-card-connected {
+  border-color: rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.05);
+}
+
+.connector-sync-btn-connected {
+  border-color: rgba(74, 222, 128, 0.3) !important;
+  background: rgba(74, 222, 128, 0.1) !important;
+  color: #4ade80 !important;
+  cursor: default !important;
+  opacity: 1 !important;
+}
+
 .connector-mcp-template-head {
   display: flex;
   align-items: center;

@@ -9,7 +9,7 @@ describe("OrchestratorRuntime - Error Handling", () => {
 
   beforeEach(() => {
     store = new RuntimeStore(":memory:");
-    orchestrator = new OrchestratorRuntime(store, userId);
+    orchestrator = new OrchestratorRuntime(store);
     vi.useFakeTimers();
   });
 

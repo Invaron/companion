@@ -691,10 +691,13 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                           {mcpTemplates.map((template) => {
                             const selected = selectedMcpTemplateId === template.id;
                             const templateIcon = getMcpTemplateIcon(template);
+                            const templateConnected = mcpServers.some(
+                              (server) => server.serverUrl === template.serverUrl || server.label === template.label
+                            );
                             return (
                               <div
                                 key={template.id}
-                                className={`connector-mcp-template-card ${selected ? "connector-mcp-template-card-selected" : ""}`}
+                                className={`connector-mcp-template-card ${selected ? "connector-mcp-template-card-selected" : ""} ${templateConnected ? "connector-mcp-template-card-connected" : ""}`}
                               >
                                 <div className="connector-mcp-template-head">
                                   <span className="connector-mcp-template-provider-wrap">
@@ -707,9 +710,11 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                     )}
                                     <span className="connector-mcp-template-provider">{template.provider}</span>
                                   </span>
-                                  {template.verified && (
+                                  {templateConnected ? (
+                                    <span className="connector-badge connector-badge-connected">{t("Connected")}</span>
+                                  ) : template.verified ? (
                                     <span className="connector-badge connector-badge-connected">{t("Verified")}</span>
-                                  )}
+                                  ) : null}
                                 </div>
                                 <p className="connector-mcp-template-title">{template.label}</p>
                                 <p className="connector-mcp-template-description">{template.description}</p>
@@ -722,14 +727,24 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                   </ul>
                                 </details>
                                 <div className="connector-mcp-template-actions">
-                                  <button
-                                    type="button"
-                                    className="connector-sync-btn"
-                                    onClick={() => handleMcpTemplatePrimaryAction(template)}
-                                    disabled={busy}
-                                  >
-                                    {t("Connect")}
-                                  </button>
+                                  {templateConnected ? (
+                                    <button
+                                      type="button"
+                                      className="connector-sync-btn connector-sync-btn-connected"
+                                      disabled
+                                    >
+                                      ✓ {t("Connected")}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="connector-sync-btn"
+                                      onClick={() => handleMcpTemplatePrimaryAction(template)}
+                                      disabled={busy}
+                                    >
+                                      {t("Connect")}
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );

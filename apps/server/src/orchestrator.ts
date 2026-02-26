@@ -13,7 +13,7 @@ export class OrchestratorRuntime {
   private readonly scheduledNotificationCheckIntervalMs = 30_000;
   private readonly proactiveTriggerCheckIntervalMs = 5 * 60 * 1000;
 
-  constructor(private readonly store: RuntimeStore, private readonly userId: string) {}
+  constructor(private readonly store: RuntimeStore) {}
 
   start(): void {
     // Overdue deadline reminders (real deadlines from Canvas/TP)
@@ -47,42 +47,49 @@ export class OrchestratorRuntime {
   }
 
   private emitOverdueDeadlineReminders(): void {
-    const overdueDeadlines = this.store.getOverdueDeadlinesRequiringReminder(
-      this.userId,
-      new Date().toISOString(),
-      this.deadlineReminderCooldownMinutes
-    );
+    // Discover active users dynamically — avoids hardcoding userId at startup
+    const userIds = this.store.getActiveUserIds();
 
-    for (const deadline of overdueDeadlines) {
-      const reminder = this.store.recordDeadlineReminder(this.userId, deadline.id);
+    for (const userId of userIds) {
+      const overdueDeadlines = this.store.getOverdueDeadlinesRequiringReminder(
+        userId,
+        new Date().toISOString(),
+        this.deadlineReminderCooldownMinutes
+      );
 
-      if (!reminder) {
-        continue;
+      for (const deadline of overdueDeadlines) {
+        const reminder = this.store.recordDeadlineReminder(userId, deadline.id);
+
+        if (!reminder) {
+          continue;
+        }
+
+        const overdueMs = Date.now() - new Date(deadline.dueDate).getTime();
+        const overdueHours = Math.max(1, Math.floor(overdueMs / (60 * 60 * 1000)));
+
+        // Overdue reminders are always urgent
+        this.store.pushNotification(userId, {
+          source: "assignment-tracker",
+          title: "Deadline status check",
+          message: `${deadline.task} for ${deadline.course} is overdue by ${overdueHours}h. Mark complete or let me know you're still working.`,
+          priority: deadline.priority === "critical" || overdueHours >= 24 ? "critical" : "high",
+          metadata: {
+            deadlineId: deadline.id
+          },
+          actions: ["complete", "working", "view"],
+          url: `/companion/?tab=schedule&deadlineId=${encodeURIComponent(deadline.id)}`
+        });
       }
-
-      const overdueMs = Date.now() - new Date(deadline.dueDate).getTime();
-      const overdueHours = Math.max(1, Math.floor(overdueMs / (60 * 60 * 1000)));
-
-      // Overdue reminders are always urgent
-      this.store.pushNotification(this.userId, {
-        source: "assignment-tracker",
-        title: "Deadline status check",
-        message: `${deadline.task} for ${deadline.course} is overdue by ${overdueHours}h. Mark complete or let me know you're still working.`,
-        priority: deadline.priority === "critical" || overdueHours >= 24 ? "critical" : "high",
-        metadata: {
-          deadlineId: deadline.id
-        },
-        actions: ["complete", "working", "view"],
-        url: `/companion/?tab=schedule&deadlineId=${encodeURIComponent(deadline.id)}`
-      });
     }
   }
 
   /**
-   * Process scheduled notifications that are now due
+   * Process scheduled notifications that are now due.
+   * Uses userId-agnostic query so orchestrator finds reminders
+   * regardless of which OAuth userId created them.
    */
   private processScheduledNotifications(): void {
-    const dueNotifications = this.store.getDueScheduledNotifications(this.userId);
+    const dueNotifications = this.store.getAllDueScheduledNotifications();
     if (dueNotifications.length === 0) {
       return;
     }
@@ -93,20 +100,30 @@ export class OrchestratorRuntime {
 
     for (const scheduled of immediateNotifications) {
       console.log(`[orchestrator] delivering immediately: "${scheduled.notification.title}" (category=${scheduled.category ?? "none"})`);
-      this.store.pushNotification(this.userId, scheduled.notification);
-      this.rescheduleIfRecurring(scheduled);
-      this.store.removeScheduledNotification(this.userId, scheduled.id);
+      this.store.pushNotification(scheduled.userId, scheduled.notification);
+      this.rescheduleIfRecurring(scheduled, scheduled.userId);
+      this.store.removeScheduledNotificationById(scheduled.id);
     }
 
     if (digestCandidates.length > 0) {
-      const digest = buildDigestNotification(digestCandidates, new Date());
-      if (digest) {
-        this.store.pushNotification(this.userId, digest);
+      // Group digest candidates by userId
+      const byUser = new Map<string, typeof digestCandidates>();
+      for (const scheduled of digestCandidates) {
+        const list = byUser.get(scheduled.userId) ?? [];
+        list.push(scheduled);
+        byUser.set(scheduled.userId, list);
       }
 
-      for (const scheduled of digestCandidates) {
-        this.rescheduleIfRecurring(scheduled);
-        this.store.removeScheduledNotification(this.userId, scheduled.id);
+      for (const [userId, candidates] of byUser) {
+        const digest = buildDigestNotification(candidates, new Date());
+        if (digest) {
+          this.store.pushNotification(userId, digest);
+        }
+
+        for (const scheduled of candidates) {
+          this.rescheduleIfRecurring(scheduled, userId);
+          this.store.removeScheduledNotificationById(scheduled.id);
+        }
       }
     }
   }
@@ -114,7 +131,7 @@ export class OrchestratorRuntime {
   /**
    * If a delivered notification has a recurrence, schedule the next occurrence
    */
-  private rescheduleIfRecurring(scheduled: ScheduledNotification): void {
+  private rescheduleIfRecurring(scheduled: ScheduledNotification, userId: string): void {
     if (!scheduled.recurrence || scheduled.recurrence === "none") {
       return;
     }
@@ -144,7 +161,7 @@ export class OrchestratorRuntime {
     }
 
     this.store.scheduleNotification(
-      this.userId,
+      userId,
       scheduled.notification,
       next,
       scheduled.eventId,
@@ -159,10 +176,15 @@ export class OrchestratorRuntime {
   private checkProactiveTriggers(): void {
     void (async () => {
       try {
-        const notifications = await checkProactiveTriggersWithCooldown(this.store, this.userId);
+        // Iterate over all active users
+        const userIds = this.store.getActiveUserIds();
 
-        for (const notification of notifications) {
-          this.store.pushNotification(this.userId, notification);
+        for (const userId of userIds) {
+          const notifications = await checkProactiveTriggersWithCooldown(this.store, userId);
+
+          for (const notification of notifications) {
+            this.store.pushNotification(userId, notification);
+          }
         }
       } catch (error) {
         // Log error but don't crash the orchestrator

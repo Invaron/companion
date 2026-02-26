@@ -15,7 +15,7 @@ describe("orchestrator digest batching", () => {
       fs.unlinkSync(testDbPath);
     }
     store = new RuntimeStore(testDbPath);
-    runtime = new OrchestratorRuntime(store, userId);
+    runtime = new OrchestratorRuntime(store);
   });
 
   afterEach(() => {

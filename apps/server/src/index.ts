@@ -169,7 +169,7 @@ const storageDiagnostics = (): PostgresPersistenceDiagnostics =>
     ? persistenceContext.postgresSnapshotStore.getDiagnostics(persistenceContext.sqlitePath)
     : fallbackStorageDiagnostics(persistenceContext.sqlitePath);
 
-const runtime = new OrchestratorRuntime(store, "");
+const runtime = new OrchestratorRuntime(store);
 const syncService = new BackgroundSyncService(store, "");
 const digestService = new EmailDigestService(store, "");
 const tpSyncService = new TPSyncService(store, "");
