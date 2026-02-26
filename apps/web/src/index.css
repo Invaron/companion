@@ -8935,11 +8935,15 @@ label small.muted {
    LOCKED FEATURE OVERLAY — blurred background with lock icon + upgrade CTA
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* When locked overlay is present, disable scrolling and gradient mask */
+/* When locked overlay is present, disable scrolling, gradient mask, and tab animation */
 .tab-content-area:has(.locked-feature-overlay) {
   overflow: hidden !important;
   -webkit-mask-image: none !important;
   mask-image: none !important;
+}
+
+.tab-panel:has(.locked-feature-overlay) {
+  animation: none !important;
 }
 
 .locked-feature-overlay {
@@ -8989,7 +8993,8 @@ label small.muted {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center center;
+  /* Anchor to top so the tab bar at the bottom of the screenshot gets cropped */
+  object-position: center top;
   opacity: 0.22;
   filter: blur(4px);
   pointer-events: none;
