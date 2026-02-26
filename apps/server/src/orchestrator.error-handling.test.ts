@@ -18,38 +18,33 @@ describe("OrchestratorRuntime - Error Handling", () => {
     vi.useRealTimers();
   });
 
-  describe("error handling", () => {
-    it("should handle agent errors gracefully", async () => {
-      // Create a mock agent that throws an error
-      const errorAgent = {
-        name: "notes" as const,
-        intervalMs: 1000,
-        run: vi.fn().mockRejectedValue(new Error("Test error"))
-      };
-
-      // We can't easily inject a failing agent, but we can verify
-      // the error handling behavior through notifications
+  describe("resilience", () => {
+    it("should start and keep running with no scheduled notifications", async () => {
       orchestrator.start();
 
       await vi.advanceTimersByTimeAsync(100);
 
-      // The orchestrator should continue running even if an agent fails
       const snapshot = store.getSnapshot(userId);
       expect(snapshot).toBeDefined();
+      expect(snapshot.notifications).toBeDefined();
     });
 
-    it("should create notification on agent error", async () => {
+    it("should process due scheduled notifications", async () => {
+      // Schedule a high-priority notification that's already due (bypasses digest batching)
+      store.scheduleNotification(userId, {
+        source: "orchestrator",
+        title: "Test reminder",
+        message: "This is a test",
+        priority: "high"
+      }, new Date(Date.now() - 1000));
+
       orchestrator.start();
 
-      // The orchestrator handles errors by creating notifications
-      // We verify the system is resilient
-      await vi.advanceTimersByTimeAsync(1000);
+      await vi.advanceTimersByTimeAsync(100);
 
       const snapshot = store.getSnapshot(userId);
-      
-      // System should still be operational
-      expect(snapshot.notifications).toBeDefined();
-      expect(snapshot.agentStates).toBeDefined();
+      const testNotifs = snapshot.notifications.filter(n => n.title === "Test reminder");
+      expect(testNotifs.length).toBe(1);
     });
   });
 });

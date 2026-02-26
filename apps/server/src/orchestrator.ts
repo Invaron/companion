@@ -1,14 +1,9 @@
-import { BaseAgent } from "./agent-base.js";
-import { AssignmentTrackerAgent } from "./agents/assignment-agent.js";
-import { LecturePlanAgent } from "./agents/lecture-plan-agent.js";
-import { buildContextAwareNudge } from "./nudge-engine.js";
-import { NotesAgent } from "./agents/notes-agent.js";
 import {
   buildDigestNotification,
   isDigestCandidate,
 } from "./notification-digest-batching.js";
 import { RuntimeStore } from "./store.js";
-import { AgentEvent, ScheduledNotification } from "./types.js";
+import { ScheduledNotification } from "./types.js";
 import { checkProactiveTriggersWithCooldown } from "./proactive-chat-triggers.js";
 
 export class OrchestratorRuntime {
@@ -16,52 +11,19 @@ export class OrchestratorRuntime {
   private readonly deadlineReminderIntervalMs = 60_000;
   private readonly deadlineReminderCooldownMinutes = 180;
   private readonly scheduledNotificationCheckIntervalMs = 30_000;
-  private readonly proactiveTriggerCheckIntervalMs = 5 * 60 * 1000; // Check every 5 minutes
-  private readonly agents: BaseAgent[] = [
-    new NotesAgent(),
-    new LecturePlanAgent(),
-    new AssignmentTrackerAgent()
-  ];
+  private readonly proactiveTriggerCheckIntervalMs = 5 * 60 * 1000;
 
   constructor(private readonly store: RuntimeStore, private readonly userId: string) {}
 
   start(): void {
-    this.emitBootNotification();
-
-    for (const agent of this.agents) {
-      const runOnce = async (): Promise<void> => {
-        this.store.markAgentRunning(agent.name);
-
-        try {
-          await agent.run({
-            emit: (event) => this.handleEvent(event)
-          });
-        } catch (error) {
-          this.store.markAgentError(agent.name);
-          this.store.pushNotification(this.userId, {
-            source: "orchestrator",
-            title: `${agent.name} failed`,
-            message: error instanceof Error ? error.message : "unknown runtime error",
-            priority: "high"
-          });
-        }
-      };
-
-      void runOnce();
-      const timer = setInterval(() => {
-        void runOnce();
-      }, agent.intervalMs);
-
-      this.timers.push(timer);
-    }
-
+    // Overdue deadline reminders (real deadlines from Canvas/TP)
     this.emitOverdueDeadlineReminders();
     const deadlineReminderTimer = setInterval(() => {
       this.emitOverdueDeadlineReminders();
     }, this.deadlineReminderIntervalMs);
     this.timers.push(deadlineReminderTimer);
 
-    // Process scheduled notifications
+    // Process scheduled notifications (Gemini-created reminders)
     this.processScheduledNotifications();
     const scheduledNotifTimer = setInterval(() => {
       this.processScheduledNotifications();
@@ -82,38 +44,6 @@ export class OrchestratorRuntime {
     }
 
     this.timers = [];
-  }
-
-  private handleEvent(event: AgentEvent): void {
-    this.store.recordEvent(event);
-    const context = this.store.getUserContext(this.userId);
-    const nudge = buildContextAwareNudge(event, context);
-
-    if (nudge) {
-      // All system-generated nudges are pushed immediately.
-      // The shouldDispatchNotification gate (category toggles, priority filter,
-      // quiet hours) already controls whether the user actually sees them.
-      // Only user-created reminders (via Gemini scheduleReminder tool) go
-      // through the scheduled_notifications table.
-      this.store.pushNotification(this.userId, nudge);
-      return;
-    }
-
-    this.store.pushNotification(this.userId, {
-      source: "orchestrator",
-      title: "Unknown event",
-      message: `Unhandled event type: ${event.eventType}`,
-      priority: "low"
-    });
-  }
-
-  private emitBootNotification(): void {
-    this.store.pushNotification(this.userId, {
-      source: "orchestrator",
-      title: "Companion online",
-      message: "All agents scheduled and running.",
-      priority: "medium"
-    });
   }
 
   private emitOverdueDeadlineReminders(): void {

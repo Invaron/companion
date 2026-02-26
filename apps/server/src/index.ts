@@ -2873,10 +2873,6 @@ const locationHistorySchema = z.object({
   context: z.string().trim().max(500).optional()
 });
 
-// Push notification cooldown — prevents the same source+title from spamming
-const PUSH_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
-const pushCooldownMap = new Map<string, number>();
-
 store.onNotification((notification: Notification) => {
   void broadcastNotification(notification);
 });
@@ -2885,23 +2881,6 @@ async function broadcastNotification(notification: Notification): Promise<void> 
   if (!store.shouldDispatchNotification("", notification)) {
     console.log(`[push] blocked by dispatch rules: source=${notification.source} priority=${notification.priority} title="${notification.title}"`);
     return;
-  }
-
-  // Cooldown dedup — skip if same source+title was pushed recently
-  // User-created reminders (source=orchestrator with scheduled id) always go through
-  const cooldownKey = `${notification.source}::${notification.title}`;
-  const lastSent = pushCooldownMap.get(cooldownKey) ?? 0;
-  const now = Date.now();
-  if (now - lastSent < PUSH_COOLDOWN_MS) {
-    return; // silently skip duplicate
-  }
-  pushCooldownMap.set(cooldownKey, now);
-
-  // Prune old cooldown entries periodically (keep map small)
-  if (pushCooldownMap.size > 200) {
-    for (const [key, ts] of pushCooldownMap) {
-      if (now - ts > PUSH_COOLDOWN_MS) pushCooldownMap.delete(key);
-    }
   }
 
   // Use getAllPushSubscriptions — orchestrator pushes with userId="" but subscriptions

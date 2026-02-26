@@ -1603,7 +1603,8 @@ describe("gemini-tools", () => {
 
     it("icon persists through DB round-trip via getDueScheduledNotifications", () => {
       // Use a time just barely in the past but within the 60s grace window (local format, no Z)
-      const justPastLocal = localFuture(-30_000);
+      // Note: localTimeToUTC drops seconds, so use -5s to stay safely within the 60s grace
+      const justPastLocal = localFuture(-5_000);
       const result = handleScheduleReminder(store, userId, {
         title: "Gym time",
         message: "Hit the weights",
