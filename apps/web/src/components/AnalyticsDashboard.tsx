@@ -111,11 +111,7 @@ export function AnalyticsDashboard(): JSX.Element {
 
       {loading && (
         <div className="daily-summary-skeleton analytics-fade-in">
-          <div className="skeleton-block skeleton-visual" />
-          <div className="skeleton-block skeleton-text-lg" />
           <div className="skeleton-block skeleton-text-md" />
-          <div className="skeleton-block skeleton-text-md" />
-          <div className="skeleton-block skeleton-text-sm" />
           <div className="skeleton-block skeleton-text-md" style={{ width: '70%' }} />
           <div className="skeleton-block skeleton-text-sm" style={{ width: '50%' }} />
           <div className="skeleton-row">

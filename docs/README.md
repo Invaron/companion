@@ -12,6 +12,7 @@
 | [Frontend Guide](frontend.md) | React components, views, hooks, theming |
 | [Environment Variables](environment.md) | Every env var with defaults and descriptions |
 | [Deployment](deployment.md) | Railway (backend) + GitHub Pages (frontend) setup |
+| [Product Roadmap](roadmap.md) | Where the app is heading — phases, growth strategy, metrics |
 
 ## Legacy Docs
 
