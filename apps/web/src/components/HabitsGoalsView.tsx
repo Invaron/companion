@@ -8,6 +8,7 @@ import {
 import { useI18n } from "../lib/i18n";
 import { Goal, Habit } from "../types";
 import { hapticSuccess } from "../lib/haptics";
+import { AnimatedFlame, AnimatedTrophy } from "./AnimatedIcons";
 
 interface BusyState {
   type: "habit" | "goal";
@@ -35,6 +36,23 @@ function formatHabitTarget(targetPerWeek: number): string {
     return "Daily";
   }
   return `${targetPerWeek}×/week`;
+}
+
+/** Count completed check-ins in recent history for the habit's cadence window */
+function computeHabitProgress(habit: Habit): { done: number; target: number; label: string } {
+  const cadence = habit.cadence.toLowerCase().trim();
+  const recent = habit.recentCheckIns || [];
+  const done = recent.filter((d) => d.completed).length;
+
+  if (cadence === "daily" || habit.targetPerWeek === 7) {
+    return { done, target: 7, label: `${done}×/week` };
+  }
+  if (cadence === "weekly") {
+    return { done, target: habit.targetPerWeek > 0 ? habit.targetPerWeek : 7, label: `${done}×/week` };
+  }
+  // Default: show against the targetPerWeek
+  const t = habit.targetPerWeek > 0 ? habit.targetPerWeek : 7;
+  return { done, target: t, label: `${done}×/week` };
 }
 
 export function HabitsGoalsView(): JSX.Element {
@@ -99,8 +117,9 @@ export function HabitsGoalsView(): JSX.Element {
 
   const renderHabit = (habit: Habit): JSX.Element => {
     const isBusy = busy?.type === "habit" && busy.id === habit.id;
-    const completionPercent = Math.max(0, Math.min(100, Math.round(habit.completionRate7d)));
     const isUnbounded = habit.targetPerWeek <= UNBOUNDED_HABIT_TARGET;
+    const progress = computeHabitProgress(habit);
+    const barPercent = Math.max(0, Math.min(100, Math.round((progress.done / progress.target) * 100)));
 
     return (
       <article key={habit.id} className="habit-card habit-card-compact">
@@ -125,21 +144,21 @@ export function HabitsGoalsView(): JSX.Element {
           </button>
         </header>
         {isUnbounded ? (
-          /* Unbounded habits: streak is the primary metric, not progress toward a target */
+          /* Unbounded habits: streak is the primary metric */
           <div className="habit-streak-display">
             {habit.streak > 0 ? (
-              <span className="habit-streak-badge">🔥 {habit.streak} {t("day streak")}</span>
+              <span className="habit-streak-badge"><AnimatedFlame size={16} className="habit-streak-flame" /> {habit.streak} {t("day streak")}</span>
             ) : (
               <span className="habit-streak-badge habit-streak-badge-empty">{t("Start your streak today")}</span>
             )}
           </div>
         ) : (
-          /* Bounded habits: show 7-day consistency bar with context label */
+          /* Bounded habits: show progress bar labeled with actual check-in count */
           <div className="habit-visual-progress-wrapper">
             <div className="habit-visual-progress">
-              <div className={`habit-visual-progress-fill${habit.streakGraceUsed ? " habit-visual-progress-grace" : ""}`} style={{ width: `${completionPercent}%` }} />
+              <div className={`habit-visual-progress-fill${habit.streakGraceUsed ? " habit-visual-progress-grace" : ""}`} style={{ width: `${barPercent}%` }} />
             </div>
-            <span className="habit-progress-label">{t("7-day consistency")} · {completionPercent}%</span>
+            <span className="habit-progress-label">{progress.label}</span>
           </div>
         )}
       </article>
@@ -192,7 +211,7 @@ export function HabitsGoalsView(): JSX.Element {
             </button>
           )}
           {isComplete && (
-            <span className="goal-complete-badge" aria-label={t("Goal complete")}>🏆</span>
+            <span className="goal-complete-badge" aria-label={t("Goal complete")}><AnimatedTrophy size={28} /></span>
           )}
         </header>
         {/* Only show progress bar for multi-step goals that aren't complete */}
@@ -201,7 +220,7 @@ export function HabitsGoalsView(): JSX.Element {
             <div className="goal-progress-bar">
               <div className={`goal-progress-fill${goal.streakGraceUsed ? " goal-progress-grace" : ""}`} style={{ width: `${progressPercent}%` }} />
             </div>
-            <span className="habit-progress-label">{progressPercent}% {t("complete")}</span>
+            <span className="habit-progress-label">{t("{progress}/{target} check-ins", { progress: goal.progressCount, target: goal.targetCount })}</span>
           </div>
         )}
       </article>

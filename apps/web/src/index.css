@@ -2126,10 +2126,16 @@ button:disabled {
   margin-bottom: 4px;
 }
 .habit-streak-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--accent-text, #f6c37f);
+}
+.habit-streak-flame {
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 .habit-streak-badge-empty {
   font-weight: 400;
@@ -2146,6 +2152,8 @@ button:disabled {
   font-size: 1.5rem;
   line-height: 1;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .pill-button {
