@@ -170,6 +170,7 @@ const GEMINI_CARD: GeminiCard = {
 
 const GITHUB_MCP_ICON = { src: iconPath("icons/integrations/github.svg"), alt: "GitHub" };
 const NOTION_MCP_ICON = { src: iconPath("icons/integrations/notion.svg"), alt: "Notion" };
+const GOOGLE_CALENDAR_MCP_ICON = { src: iconPath("icons/integrations/google-calendar.svg"), alt: "Google Calendar" };
 
 // ── Connector grouping ──────────────────────────────────────────────────
 
@@ -219,7 +220,14 @@ function isNotionMcpText(value: string): boolean {
   return /notion/i.test(value);
 }
 
+function isGoogleCalendarMcpText(value: string): boolean {
+  return /google.*calendar|gcal/i.test(value);
+}
+
 function getMcpTemplateIcon(template: McpServerTemplate): { src: string; alt: string } | null {
+  if (isGoogleCalendarMcpText(template.provider) || isGoogleCalendarMcpText(template.label) || isGoogleCalendarMcpText(template.id)) {
+    return GOOGLE_CALENDAR_MCP_ICON;
+  }
   if (isNotionMcpText(template.provider) || isNotionMcpText(template.label)) {
     return NOTION_MCP_ICON;
   }
@@ -230,6 +238,9 @@ function getMcpTemplateIcon(template: McpServerTemplate): { src: string; alt: st
 }
 
 function getMcpServerIcon(server: McpServerConfig): { src: string; alt: string } | null {
+  if (isGoogleCalendarMcpText(server.label) || isGoogleCalendarMcpText(server.serverUrl)) {
+    return GOOGLE_CALENDAR_MCP_ICON;
+  }
   if (isNotionMcpText(server.label) || isNotionMcpText(server.serverUrl)) {
     return NOTION_MCP_ICON;
   }
@@ -253,6 +264,14 @@ function getMcpTemplateReadMoreItems(template: McpServerTemplate): string[] {
       "Search Notion pages and databases from your workspace.",
       "Read Notion docs in chat context for planning and study support.",
       "Use server-exposed create or update tools when available."
+    ];
+  }
+
+  if (isGoogleCalendarMcpText(template.provider) || isGoogleCalendarMcpText(template.label) || isGoogleCalendarMcpText(template.id)) {
+    return [
+      "Sync your Google Calendar events into your Companion schedule.",
+      "Let Gemini create, update, or check calendar events via chat.",
+      "See university and personal events in one unified timeline."
     ];
   }
 

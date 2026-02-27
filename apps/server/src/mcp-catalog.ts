@@ -53,8 +53,6 @@ const MCP_SERVER_TEMPLATES: readonly McpServerTemplate[] = [
     tokenPlaceholder: "ntn_xxx",
     tokenHelp:
       "Create a Notion integration at notion.so/my-integrations, grant access to the pages or databases you want, then paste its token.",
-    // Keep this list small and deterministic for better tool routing.
-    // Include OpenAI alias names (`search`/`fetch`) as fallbacks where MCP clients expose them without the notion- prefix.
     suggestedToolAllowlist: [
       "notion-search",
       "search",
@@ -64,6 +62,29 @@ const MCP_SERVER_TEMPLATES: readonly McpServerTemplate[] = [
       "notion-update-page",
       "notion-query-data-sources",
       "notion-query-database-view"
+    ]
+  },
+  {
+    id: "google_calendar",
+    provider: "Google",
+    label: "Google Calendar",
+    description: "View and manage your Google Calendar events, schedules, and reminders.",
+    serverUrl: "https://calendar.google.com/.well-known/mcp",
+    docsUrl: "https://developers.google.com/calendar/api/guides/overview",
+    verified: false,
+    authType: "bearer",
+    tokenLabel: "Google OAuth access token",
+    tokenPlaceholder: "ya29.xxx",
+    tokenHelp:
+      "Generate an OAuth 2.0 access token with Calendar read/write scope from the Google Cloud Console or OAuth Playground (developers.google.com/oauthplayground). Select the Google Calendar API v3 scope.",
+    suggestedToolAllowlist: [
+      "list_calendars",
+      "list_events",
+      "get_event",
+      "create_event",
+      "update_event",
+      "delete_event",
+      "quick_add_event"
     ]
   }
 ];
