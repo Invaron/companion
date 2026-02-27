@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ConnectorService,
   UserConnection,
@@ -18,8 +18,10 @@ import {
   getCanvasStatus,
   getConnectors,
   getGeminiStatus,
-  getMcpServers
+  getMcpServers,
+  triggerCanvasSync
 } from "../lib/api";
+import type { ConnectServiceResponse } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import {
   loadCanvasSettings,
@@ -304,6 +306,32 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
     lastRequestAt: null
   });
 
+  // ── Canvas course picker (shown after connect) ─────────────────────────
+  const [canvasCoursePicker, setCanvasCoursePicker] = useState<ConnectServiceResponse["availableCourses"] | null>(null);
+  const [canvasCoursePickerSelected, setCanvasCoursePickerSelected] = useState<Set<number>>(new Set());
+  const [canvasCoursePickerSyncing, setCanvasCoursePickerSyncing] = useState(false);
+
+  /** Auto-select courses whose enrollment term overlaps the current date. */
+  const autoSelectCurrentSemesterCourses = useMemo(() => {
+    return (courses: NonNullable<ConnectServiceResponse["availableCourses"]>): Set<number> => {
+      const now = Date.now();
+      const currentTermCourseIds: number[] = [];
+
+      for (const course of courses) {
+        if (course.term?.start_at && course.term?.end_at) {
+          const start = Date.parse(course.term.start_at);
+          const end = Date.parse(course.term.end_at);
+          if (Number.isFinite(start) && Number.isFinite(end) && now >= start && now <= end) {
+            currentTermCourseIds.push(course.id);
+          }
+        }
+      }
+
+      // If term-based detection found results, use them. Otherwise select all.
+      return new Set(currentTermCourseIds.length > 0 ? currentTermCourseIds : courses.map((c) => c.id));
+    };
+  }, []);
+
   const fetchConnections = useCallback(async () => {
     try {
       const data = await getConnectors();
@@ -464,9 +492,19 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
           const current = loadCanvasSettings();
           saveCanvasSettings({ ...current, baseUrl });
 
-          // Auto-sync runs on the server; refresh canvas status
-          if (connectResult.autoSync?.success) {
-            await fetchConnectorMeta();
+          // Show course picker if courses were fetched successfully
+          if (connectResult.availableCourses && connectResult.availableCourses.length > 0) {
+            const autoSelected = autoSelectCurrentSemesterCourses(connectResult.availableCourses);
+            setCanvasCoursePicker(connectResult.availableCourses);
+            setCanvasCoursePickerSelected(autoSelected);
+            await Promise.all([fetchConnections(), fetchConnectorMeta()]);
+            setSubmitting(null);
+            return;
+          }
+
+          // If no courses found or fetch error, still refresh connections
+          if (connectResult.fetchError) {
+            setError(connectResult.fetchError);
           }
         } else {
           // Generic token connector (Blackboard, etc.)
@@ -595,6 +633,60 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
     } finally {
       setSubmitting(null);
     }
+  };
+
+  // ── Canvas course picker handlers ──────────────────────────────────────
+
+  const handleCanvasCoursePickerToggle = (courseId: number): void => {
+    setCanvasCoursePickerSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) {
+        next.delete(courseId);
+      } else {
+        next.add(courseId);
+      }
+      return next;
+    });
+  };
+
+  const handleCanvasCoursePickerConfirm = async (): Promise<void> => {
+    setCanvasCoursePickerSyncing(true);
+    setError(null);
+    const selectedIds = Array.from(canvasCoursePickerSelected);
+
+    try {
+      // Save course selection to scope settings
+      const currentScope = loadIntegrationScopeSettings();
+      saveIntegrationScopeSettings({
+        ...currentScope,
+        canvasCourseIds: selectedIds
+      });
+
+      // Trigger sync with selected courses only
+      const syncResult = await triggerCanvasSync(undefined, {
+        courseIds: selectedIds,
+        pastDays: 7,
+        futureDays: 180
+      });
+
+      if (!syncResult.success) {
+        setError(syncResult.error ?? t("Canvas sync failed"));
+      }
+
+      await fetchConnectorMeta();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("Sync failed"));
+    } finally {
+      setCanvasCoursePickerSyncing(false);
+      setCanvasCoursePicker(null);
+      setExpandedService(null);
+      setInputValues(getDefaultInputValues());
+    }
+  };
+
+  const handleCanvasCoursePickerCancel = (): void => {
+    setCanvasCoursePicker(null);
+    setCanvasCoursePickerSelected(new Set());
   };
 
   const isPaidPlan = planInfo ? planInfo.plan !== "free" : false;
@@ -1387,6 +1479,78 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
           </div>
         )}
       </section>
+
+      {/* Canvas Course Picker Overlay */}
+      {canvasCoursePicker && canvasCoursePicker.length > 0 && (
+        <div className="canvas-course-picker-overlay" onClick={handleCanvasCoursePickerCancel} role="presentation">
+          <div className="canvas-course-picker" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={t("Select Canvas courses")}>
+            <h3 className="canvas-course-picker-title">{t("Select courses to sync")}</h3>
+            <p className="canvas-course-picker-desc">
+              {t("Choose which Canvas courses to track. Current semester courses are pre-selected.")}
+            </p>
+
+            <div className="canvas-course-picker-actions">
+              <button
+                type="button"
+                className="scope-settings-action-btn"
+                onClick={() => setCanvasCoursePickerSelected(new Set(canvasCoursePicker.map((c) => c.id)))}
+              >
+                {t("Select all")}
+              </button>
+              <button
+                type="button"
+                className="scope-settings-action-btn"
+                onClick={() => setCanvasCoursePickerSelected(new Set())}
+              >
+                {t("Clear")}
+              </button>
+            </div>
+
+            <div className="scope-course-grid">
+              {canvasCoursePicker.map((course) => {
+                const selected = canvasCoursePickerSelected.has(course.id);
+                const displayName = course.name.startsWith(course.course_code)
+                  ? course.name
+                  : `${course.course_code} — ${course.name}`;
+                const termLabel = course.term?.name ? ` (${course.term.name})` : "";
+                return (
+                  <button
+                    key={course.id}
+                    type="button"
+                    className={`scope-course-chip${selected ? " scope-course-chip-active" : ""}`}
+                    onClick={() => handleCanvasCoursePickerToggle(course.id)}
+                    aria-pressed={selected}
+                  >
+                    <span className="scope-course-check">{selected ? "✓" : ""}</span>
+                    <span className="scope-course-name">{displayName}{termLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="canvas-course-picker-footer">
+              <button
+                type="button"
+                className="connector-disconnect-btn"
+                onClick={handleCanvasCoursePickerCancel}
+                disabled={canvasCoursePickerSyncing}
+              >
+                {t("Skip")}
+              </button>
+              <button
+                type="button"
+                className="connector-connect-btn"
+                onClick={() => void handleCanvasCoursePickerConfirm()}
+                disabled={canvasCoursePickerSyncing || canvasCoursePickerSelected.size === 0}
+              >
+                {canvasCoursePickerSyncing
+                  ? t("Syncing...")
+                  : t("Sync {count} courses", { count: canvasCoursePickerSelected.size })}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

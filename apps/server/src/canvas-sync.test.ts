@@ -316,7 +316,10 @@ describe("Canvas Integration", () => {
           status: 200,
           statusText: "OK",
           json,
-          headers: init?.headers ?? {}
+          headers: {
+            get: () => null,
+            ...(init?.headers ?? {})
+          }
         } as unknown as Response;
       });
 

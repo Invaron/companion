@@ -1483,6 +1483,14 @@ export interface ConnectServiceResponse {
   redirectUrl?: string;
   connection?: UserConnection;
   autoSync?: { success: boolean; courses?: number; deadlines?: number; error?: string };
+  /** Canvas connect returns available courses for user to pick from before syncing. */
+  availableCourses?: Array<{
+    id: number;
+    name: string;
+    course_code: string;
+    term?: { id: number; name: string; start_at: string | null; end_at: string | null };
+  }>;
+  fetchError?: string;
 }
 
 export async function connectService(

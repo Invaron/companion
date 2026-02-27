@@ -34,6 +34,7 @@ import { TPSyncService } from "./tp-sync-service.js";
 import { TimeEditSyncService } from "./timeedit-sync-service.js";
 import { CanvasSyncService } from "./canvas-sync.js";
 import type { CanvasSyncOptions } from "./canvas-sync.js";
+import { CanvasClient } from "./canvas-client.js";
 import { BlackboardSyncService } from "./blackboard-sync.js";
 import { TeamsSyncService } from "./teams-sync.js";
 import { WithingsOAuthService } from "./withings-oauth.js";
@@ -1471,25 +1472,32 @@ app.post("/api/connectors/:service/connect", async (req, res) => {
       displayLabel: "Canvas LMS"
     });
 
-    // Kick off an immediate sync now that credentials are stored.
-    let autoSync: { success: boolean; courses?: number; deadlines?: number; error?: string } | undefined;
+    // Fetch available courses so the user can choose which ones to sync.
+    // Don't do a full sync yet — let the user pick courses first.
+    let availableCourses: Array<{ id: number; name: string; course_code: string; term?: { id: number; name: string; start_at: string | null; end_at: string | null } }> = [];
+    let fetchError: string | undefined;
     try {
       const syncOptions = resolveCanvasSyncOptions(authReq.authUser.id);
-      const canvasService = getCanvasSyncServiceForUser(authReq.authUser.id);
-      const syncResult = await canvasService.sync(syncOptions);
-      autoSync = {
-        success: syncResult.success,
-        courses: syncResult.coursesCount ?? 0,
-        deadlines: syncResult.deadlineBridge?.created ?? 0,
-        error: syncResult.error
-      };
-      console.log(`[canvas] auto-sync on connect: userId=${authReq.authUser.id} success=${syncResult.success} courses=${syncResult.coursesCount ?? 0}`);
-    } catch (syncErr) {
-      console.error(`[canvas] auto-sync on connect failed:`, syncErr);
-      autoSync = { success: false, error: syncErr instanceof Error ? syncErr.message : "Sync failed" };
+      const client = new CanvasClient(syncOptions.baseUrl, syncOptions.token);
+      const courses = await client.getCourses();
+      availableCourses = courses.map((c) => ({
+        id: c.id,
+        name: c.name,
+        course_code: c.course_code,
+        ...(c.term ? { term: { id: c.term.id, name: c.term.name, start_at: c.term.start_at, end_at: c.term.end_at } } : {})
+      }));
+      console.log(`[canvas] connect: userId=${authReq.authUser.id} availableCourses=${availableCourses.length}`);
+    } catch (err) {
+      console.error(`[canvas] course fetch on connect failed:`, err);
+      fetchError = err instanceof Error ? err.message : "Failed to fetch courses";
     }
 
-    return res.json({ ok: true, service: "canvas", autoSync });
+    return res.json({
+      ok: true,
+      service: "canvas",
+      availableCourses,
+      fetchError
+    });
   }
 
   if (service === "mcp") {

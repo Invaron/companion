@@ -686,11 +686,21 @@ export interface AnalyticsCoachInsight {
   visual?: GrowthNarrativeVisual;
 }
 
+export interface CanvasEnrollmentTerm {
+  id: number;
+  name: string;
+  start_at: string | null;
+  end_at: string | null;
+}
+
 export interface CanvasCourse {
   id: number;
   name: string;
   course_code: string;
   workflow_state: "available" | "completed" | "unpublished" | "deleted";
+  start_at?: string | null;
+  end_at?: string | null;
+  term?: CanvasEnrollmentTerm;
 }
 
 export interface CanvasStatus {

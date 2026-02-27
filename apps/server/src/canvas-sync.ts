@@ -142,7 +142,11 @@ export class CanvasSyncService {
           futureDays: options?.futureDays
         }).filter((assignment) => scopedCourseIds.has(assignment.course_id));
         const modules = await client.getAllModules(scopedCourses);
-        const announcements = filterAnnouncementsByCourseScope(await client.getAnnouncements(), options?.courseIds);
+        const announcementCourseIds = Array.from(scopedCourseIds);
+        const announcements = filterAnnouncementsByCourseScope(
+          await client.getAnnouncements(announcementCourseIds),
+          options?.courseIds
+        );
 
         const canvasData: CanvasData = {
           courses: scopedCourses,
