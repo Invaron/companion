@@ -1470,7 +1470,26 @@ app.post("/api/connectors/:service/connect", async (req, res) => {
       }),
       displayLabel: "Canvas LMS"
     });
-    return res.json({ ok: true, service: "canvas" });
+
+    // Kick off an immediate sync now that credentials are stored.
+    let autoSync: { success: boolean; courses?: number; deadlines?: number; error?: string } | undefined;
+    try {
+      const syncOptions = resolveCanvasSyncOptions(authReq.authUser.id);
+      const canvasService = getCanvasSyncServiceForUser(authReq.authUser.id);
+      const syncResult = await canvasService.sync(syncOptions);
+      autoSync = {
+        success: syncResult.success,
+        courses: syncResult.coursesCount ?? 0,
+        deadlines: syncResult.deadlineBridge?.created ?? 0,
+        error: syncResult.error
+      };
+      console.log(`[canvas] auto-sync on connect: userId=${authReq.authUser.id} success=${syncResult.success} courses=${syncResult.coursesCount ?? 0}`);
+    } catch (syncErr) {
+      console.error(`[canvas] auto-sync on connect failed:`, syncErr);
+      autoSync = { success: false, error: syncErr instanceof Error ? syncErr.message : "Sync failed" };
+    }
+
+    return res.json({ ok: true, service: "canvas", autoSync });
   }
 
   if (service === "mcp") {

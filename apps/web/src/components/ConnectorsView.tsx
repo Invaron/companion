@@ -460,9 +460,14 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
             return;
           }
 
-          await connectService(connector.service, { token, baseUrl });
+          const connectResult = await connectService(connector.service, { token, baseUrl });
           const current = loadCanvasSettings();
           saveCanvasSettings({ ...current, baseUrl });
+
+          // Auto-sync runs on the server; refresh canvas status
+          if (connectResult.autoSync?.success) {
+            await fetchConnectorMeta();
+          }
         } else {
           // Generic token connector (Blackboard, etc.)
           await connectService(connector.service, { token });

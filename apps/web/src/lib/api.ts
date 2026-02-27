@@ -1482,6 +1482,7 @@ export interface ConnectServiceResponse {
   ok: boolean;
   redirectUrl?: string;
   connection?: UserConnection;
+  autoSync?: { success: boolean; courses?: number; deadlines?: number; error?: string };
 }
 
 export async function connectService(
