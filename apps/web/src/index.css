@@ -797,6 +797,91 @@ button:disabled {
   color: var(--text);
 }
 
+/* ── 14-day overview strip ── */
+.sched-week-strip {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 2px 0;
+  scroll-snap-type: x proximity;
+}
+.sched-week-strip::-webkit-scrollbar { display: none; }
+
+.sched-week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 38px;
+  padding: 6px 6px 5px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  scroll-snap-align: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.sched-week-day:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sched-week-day--today {
+  border-color: var(--border-soft);
+}
+
+.sched-week-day--selected {
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.sched-week-day-name {
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.sched-week-day-num {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+
+.sched-week-day--selected .sched-week-day-num {
+  color: var(--accent);
+}
+
+.sched-week-day-indicator {
+  display: flex;
+  gap: 2px;
+  height: 5px;
+  align-items: center;
+}
+
+.sched-week-day-indicator--empty {
+  visibility: hidden;
+}
+
+.sched-week-day-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+.sched-week-day--selected .sched-week-day-dot {
+  opacity: 1;
+}
+
 /* ── Badge row ── */
 .sched-badges {
   display: flex;

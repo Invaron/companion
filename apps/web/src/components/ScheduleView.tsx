@@ -5,6 +5,7 @@ import { useI18n } from "../lib/i18n";
 import { LectureEvent } from "../types";
 
 const EMPTY_SCHEDULE_SVG = `${(import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "")}/illustrations/empty-schedule.svg`;
+const STRIP_DAYS = 14;
 
 interface DayTimelineSegment {
   type: "event" | "free";
@@ -173,6 +174,7 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
   const swipeCurrentRef = useRef<{ x: number; y: number } | null>(null);
   const swipeAxisRef = useRef<"x" | "y" | null>(null);
   const dayTransitionTimerRef = useRef<number | null>(null);
+  const weekStripRef = useRef<HTMLDivElement>(null);
   const referenceDate = useMemo(() => addDays(startOfDay(new Date()), dayOffset), [dayOffset]);
   const isReferenceToday = dayOffset === 0;
 
@@ -230,6 +232,14 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
       window.clearTimeout(timer);
     };
   }, [focusLectureId, schedule]);
+
+  // Auto-scroll week strip to keep selected day visible
+  useEffect(() => {
+    if (!weekStripRef.current) return;
+    if (dayOffset < 0 || dayOffset >= STRIP_DAYS) return;
+    const btn = weekStripRef.current.children[dayOffset] as HTMLElement | undefined;
+    btn?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [dayOffset]);
 
   const formatTime = (isoString: string): string => {
     const date = new Date(isoString);
@@ -298,6 +308,18 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
   });
   const now = new Date();
   const nowLabel = now.toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit", hour12: false });
+
+  // Build strip data for 14-day overview
+  const todayStart = startOfDay(new Date());
+  const stripDays = useMemo(() =>
+    Array.from({ length: STRIP_DAYS }, (_, i) => {
+      const date = addDays(todayStart, i);
+      const eventCount = sortedSchedule.filter(block => isSameLocalDate(new Date(block.startTime), date)).length;
+      return { offset: i, date, eventCount };
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sortedSchedule.length, todayStart.getTime()]
+  );
 
   const navigateDay = (delta: number): void => {
     if (delta === 0) {
@@ -406,6 +428,38 @@ export function ScheduleView({ focusLectureId }: ScheduleViewProps): JSX.Element
         <button type="button" className="sched-nav-btn" onClick={() => navigateDay(1)} aria-label={t("Next day")}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
+      </div>
+
+      {/* 14-day overview strip */}
+      <div className="sched-week-strip" ref={weekStripRef}>
+        {stripDays.map(({ offset, date, eventCount }) => {
+          const isSelected = dayOffset === offset;
+          const isToday = offset === 0;
+          const dayLabel = date.toLocaleDateString(localeTag, { weekday: "short" }).slice(0, 2);
+          const dateNum = date.getDate();
+
+          return (
+            <button
+              key={offset}
+              type="button"
+              className={`sched-week-day${isSelected ? " sched-week-day--selected" : ""}${isToday && !isSelected ? " sched-week-day--today" : ""}`}
+              onClick={() => navigateDay(offset - dayOffset)}
+              aria-label={date.toLocaleDateString(localeTag, { weekday: "long", month: "short", day: "numeric" })}
+            >
+              <span className="sched-week-day-name">{dayLabel}</span>
+              <span className="sched-week-day-num">{dateNum}</span>
+              {eventCount > 0 ? (
+                <span className="sched-week-day-indicator">
+                  {Array.from({ length: Math.min(eventCount, 3) }, (_, di) => (
+                    <span key={di} className="sched-week-day-dot" />
+                  ))}
+                </span>
+              ) : (
+                <span className="sched-week-day-indicator sched-week-day-indicator--empty" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Meta badges */}
