@@ -341,3 +341,66 @@ function getGitHubRedirectUri(): string {
   const base = config.OAUTH_REDIRECT_BASE_URL ?? `http://localhost:${config.PORT}`;
   return `${base}/api/auth/github/callback`;
 }
+
+// ── Notion OAuth ──
+
+export function notionOAuthEnabled(): boolean {
+  return Boolean(config.NOTION_OAUTH_CLIENT_ID && config.NOTION_OAUTH_CLIENT_SECRET);
+}
+
+function getNotionRedirectUri(): string {
+  const base = config.OAUTH_REDIRECT_BASE_URL ?? `http://localhost:${config.PORT}`;
+  return `${base}/api/auth/notion/callback`;
+}
+
+export function getNotionOAuthUrl(state: string): string {
+  const params = new URLSearchParams({
+    client_id: config.NOTION_OAUTH_CLIENT_ID!,
+    redirect_uri: getNotionRedirectUri(),
+    response_type: "code",
+    owner: "user",
+    state
+  });
+  return `https://api.notion.com/v1/oauth/authorize?${params.toString()}`;
+}
+
+export async function exchangeNotionCode(code: string): Promise<string> {
+  const credentials = Buffer.from(
+    `${config.NOTION_OAUTH_CLIENT_ID}:${config.NOTION_OAUTH_CLIENT_SECRET}`
+  ).toString("base64");
+
+  const tokenResponse = await fetch("https://api.notion.com/v1/oauth/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${credentials}`,
+      "Notion-Version": "2022-06-28"
+    },
+    body: JSON.stringify({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: getNotionRedirectUri()
+    })
+  });
+
+  if (!tokenResponse.ok) {
+    const body = await tokenResponse.text();
+    console.error(`[notion-oauth] Token exchange HTTP error: ${tokenResponse.status} body=${body.slice(0, 500)}`);
+    throw new Error(`Notion token exchange failed: ${tokenResponse.status} ${body}`);
+  }
+
+  const data = (await tokenResponse.json()) as {
+    access_token?: string;
+    error?: string;
+    error_description?: string;
+    workspace_name?: string;
+  };
+
+  if (!data.access_token || data.error) {
+    console.error(`[notion-oauth] Token exchange error: ${data.error ?? "no access_token"}`);
+    throw new Error(`Notion OAuth error: ${data.error_description ?? data.error ?? "no access_token"}`);
+  }
+
+  console.log(`[notion-oauth] Token exchange success: workspace=${data.workspace_name ?? "unknown"}`);
+  return data.access_token;
+}

@@ -15,7 +15,10 @@ import {
   githubOAuthEnabled,
   getGitHubOAuthUrl,
   exchangeGitHubCode,
-  exchangeGitHubCodeWithToken
+  exchangeGitHubCodeWithToken,
+  notionOAuthEnabled,
+  getNotionOAuthUrl,
+  exchangeNotionCode
 } from "./oauth-login.js";
 import { buildDeadlineDedupResult } from "./deadline-dedup.js";
 import { generateDeadlineSuggestions } from "./deadline-suggestions.js";
@@ -278,10 +281,15 @@ interface PendingMcpGoogleOAuthState extends PendingOAuthState {
   templateId: string;
 }
 
+interface PendingMcpNotionOAuthState extends PendingOAuthState {
+  templateId: string;
+}
+
 const withingsPendingOAuthStates = new Map<string, PendingOAuthState>();
 const microsoftPendingOAuthStates = new Map<string, PendingOAuthState>();
 const mcpGitHubPendingOAuthStates = new Map<string, PendingMcpGitHubOAuthState>();
 const mcpGooglePendingOAuthStates = new Map<string, PendingMcpGoogleOAuthState>();
+const mcpNotionPendingOAuthStates = new Map<string, PendingMcpNotionOAuthState>();
 const tpSyncInFlightUsers = new Set<string>();
 
 interface CanvasConnectorCredentials {
@@ -584,6 +592,27 @@ function consumePendingMcpGoogleOAuthState(state: string | null): PendingMcpGoog
     return null;
   }
   mcpGooglePendingOAuthStates.delete(state);
+  return entry;
+}
+
+function registerPendingMcpNotionOAuthState(state: string, userId: string, templateId: string): void {
+  cleanupPendingOAuthStates(mcpNotionPendingOAuthStates);
+  mcpNotionPendingOAuthStates.set(state, {
+    userId,
+    templateId,
+    expiresAt: Date.now() + OAUTH_STATE_TTL_MS
+  });
+}
+
+function consumePendingMcpNotionOAuthState(state: string | null): PendingMcpNotionOAuthState | null {
+  cleanupPendingOAuthStates(mcpNotionPendingOAuthStates);
+  if (!state) return null;
+  const entry = mcpNotionPendingOAuthStates.get(state);
+  if (!entry || entry.expiresAt <= Date.now()) {
+    mcpNotionPendingOAuthStates.delete(state);
+    return null;
+  }
+  mcpNotionPendingOAuthStates.delete(state);
   return entry;
 }
 
@@ -1305,6 +1334,48 @@ app.get("/api/auth/github/callback", async (req, res) => {
   }
 });
 
+// ── Notion OAuth Callback ──
+
+app.get("/api/auth/notion/callback", async (req, res) => {
+  const state = typeof req.query.state === "string" ? req.query.state : null;
+  const pendingMcpNotion = consumePendingMcpNotionOAuthState(state);
+  console.log(`[notion-oauth] Callback hit: state=${state?.slice(0, 16) ?? "null"} code=${req.query.code ? "present" : "MISSING"} error=${req.query.error ?? "none"} pendingMatch=${!!pendingMcpNotion}`);
+
+  if (!pendingMcpNotion) {
+    return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", "Invalid or expired Notion OAuth state"));
+  }
+
+  try {
+    const code = req.query.code as string;
+    if (!code) {
+      console.log(`[notion-oauth] FAIL: Missing OAuth code in callback`);
+      return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", "Missing OAuth code"));
+    }
+
+    const template = getMcpServerTemplateById(pendingMcpNotion.templateId);
+    if (!template) {
+      console.log(`[notion-oauth] FAIL: Template ${pendingMcpNotion.templateId} not found`);
+      return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", "MCP template no longer exists"));
+    }
+
+    console.log(`[notion-oauth] Exchanging code for user=${pendingMcpNotion.userId} template=${template.id}...`);
+    const accessToken = await exchangeNotionCode(code);
+
+    const { server } = await upsertMcpTemplateServerWithToken(
+      pendingMcpNotion.userId,
+      template.id,
+      accessToken,
+      { skipValidation: true }
+    );
+    console.log(`[notion-oauth] SUCCESS: Server ${server.id} stored. Redirecting to frontend.`);
+    return res.redirect(getIntegrationFrontendRedirect("mcp", "connected", `${template.label} connected`));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Notion OAuth failed";
+    console.error(`[notion-oauth] ERROR in callback:`, error);
+    return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", message));
+  }
+});
+
 // ── Consent / TOS / Privacy ──
 
 const CURRENT_TOS_VERSION = "1.0";
@@ -1349,6 +1420,7 @@ app.delete("/api/user/data", (req, res) => {
   store.deleteAllUserData(authReq.authUser.id);
   clearPendingOAuthStatesForUser(withingsPendingOAuthStates, authReq.authUser.id);
   clearPendingOAuthStatesForUser(mcpGitHubPendingOAuthStates, authReq.authUser.id);
+  clearPendingOAuthStatesForUser(mcpNotionPendingOAuthStates, authReq.authUser.id);
   return res.json({ deleted: true });
 });
 
@@ -1428,6 +1500,7 @@ app.get("/api/mcp/catalog", (req, res) => {
     if (template.authType === "oauth") {
       if (template.oauthProvider === "github") oauthEnabled = githubOAuthEnabled();
       else if (template.oauthProvider === "google") oauthEnabled = googleOAuthEnabled();
+      else if (template.oauthProvider === "notion") oauthEnabled = notionOAuthEnabled();
     }
     return { ...template, oauthEnabled };
   });
@@ -1521,6 +1594,20 @@ app.post("/api/mcp/templates/:templateId/connect", async (req, res) => {
     const redirectUrl = getGoogleCalendarOAuthUrl(state);
     console.log(`[google-cal-oauth] Generated OAuth redirect for user=${authReq.authUser.id} template=${template.id} state=${state.slice(0, 12)}...`);
     console.log(`[google-cal-oauth] Redirect URL: ${redirectUrl.slice(0, 120)}...`);
+    return res.json({ redirectUrl });
+  }
+
+  if (template.authType === "oauth" && template.oauthProvider === "notion") {
+    if (!notionOAuthEnabled()) {
+      return res.status(400).json({
+        error: "Notion OAuth is not configured on this server. Paste a Notion integration token instead."
+      });
+    }
+
+    const state = `mcp_notion_${Math.random().toString(36).slice(2)}`;
+    registerPendingMcpNotionOAuthState(state, authReq.authUser.id, template.id);
+    const redirectUrl = getNotionOAuthUrl(state);
+    console.log(`[notion-oauth] Generated OAuth redirect for user=${authReq.authUser.id} template=${template.id}`);
     return res.json({ redirectUrl });
   }
 
@@ -1759,6 +1846,7 @@ app.delete("/api/connectors/:service", (req, res) => {
   if (parsed.data === "mcp") {
     clearMcpServers(store, authReq.authUser.id);
     clearPendingOAuthStatesForUser(mcpGitHubPendingOAuthStates, authReq.authUser.id);
+    clearPendingOAuthStatesForUser(mcpNotionPendingOAuthStates, authReq.authUser.id);
   }
   if (parsed.data === "withings") {
     store.clearWithingsTokens(authReq.authUser.id);

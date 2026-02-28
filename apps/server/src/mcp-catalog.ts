@@ -7,7 +7,7 @@ export interface McpServerTemplate {
   docsUrl: string;
   verified: boolean;
   authType: "bearer" | "oauth";
-  oauthProvider?: "github" | "google";
+  oauthProvider?: "github" | "google" | "notion";
   oauthEnabled?: boolean;
   tokenLabel: string;
   tokenPlaceholder: string;
@@ -48,11 +48,12 @@ const MCP_SERVER_TEMPLATES: readonly McpServerTemplate[] = [
     serverUrl: "https://mcp.notion.com/mcp",
     docsUrl: "https://www.notion.com/help/notion-mcp-server",
     verified: true,
-    authType: "bearer",
+    authType: "oauth",
+    oauthProvider: "notion",
     tokenLabel: "Notion integration token",
     tokenPlaceholder: "ntn_xxx",
     tokenHelp:
-      "Create a Notion integration at notion.so/my-integrations, grant access to the pages or databases you want, then paste its token.",
+      "Optional fallback if OAuth is unavailable. Create a Notion integration at notion.so/my-integrations, grant access to the pages or databases you want, then paste its token.",
     suggestedToolAllowlist: [
       "notion-search",
       "search",
