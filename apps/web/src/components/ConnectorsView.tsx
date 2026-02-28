@@ -817,10 +817,10 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                   />
                 </div>
                 {connector.service === "canvas" && (
-                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("In Canvas go to <strong>Account</strong> → <strong>Settings</strong> → <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>, then paste the token above.") }} />
+                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Open Canvas <strong>in your browser</strong> (not the app) → <strong>Account</strong> (top-left) → <strong>Settings</strong> → scroll to <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>. Give it any name, then paste the token above.") }} />
                 )}
                 {connector.service === "blackboard" && (
-                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("In Blackboard go to <strong>System Admin</strong> → <strong>REST API Integrations</strong> to generate and copy your API token.") }} />
+                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Open Blackboard <strong>in your browser</strong> → click your <strong>name / avatar</strong> (top-right) → <strong>Settings</strong> → <strong>Developer</strong> → <strong>Register a New Application</strong>. Copy the <strong>Application Key</strong> and paste it above.") }} />
                 )}
                 <button
                   className="connector-connect-btn"
@@ -1124,7 +1124,10 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                   disabled={busy}
                 />
                 {connector.service === "tp_schedule" && (
-                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Go to <strong>tp.educloud.no</strong> → find your courses → click <strong>Verktøy</strong> → <strong>Kopier abonnementlenken til timeplanen</strong>. Paste the iCal URL here (starts with https://tp.educloud.no/...).") }} />
+                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Open <strong>tp.educloud.no</strong> in your browser → log in → find your programme/courses → click <strong>Verktøy</strong> (tools icon) → <strong>Kopier abonnementlenken til timeplanen</strong>. The URL starts with <code>https://tp.educloud.no/</code>.") }} />
+                )}
+                {connector.service === "timeedit" && (
+                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Open your university's <strong>TimeEdit</strong> page in your browser → search and select your courses → click <strong>Subscribe</strong> (calendar icon) → copy the <strong>iCal/ICS link</strong>. The URL usually contains <code>timeedit.net</code>.") }} />
                 )}
                 <button
                   className="connector-connect-btn"
@@ -1290,10 +1293,10 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                   />
                 </div>
                 {connector.service === "canvas" && (
-                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("In Canvas go to <strong>Account</strong> → <strong>Settings</strong> → <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>, then paste the token above.") }} />
+                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Open Canvas <strong>in your browser</strong> (not the app) → <strong>Account</strong> (top-left) → <strong>Settings</strong> → scroll to <strong>Approved Integrations</strong> → <strong>+ New Access Token</strong>. Give it any name, then paste the token above.") }} />
                 )}
                 {connector.service === "blackboard" && (
-                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("In Blackboard go to <strong>System Admin</strong> → <strong>REST API Integrations</strong> to generate and copy your API token.") }} />
+                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Open Blackboard <strong>in your browser</strong> → click your <strong>name / avatar</strong> (top-right) → <strong>Settings</strong> → <strong>Developer</strong> → <strong>Register a New Application</strong>. Copy the <strong>Application Key</strong> and paste it above.") }} />
                 )}
                 <button
                   className="connector-connect-btn"
@@ -1318,7 +1321,10 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                   disabled={busy}
                 />
                 {connector.service === "tp_schedule" && (
-                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Go to <strong>tp.educloud.no</strong> → find your courses → click <strong>Verktøy</strong> → <strong>Kopier abonnementlenken til timeplanen</strong>. Paste the iCal URL here (starts with https://tp.educloud.no/...).") }} />
+                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Open <strong>tp.educloud.no</strong> in your browser → log in → find your programme/courses → click <strong>Verktøy</strong> (tools icon) → <strong>Kopier abonnementlenken til timeplanen</strong>. The URL starts with <code>https://tp.educloud.no/</code>.") }} />
+                )}
+                {connector.service === "timeedit" && (
+                  <p className="connector-help-text" dangerouslySetInnerHTML={{ __html: t("Open your university's <strong>TimeEdit</strong> page in your browser → search and select your courses → click <strong>Subscribe</strong> (calendar icon) → copy the <strong>iCal/ICS link</strong>. The URL usually contains <code>timeedit.net</code>.") }} />
                 )}
                 <button
                   className="connector-connect-btn"
