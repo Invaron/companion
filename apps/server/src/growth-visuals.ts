@@ -2,24 +2,29 @@ import { GeminiClient } from "./gemini.js";
 import { AnalyticsCoachInsight, DailyGrowthSummary, GrowthNarrativeVisual } from "./types.js";
 import { nowIso } from "./utils.js";
 
-const MAX_PROMPT_TEXT_LENGTH = 300;
+const MAX_PROMPT_TEXT_LENGTH = 600;
 
 function compact(value: string, maxLength = MAX_PROMPT_TEXT_LENGTH): string {
   const cleaned = value.replace(/\s+/g, " ").trim();
   if (cleaned.length <= maxLength) {
     return cleaned;
   }
-  return `${cleaned.slice(0, maxLength)}...`;
+  // Try to break at the last sentence boundary within the limit
+  const truncated = cleaned.slice(0, maxLength);
+  const lastPeriod = truncated.lastIndexOf(". ");
+  if (lastPeriod > maxLength * 0.6) {
+    return `${truncated.slice(0, lastPeriod + 1)}`;
+  }
+  return `${truncated}...`;
 }
 
 function buildDailyVisualPrompt(summary: DailyGrowthSummary): string {
-  const highlights = summary.highlights.slice(0, 3).map((item) => `- ${compact(item, 140)}`).join("\n");
+  const highlights = summary.highlights.slice(0, 3).map((item) => `- ${compact(item, 200)}`).join("\n");
   return `Create a vibrant digital illustration of a person's day as a growth journey.
 Tone: hopeful, focused, grounded.
 Style: modern editorial art, expressive lighting, rich colors, clean composition.
 Scene cues:
 - Reflection summary: ${compact(summary.summary)}
-- Signals: ${summary.chatMessageCount} chat notes, ${summary.journalEntryCount} journal entries
 ${highlights ? `- Key highlights:\n${highlights}` : "- Key highlights: none"}
 
 Output requirements:
@@ -30,9 +35,9 @@ Output requirements:
 }
 
 function buildAnalyticsVisualPrompt(insight: AnalyticsCoachInsight): string {
-  const strength = insight.strengths[0] ? compact(insight.strengths[0], 140) : "steady momentum";
-  const risk = insight.risks[0] ? compact(insight.risks[0], 140) : "friction points";
-  const recommendation = insight.recommendations[0] ? compact(insight.recommendations[0], 140) : "clear next action";
+  const strength = insight.strengths[0] ? compact(insight.strengths[0], 200) : "steady momentum";
+  const risk = insight.risks[0] ? compact(insight.risks[0], 200) : "friction points";
+  const recommendation = insight.recommendations[0] ? compact(insight.recommendations[0], 200) : "clear next action";
   return `Create a cinematic strategic-growth illustration for a ${insight.periodDays}-day review.
 Tone: confident, practical, motivating.
 Style: premium concept art, colorful gradients, structured composition.

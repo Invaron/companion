@@ -743,7 +743,7 @@ export const functionDeclarations: FunctionDeclaration[] = [
   {
     name: "createNutritionMeal",
     description:
-      "Create a meal entry with optional item list and macros. Preferred for image-based and mixed meals; include one item per recognizable food component with realistic grams.",
+      "Create a meal entry with optional item list and macros. Preferred for image-based and mixed meals; include one item per recognizable food component with realistic quantity (g, ml, or ea as appropriate).",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -782,13 +782,13 @@ export const functionDeclarations: FunctionDeclaration[] = [
         items: {
           type: SchemaType.ARRAY,
           description:
-            "Optional meal items. Each item can reference a custom food via customFoodId/customFoodName and must include quantity. For image-estimated meals, split the dish into distinct food components and provide realistic grams per item (for example 220, 350).",
+            "Optional meal items. Each item can reference a custom food via customFoodId/customFoodName and must include quantity. For image-estimated meals, split the dish into distinct food components and provide realistic quantity per item using the appropriate unit (g for solids, ml for liquids, ea for countable items). Even single-item images should have one explicit meal item.",
           items: {
             type: SchemaType.OBJECT,
             properties: {
               customFoodId: { type: SchemaType.STRING },
               customFoodName: { type: SchemaType.STRING },
-              quantity: { type: SchemaType.NUMBER, description: "Food amount in grams." },
+              quantity: { type: SchemaType.NUMBER, description: "Food amount — in grams (g) for solids, ml for liquids, or count (ea) for discrete items. Match the unit to the food type." },
               name: { type: SchemaType.STRING },
               unitLabel: { type: SchemaType.STRING },
               caloriesPerUnit: { type: SchemaType.NUMBER },

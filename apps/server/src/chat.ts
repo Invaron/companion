@@ -335,7 +335,7 @@ function toGeminiMessages(
   if (attachments.length > 0) {
     userParts.push({
       text:
-        "Attachment instruction: if this request involves food logging from the image(s), use createNutritionMeal with an `items` array that lists each visible food component separately, and include realistic grams (`quantity`) for each item. Do not log only a generic meal name or 1g placeholder items."
+        "Attachment instruction: if this request involves food logging from the image(s), use createNutritionMeal with an `items` array that lists each visible food component separately. Include a realistic quantity for each item using the appropriate unit (g for solid foods, ml for liquids, ea for countable items like eggs). Even if the image shows only one food item, log it as a meal item with quantity and per-item macros."
     });
   }
 
@@ -1270,11 +1270,14 @@ function buildFunctionCallingSystemInstruction(
   runtimeContextNudge: string,
   longTermMemoryNudge: string,
   mcpToolNudge: string,
-  allowedToolNames: ReadonlySet<string> | null
+  allowedToolNames: ReadonlySet<string> | null,
+  connectedServices?: { withings?: boolean; hasGitHubMcp?: boolean }
 ): string {
   const hasNutrition = !allowedToolNames || allowedToolNames.has("getNutritionSummary");
   const hasHabits = !allowedToolNames || allowedToolNames.has("getHabitsGoalsStatus");
   const hasWithings = !allowedToolNames || allowedToolNames.has("getWithingsHealthSummary");
+  const withingsConnected = connectedServices?.withings ?? false;
+  const hasGitHubMcp = connectedServices?.hasGitHubMcp ?? false;
 
   const coreBehavior = [
     `- For factual questions about schedule, deadlines, or connected external systems, use tools before answering.`,
@@ -1292,18 +1295,20 @@ function buildFunctionCallingSystemInstruction(
       `- Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.`,
       `- When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).`,
       `- For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).`,
-      `- For each item in image-based meal logs, include realistic grams (quantity) and per-item macro values so totals are traceable item-by-item.`,
-      `- Do not log image-based meals as a single generic meal item unless the image clearly contains only one food item.`
+      `- For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.`,
+      `- If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.`
     );
   }
-  if (hasWithings) {
+  if (hasWithings && withingsConnected) {
     coreBehavior.push(`- For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.`);
   }
   coreBehavior.push(
     `- For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.`,
     `- If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.`,
-    `- For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.`,
-    `- Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.`,
+    ...(hasGitHubMcp ? [
+      `- For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.`,
+      `- Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.`,
+    ] : []),
     `- Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.`,
     `- For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).`,
     `- For manual deadline entry/removal requests, use createDeadline/deleteDeadline.`,
@@ -1311,7 +1316,7 @@ function buildFunctionCallingSystemInstruction(
     `- For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.`,
     `- CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.`,
     `- CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.`,
-    `- IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day"). The schedule UI already shows gap suggestions automatically.`,
+    `- IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").`,
     `- When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.`,
     `- For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.`,
     `- IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.`,
@@ -3622,7 +3627,11 @@ export async function sendChatMessage(
     buildRuntimeContextNudge(now),
     longTermMemoryNudge,
     mcpToolContext.summary,
-    allowedTools
+    allowedTools,
+    {
+      withings: !!store.getUserConnection(userId, "withings"),
+      hasGitHubMcp: mcpToolContext.summary.toLowerCase().includes("github")
+    }
   );
 
   const messages = toGeminiMessages(history, userInput, attachments);
@@ -3833,6 +3842,13 @@ export async function sendChatMessage(
             }
           })) as Part[]
       });
+
+      // Log tool results context that Gemini will see in the next round
+      const toolResultsSummary = replayableRoundEntries.map(({ responseEntry }) => {
+        const json = JSON.stringify(responseEntry.modelResponse);
+        return `  ${responseEntry.name}: ${json.length > 500 ? json.slice(0, 500) + "..." : json}`;
+      }).join("\n");
+      console.log(`[gemini] Round ${round + 1} tool results for next prompt:\n${toolResultsSummary}`);
     }
 
     if ((!response || response.text.trim().length === 0) && executedFunctionResponses.length > 0) {
