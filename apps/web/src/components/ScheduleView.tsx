@@ -5,7 +5,7 @@ import { useI18n } from "../lib/i18n";
 import { LectureEvent } from "../types";
 
 const EMPTY_SCHEDULE_SVG = `${(import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "")}/illustrations/empty-schedule.svg`;
-const STRIP_DAYS = 14;
+const STRIP_DAYS = 30;
 
 interface DayTimelineSegment {
   type: "event" | "free";
@@ -391,7 +391,7 @@ export function ScheduleView({ focusLectureId, hasScheduleIntegration }: Schedul
 
   // Compute "now" position relative to timeline segments for inline marker
   const nowTime = now.getTime();
-  const totalSessionMinutes = dayBlocks.reduce((sum, b) => sum + b.durationMinutes, 0);
+
 
   // Find where to insert "now" marker in the timeline
   const nowInsertIndex = isReferenceToday
@@ -459,22 +459,12 @@ export function ScheduleView({ focusLectureId, hasScheduleIntegration }: Schedul
         })}
       </div>
 
-      {/* Meta badges */}
-      <div className="sched-badges">
-        {dayBlocks.length > 0 ? (
-          <span className="sched-chip">
-            {dayBlocks.length === 1
-              ? t("{count} session", { count: dayBlocks.length })
-              : t("{count} sessions", { count: dayBlocks.length })}
-          </span>
-        ) : (
-          <span className="sched-chip sched-chip--empty">{t("Free day")}</span>
-        )}
-        {totalSessionMinutes > 0 && (
-          <span className="sched-chip sched-chip--time">{formatDuration(totalSessionMinutes)}</span>
-        )}
-        {!isOnline && <span className="sched-chip sched-chip--offline">{t("Offline")}</span>}
-      </div>
+      {/* Offline indicator */}
+      {!isOnline && (
+        <div className="sched-badges">
+          <span className="sched-chip sched-chip--offline">{t("Offline")}</span>
+        </div>
+      )}
 
       <div
         key={dayAnimationKey}
