@@ -481,7 +481,7 @@ function isMealCompleted(meal: NutritionMeal): boolean {
   return typeof meal.notes === "string" && meal.notes.includes(MEAL_DONE_TOKEN);
 }
 
-export function NutritionView({ onNavigateToChat }: { onNavigateToChat?: () => void }): JSX.Element {
+export function NutritionView({ onNavigateToChat, onOpenChatOverlay }: { onNavigateToChat?: () => void; onOpenChatOverlay?: () => void }): JSX.Element {
   const todayKey = useMemo(() => toDateKey(new Date()), []);
   const amountHoldTimers = useRef<Record<string, number>>({});
   const amountHoldIntervals = useRef<Record<string, number>>({});
@@ -1483,8 +1483,8 @@ export function NutritionView({ onNavigateToChat }: { onNavigateToChat?: () => v
                 <p className="nutrition-empty-hint">Get started:</p>
                 <div className="nutrition-empty-suggestions">
                   <span className="nutrition-suggestion-pill" onClick={openManualFoodLogging} role="button" tabIndex={0}>Log a meal manually</span>
-                  <span className="nutrition-suggestion-pill" onClick={onNavigateToChat} role="button" tabIndex={0}>Snap a photo of your food</span>
-                  <span className="nutrition-suggestion-pill" onClick={openManualFoodLogging} role="button" tabIndex={0}>Create a custom food item</span>
+                  <span className="nutrition-suggestion-pill" onClick={onOpenChatOverlay} role="button" tabIndex={0}>Snap a photo of your food</span>
+                  <span className="nutrition-suggestion-pill" onClick={onOpenChatOverlay} role="button" tabIndex={0}>Ask Gemini to log your meal</span>
                 </div>
                 <p className="nutrition-empty-hint">Tap the icon to start logging</p>
               </div>
