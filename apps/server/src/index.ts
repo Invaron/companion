@@ -10,6 +10,8 @@ import {
   googleOAuthEnabled,
   getGoogleOAuthUrl,
   exchangeGoogleCode,
+  getGoogleCalendarOAuthUrl,
+  exchangeGoogleCalendarCode,
   githubOAuthEnabled,
   getGitHubOAuthUrl,
   exchangeGitHubCode,
@@ -271,9 +273,14 @@ interface PendingMcpGitHubOAuthState extends PendingOAuthState {
   templateId: string;
 }
 
+interface PendingMcpGoogleOAuthState extends PendingOAuthState {
+  templateId: string;
+}
+
 const withingsPendingOAuthStates = new Map<string, PendingOAuthState>();
 const microsoftPendingOAuthStates = new Map<string, PendingOAuthState>();
 const mcpGitHubPendingOAuthStates = new Map<string, PendingMcpGitHubOAuthState>();
+const mcpGooglePendingOAuthStates = new Map<string, PendingMcpGoogleOAuthState>();
 const tpSyncInFlightUsers = new Set<string>();
 
 interface CanvasConnectorCredentials {
@@ -555,6 +562,27 @@ function consumePendingMcpGitHubOAuthState(state: string | null): PendingMcpGitH
   }
 
   mcpGitHubPendingOAuthStates.delete(state);
+  return entry;
+}
+
+function registerPendingMcpGoogleOAuthState(state: string, userId: string, templateId: string): void {
+  cleanupPendingOAuthStates(mcpGooglePendingOAuthStates);
+  mcpGooglePendingOAuthStates.set(state, {
+    userId,
+    templateId,
+    expiresAt: Date.now() + OAUTH_STATE_TTL_MS
+  });
+}
+
+function consumePendingMcpGoogleOAuthState(state: string | null): PendingMcpGoogleOAuthState | null {
+  cleanupPendingOAuthStates(mcpGooglePendingOAuthStates);
+  if (!state) return null;
+  const entry = mcpGooglePendingOAuthStates.get(state);
+  if (!entry || entry.expiresAt <= Date.now()) {
+    mcpGooglePendingOAuthStates.delete(state);
+    return null;
+  }
+  mcpGooglePendingOAuthStates.delete(state);
   return entry;
 }
 
@@ -1133,6 +1161,45 @@ app.get("/api/auth/google", (_req, res) => {
 });
 
 app.get("/api/auth/google/callback", async (req, res) => {
+  // Check if this is an MCP Google Calendar OAuth callback
+  const state = typeof req.query.state === "string" ? req.query.state : null;
+  const pendingMcpGoogleOAuth = consumePendingMcpGoogleOAuthState(state);
+  if (pendingMcpGoogleOAuth) {
+    try {
+      const code = req.query.code as string;
+      if (!code) {
+        return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", "Missing OAuth code"));
+      }
+
+      const template = getMcpServerTemplateById(pendingMcpGoogleOAuth.templateId);
+      if (!template) {
+        return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", "MCP template no longer exists"));
+      }
+
+      const exchange = await exchangeGoogleCalendarCode(code);
+
+      // Store as JSON token blob so mcp.ts can detect and refresh it
+      const tokenBlob = JSON.stringify({
+        type: "google_oauth",
+        accessToken: exchange.accessToken,
+        refreshToken: exchange.refreshToken,
+        expiresAt: exchange.expiresAt
+      });
+
+      const { server } = await upsertMcpTemplateServerWithToken(
+        pendingMcpGoogleOAuth.userId,
+        template.id,
+        tokenBlob
+      );
+      void server; // used for side-effect
+      return res.redirect(getIntegrationFrontendRedirect("mcp", "connected", `${template.label} connected`));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Google Calendar OAuth failed";
+      return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", message));
+    }
+  }
+
+  // Standard Google OAuth login flow
   try {
     const code = req.query.code as string;
     if (!code) return res.status(400).send("Missing OAuth code");
@@ -1337,13 +1404,14 @@ app.get("/api/mcp/catalog", (req, res) => {
   const authReq = req as AuthenticatedRequest;
   if (!authReq.authUser) return res.status(401).json({ error: "Unauthorized" });
 
-  const templates = getMcpServerTemplates().map((template) => ({
-    ...template,
-    oauthEnabled:
-      template.authType === "oauth" && template.oauthProvider === "github"
-        ? githubOAuthEnabled()
-        : false
-  }));
+  const templates = getMcpServerTemplates().map((template) => {
+    let oauthEnabled = false;
+    if (template.authType === "oauth") {
+      if (template.oauthProvider === "github") oauthEnabled = githubOAuthEnabled();
+      else if (template.oauthProvider === "google") oauthEnabled = googleOAuthEnabled();
+    }
+    return { ...template, oauthEnabled };
+  });
 
   return res.json({
     templates
@@ -1419,6 +1487,19 @@ app.post("/api/mcp/templates/:templateId/connect", async (req, res) => {
     const redirectUrl = getGitHubOAuthUrl(state, {
       scope: "user:email read:user repo read:org"
     });
+    return res.json({ redirectUrl });
+  }
+
+  if (template.authType === "oauth" && template.oauthProvider === "google") {
+    if (!googleOAuthEnabled()) {
+      return res.status(400).json({
+        error: "Google OAuth is not configured on this server. Paste a Google access token instead."
+      });
+    }
+
+    const state = `mcp_gcal_${Math.random().toString(36).slice(2)}`;
+    registerPendingMcpGoogleOAuthState(state, authReq.authUser.id, template.id);
+    const redirectUrl = getGoogleCalendarOAuthUrl(state);
     return res.json({ redirectUrl });
   }
 

@@ -3,6 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { FunctionDeclaration, SchemaType } from "@google/generative-ai";
 import { RuntimeStore } from "./store.js";
+import { refreshGoogleAccessToken } from "./oauth-login.js";
 
 const MCP_MIN_TOOLS_PER_SERVER = 4;
 const MCP_MAX_TOOLS_PER_SERVER = 16;
@@ -76,6 +77,91 @@ interface RemoteMcpTool {
 }
 
 const toolCache = new Map<string, CachedServerTools>();
+
+interface GoogleOAuthTokenBlob {
+  type: "google_oauth";
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+}
+
+function isGoogleOAuthTokenBlob(obj: unknown): obj is GoogleOAuthTokenBlob {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    (obj as GoogleOAuthTokenBlob).type === "google_oauth" &&
+    typeof (obj as GoogleOAuthTokenBlob).accessToken === "string" &&
+    typeof (obj as GoogleOAuthTokenBlob).refreshToken === "string" &&
+    typeof (obj as GoogleOAuthTokenBlob).expiresAt === "string"
+  );
+}
+
+/**
+ * Resolves the effective bearer token for an MCP server.
+ * For plain strings, returns as-is.
+ * For Google OAuth JSON blobs, checks expiry and auto-refreshes.
+ * If store+userId are provided, persists the refreshed token back to the DB.
+ */
+async function resolveOAuthBearerToken(
+  server: McpServerConfig,
+  store?: RuntimeStore,
+  userId?: string
+): Promise<string | undefined> {
+  if (!server.token) return undefined;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(server.token);
+  } catch {
+    // Not JSON — plain bearer token
+    return server.token;
+  }
+
+  if (!isGoogleOAuthTokenBlob(parsed)) {
+    // JSON but not our OAuth blob — return raw
+    return server.token;
+  }
+
+  const expiresAt = new Date(parsed.expiresAt).getTime();
+  const now = Date.now();
+  const MARGIN_MS = 60_000; // refresh 60s before expiry
+
+  if (expiresAt - now > MARGIN_MS) {
+    // Still valid
+    return parsed.accessToken;
+  }
+
+  // Token expired or about to expire — refresh
+  try {
+    const refreshed = await refreshGoogleAccessToken(parsed.refreshToken);
+    const updatedBlob: GoogleOAuthTokenBlob = {
+      type: "google_oauth",
+      accessToken: refreshed.accessToken,
+      refreshToken: refreshed.refreshToken ?? parsed.refreshToken,
+      expiresAt: refreshed.expiresAt
+    };
+    const updatedToken = JSON.stringify(updatedBlob);
+
+    // Update server object in-place for current request
+    server.token = updatedToken;
+
+    // Persist to DB if store context is available
+    if (store && userId) {
+      const servers = getMcpServers(store, userId);
+      const target = servers.find((s) => s.id === server.id);
+      if (target) {
+        target.token = updatedToken;
+        writeMcpServers(store, userId, servers);
+      }
+    }
+
+    return refreshed.accessToken;
+  } catch (err) {
+    console.error(`[mcp] Failed to refresh Google OAuth token for server ${server.id}:`, err);
+    // Fall back to existing (possibly expired) access token
+    return parsed.accessToken;
+  }
+}
 
 export function calculateMcpToolBudgets(serverCount: number): {
   totalBudget: number;
@@ -370,10 +456,16 @@ function toGeminiParameterSchema(node: unknown, depth = 0): {
   };
 }
 
-async function withMcpClient<T>(server: McpServerConfig, fn: (client: Client) => Promise<T>): Promise<T> {
+async function withMcpClient<T>(
+  server: McpServerConfig,
+  fn: (client: Client) => Promise<T>,
+  store?: RuntimeStore,
+  userId?: string
+): Promise<T> {
   const headers: Record<string, string> = {};
-  if (server.token) {
-    headers.Authorization = `Bearer ${server.token}`;
+  const bearerToken = await resolveOAuthBearerToken(server, store, userId);
+  if (bearerToken) {
+    headers.Authorization = `Bearer ${bearerToken}`;
   }
 
   const transport = new StreamableHTTPClientTransport(new URL(server.serverUrl), {
@@ -394,7 +486,7 @@ async function withMcpClient<T>(server: McpServerConfig, fn: (client: Client) =>
   }
 }
 
-async function listRemoteTools(userId: string, server: McpServerConfig): Promise<RemoteMcpTool[]> {
+async function listRemoteTools(userId: string, server: McpServerConfig, store?: RuntimeStore): Promise<RemoteMcpTool[]> {
   const cacheKey = `${userId}:${server.id}`;
   const cached = toolCache.get(cacheKey);
   const now = Date.now();
@@ -402,7 +494,7 @@ async function listRemoteTools(userId: string, server: McpServerConfig): Promise
     return cached.tools;
   }
 
-  const response = await withMcpClient(server, async (client) => client.listTools());
+  const response = await withMcpClient(server, async (client) => client.listTools(), store, userId);
   let tools = (response.tools ?? []).map((tool) => ({
     name: tool.name,
     description: tool.description,
@@ -444,7 +536,7 @@ export async function buildMcpToolContext(store: RuntimeStore, userId: string): 
 
   for (const server of servers) {
     try {
-      const tools = (await listRemoteTools(userId, server)).slice(0, budgets.perServerBudget);
+      const tools = (await listRemoteTools(userId, server, store)).slice(0, budgets.perServerBudget);
       const addedToolNames: string[] = [];
       for (const tool of tools) {
         if (totalTools >= budgets.totalBudget) {
@@ -582,12 +674,19 @@ export function normalizeMcpToolResult(value: unknown): unknown {
   };
 }
 
-export async function executeMcpToolCall(binding: McpToolBinding, args: Record<string, unknown>): Promise<unknown> {
+export async function executeMcpToolCall(
+  binding: McpToolBinding,
+  args: Record<string, unknown>,
+  store?: RuntimeStore,
+  userId?: string
+): Promise<unknown> {
   const response = await withMcpClient(binding.server, async (client) =>
     client.callTool({
       name: binding.remoteToolName,
       arguments: args
-    })
+    }),
+    store,
+    userId
   );
 
   return {

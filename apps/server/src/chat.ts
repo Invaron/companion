@@ -3766,7 +3766,7 @@ export async function sendChatMessage(
           if (mcpBinding) {
             result = {
               name: call.name,
-              response: await executeMcpToolCall(mcpBinding, args)
+              response: await executeMcpToolCall(mcpBinding, args, store, userId)
             };
           } else {
             result = executeFunctionCall(call.name, args, store, userId);

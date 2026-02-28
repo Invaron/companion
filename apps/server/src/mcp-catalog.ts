@@ -7,7 +7,7 @@ export interface McpServerTemplate {
   docsUrl: string;
   verified: boolean;
   authType: "bearer" | "oauth";
-  oauthProvider?: "github";
+  oauthProvider?: "github" | "google";
   oauthEnabled?: boolean;
   tokenLabel: string;
   tokenPlaceholder: string;
@@ -72,11 +72,12 @@ const MCP_SERVER_TEMPLATES: readonly McpServerTemplate[] = [
     serverUrl: "https://calendar.google.com/.well-known/mcp",
     docsUrl: "https://developers.google.com/calendar/api/guides/overview",
     verified: false,
-    authType: "bearer",
+    authType: "oauth",
+    oauthProvider: "google",
     tokenLabel: "Google OAuth access token",
     tokenPlaceholder: "ya29.xxx",
     tokenHelp:
-      "Generate an OAuth 2.0 access token with Calendar read/write scope from the Google Cloud Console or OAuth Playground (developers.google.com/oauthplayground). Select the Google Calendar API v3 scope.",
+      "Optional fallback if OAuth is unavailable. Generate an OAuth 2.0 access token with Calendar read/write scope from the Google Cloud Console or OAuth Playground (developers.google.com/oauthplayground).",
     suggestedToolAllowlist: [
       "list_calendars",
       "list_events",

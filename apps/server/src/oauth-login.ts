@@ -94,6 +94,112 @@ function getGoogleRedirectUri(): string {
   return `${base}/api/auth/google/callback`;
 }
 
+// ── Google Calendar OAuth (MCP integration — same Google client, Calendar scopes) ──
+
+const GOOGLE_CALENDAR_SCOPES = "openid email profile https://www.googleapis.com/auth/calendar";
+
+export function getGoogleCalendarOAuthUrl(state: string): string {
+  const redirectUri = getGoogleRedirectUri();
+  const params = new URLSearchParams({
+    client_id: config.GOOGLE_OAUTH_CLIENT_ID!,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: GOOGLE_CALENDAR_SCOPES,
+    access_type: "offline",
+    prompt: "consent",
+    state
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+export interface GoogleCalendarTokenExchange {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt: string;
+}
+
+export async function exchangeGoogleCalendarCode(code: string): Promise<GoogleCalendarTokenExchange> {
+  const redirectUri = getGoogleRedirectUri();
+
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: config.GOOGLE_OAUTH_CLIENT_ID!,
+      client_secret: config.GOOGLE_OAUTH_CLIENT_SECRET!,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code"
+    })
+  });
+
+  if (!tokenResponse.ok) {
+    const body = await tokenResponse.text();
+    throw new Error(`Google Calendar token exchange failed: ${tokenResponse.status} ${body}`);
+  }
+
+  const tokens = (await tokenResponse.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+    error?: string;
+    error_description?: string;
+  };
+
+  if (tokens.error || !tokens.access_token) {
+    throw new Error(`Google Calendar OAuth error: ${tokens.error_description ?? tokens.error ?? "no access_token"}`);
+  }
+
+  const expiresIn = typeof tokens.expires_in === "number" && Number.isFinite(tokens.expires_in)
+    ? Math.max(60, tokens.expires_in)
+    : 3600;
+
+  return {
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString()
+  };
+}
+
+export async function refreshGoogleAccessToken(refreshToken: string): Promise<GoogleCalendarTokenExchange> {
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: config.GOOGLE_OAUTH_CLIENT_ID!,
+      client_secret: config.GOOGLE_OAUTH_CLIENT_SECRET!,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token"
+    })
+  });
+
+  if (!tokenResponse.ok) {
+    const body = await tokenResponse.text();
+    throw new Error(`Google token refresh failed: ${tokenResponse.status} ${body}`);
+  }
+
+  const tokens = (await tokenResponse.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+    error?: string;
+  };
+
+  if (tokens.error || !tokens.access_token) {
+    throw new Error(`Google token refresh error: ${tokens.error ?? "no access_token"}`);
+  }
+
+  const expiresIn = typeof tokens.expires_in === "number" && Number.isFinite(tokens.expires_in)
+    ? Math.max(60, tokens.expires_in)
+    : 3600;
+
+  return {
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token ?? refreshToken,
+    expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString()
+  };
+}
+
 // ── GitHub OAuth ──
 
 export function githubOAuthEnabled(): boolean {

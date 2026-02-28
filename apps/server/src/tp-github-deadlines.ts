@@ -78,7 +78,7 @@ export interface TpGithubDeadlineSubAgentDependencies {
   tpEvents?: ImportedCalendarEvent[];
   geminiClient?: TpGithubDeadlineSubAgentModelClient;
   buildMcpToolContext?: (store: RuntimeStore, userId: string) => Promise<McpToolContext>;
-  executeMcpToolCall?: (binding: McpToolBinding, args: Record<string, unknown>) => Promise<unknown>;
+  executeMcpToolCall?: (binding: McpToolBinding, args: Record<string, unknown>, store?: RuntimeStore, userId?: string) => Promise<unknown>;
   executeFunctionCall?: typeof executeFunctionCall;
   fetchTpSchedule?: typeof fetchTPSchedule;
 }
@@ -408,7 +408,7 @@ export async function runTpGithubDeadlineSubAgent(
         try {
           let responsePayload: unknown;
           if (mcpBinding) {
-            responsePayload = await callMcpTool(mcpBinding, args);
+            responsePayload = await callMcpTool(mcpBinding, args, job.store, job.userId);
             if (isMcpRateLimitedResponse(responsePayload)) {
               blockedToolNames.add(toolLimitKey);
             }
