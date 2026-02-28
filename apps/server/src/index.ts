@@ -744,7 +744,7 @@ function buildAnalyticsCoachSignature(
   const windowStartMs = nowMs - periodDays * 24 * 60 * 60 * 1000;
   const windowStartIso = new Date(windowStartMs).toISOString();
   const windowEndIso = now.toISOString();
-  const cacheKey = `${periodDays}:${toDateKey(now)}`;
+  const cacheKey = `${userId}:${periodDays}:${toDateKey(now)}`;
 
   const deadlines = store
     .getDeadlines(userId, now, false)
@@ -1165,19 +1165,24 @@ app.get("/api/auth/google/callback", async (req, res) => {
   // Check if this is an MCP Google Calendar OAuth callback
   const state = typeof req.query.state === "string" ? req.query.state : null;
   const pendingMcpGoogleOAuth = consumePendingMcpGoogleOAuthState(state);
+  console.log(`[google-cal-oauth] Callback hit: state=${state?.slice(0, 16) ?? "null"} code=${req.query.code ? "present" : "MISSING"} error=${req.query.error ?? "none"} pendingMatch=${!!pendingMcpGoogleOAuth}`);
   if (pendingMcpGoogleOAuth) {
     try {
       const code = req.query.code as string;
       if (!code) {
+        console.log(`[google-cal-oauth] FAIL: Missing OAuth code in callback`);
         return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", "Missing OAuth code"));
       }
 
       const template = getMcpServerTemplateById(pendingMcpGoogleOAuth.templateId);
       if (!template) {
+        console.log(`[google-cal-oauth] FAIL: Template ${pendingMcpGoogleOAuth.templateId} not found`);
         return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", "MCP template no longer exists"));
       }
 
+      console.log(`[google-cal-oauth] Exchanging code for user=${pendingMcpGoogleOAuth.userId} template=${template.id}...`);
       const exchange = await exchangeGoogleCalendarCode(code);
+      console.log(`[google-cal-oauth] Token exchange OK: accessToken=${exchange.accessToken ? "present" : "MISSING"} refreshToken=${exchange.refreshToken ? "present" : "MISSING"} expiresAt=${exchange.expiresAt}`);
 
       // Store as JSON token blob so mcp.ts can detect and refresh it
       const tokenBlob = JSON.stringify({
@@ -1187,16 +1192,22 @@ app.get("/api/auth/google/callback", async (req, res) => {
         expiresAt: exchange.expiresAt
       });
 
+      console.log(`[google-cal-oauth] Validating MCP server connection (listTools) for ${template.label}...`);
       const { server } = await upsertMcpTemplateServerWithToken(
         pendingMcpGoogleOAuth.userId,
         template.id,
         tokenBlob
       );
-      void server; // used for side-effect
-      return res.redirect(getIntegrationFrontendRedirect("mcp", "connected", `${template.label} connected`));
+      console.log(`[google-cal-oauth] SUCCESS: Server ${server.id} stored. Redirecting to frontend with connected status.`);
+      const redirectTarget = getIntegrationFrontendRedirect("mcp", "connected", `${template.label} connected`);
+      console.log(`[google-cal-oauth] Redirect: ${redirectTarget}`);
+      return res.redirect(redirectTarget);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Google Calendar OAuth failed";
-      return res.redirect(getIntegrationFrontendRedirect("mcp", "failed", message));
+      console.error(`[google-cal-oauth] ERROR in callback:`, error);
+      const redirectTarget = getIntegrationFrontendRedirect("mcp", "failed", message);
+      console.log(`[google-cal-oauth] Error redirect: ${redirectTarget}`);
+      return res.redirect(redirectTarget);
     }
   }
 
@@ -1501,6 +1512,8 @@ app.post("/api/mcp/templates/:templateId/connect", async (req, res) => {
     const state = `mcp_gcal_${Math.random().toString(36).slice(2)}`;
     registerPendingMcpGoogleOAuthState(state, authReq.authUser.id, template.id);
     const redirectUrl = getGoogleCalendarOAuthUrl(state);
+    console.log(`[google-cal-oauth] Generated OAuth redirect for user=${authReq.authUser.id} template=${template.id} state=${state.slice(0, 12)}...`);
+    console.log(`[google-cal-oauth] Redirect URL: ${redirectUrl.slice(0, 120)}...`);
     return res.json({ redirectUrl });
   }
 
@@ -2153,9 +2166,10 @@ app.get("/api/growth/daily-summary", async (req, res) => {
   const dateKey = toDateKey(referenceDate);
   const nowMs = Date.now();
 
-  // Check cache
+  // Check cache (user-scoped key)
+  const dailyCacheKey = `${userId}:${dateKey}`;
   if (!forceRefresh) {
-    const cached = dailySummaryCache.get(dateKey);
+    const cached = dailySummaryCache.get(dailyCacheKey);
     if (cached && isCacheEntryFresh(cached.generatedAt, DAILY_SUMMARY_MIN_REFRESH_MS, nowMs)) {
       return res.json({ summary: cached });
     }
@@ -2348,7 +2362,7 @@ Journal (${reflections.length}): ${reflectionLines || "none"}`;
   };
 
   // Cache result (without visual) and return text immediately
-  dailySummaryCache.set(dateKey, result);
+  dailySummaryCache.set(dailyCacheKey, result);
   if (dailySummaryCache.size > 10) {
     const oldestKey = dailySummaryCache.keys().next().value;
     if (oldestKey) dailySummaryCache.delete(oldestKey);
@@ -2363,7 +2377,7 @@ Journal (${reflections.length}): ${reflectionLines || "none"}`;
         if (visual) {
           result.visual = visual;
           // Update the cache entry with the visual
-          dailySummaryCache.set(dateKey, result);
+          dailySummaryCache.set(dailyCacheKey, result);
           // Also store in the visual poll cache
           growthVisualCache.set(`daily:${userId}:${dateKey}`, { visual, generatedAt: Date.now() });
         }

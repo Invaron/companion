@@ -712,5 +712,12 @@ export async function validateMcpServerConnection(input: McpServerInput): Promis
     toolAllowlist: normalizeToolAllowlist(input.toolAllowlist)
   };
 
-  await listRemoteTools("validate", server);
+  console.log(`[mcp-validate] Validating connection to ${serverUrl} label=${server.label} hasToken=${!!server.token}`);
+  try {
+    const tools = await listRemoteTools("validate", server);
+    console.log(`[mcp-validate] Connection OK: ${tools.length} tools found`);
+  } catch (err) {
+    console.error(`[mcp-validate] Connection FAILED for ${serverUrl}:`, err);
+    throw err;
+  }
 }

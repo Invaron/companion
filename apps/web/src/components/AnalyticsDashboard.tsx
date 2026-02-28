@@ -91,6 +91,26 @@ export function AnalyticsDashboard(): JSX.Element {
     }, 3000);
   }, []);
 
+  // When deferred visual arrives via poll, persist it back to IndexedDB cache
+  useEffect(() => {
+    if (!deferredVisual) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const cacheKey = `growth-${periodDays}d-${today}`;
+    // Read existing cache entry and update with the visual
+    void (async () => {
+      if (periodDays === 1 && dailySummary) {
+        const updated = { ...dailySummary, visual: deferredVisual };
+        setDailySummary(updated);
+        void putVisualCache(cacheKey, updated);
+      } else if (periodDays !== 1 && insight) {
+        const updated = { ...insight, visual: deferredVisual };
+        setInsight(updated);
+        void putVisualCache(cacheKey, updated);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deferredVisual]);
+
   // Clean up poll on unmount
   useEffect(() => () => { if (visualPollRef.current) clearInterval(visualPollRef.current); }, []);
 

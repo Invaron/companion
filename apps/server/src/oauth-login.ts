@@ -120,6 +120,7 @@ export interface GoogleCalendarTokenExchange {
 
 export async function exchangeGoogleCalendarCode(code: string): Promise<GoogleCalendarTokenExchange> {
   const redirectUri = getGoogleRedirectUri();
+  console.log(`[google-cal-oauth] Exchanging code: redirectUri=${redirectUri} clientId=${config.GOOGLE_OAUTH_CLIENT_ID?.slice(0, 20)}...`);
 
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -135,6 +136,7 @@ export async function exchangeGoogleCalendarCode(code: string): Promise<GoogleCa
 
   if (!tokenResponse.ok) {
     const body = await tokenResponse.text();
+    console.error(`[google-cal-oauth] Token exchange HTTP error: ${tokenResponse.status} body=${body.slice(0, 500)}`);
     throw new Error(`Google Calendar token exchange failed: ${tokenResponse.status} ${body}`);
   }
 
@@ -147,12 +149,15 @@ export async function exchangeGoogleCalendarCode(code: string): Promise<GoogleCa
   };
 
   if (tokens.error || !tokens.access_token) {
+    console.error(`[google-cal-oauth] Token exchange response error: ${tokens.error_description ?? tokens.error ?? "no access_token"}`);
     throw new Error(`Google Calendar OAuth error: ${tokens.error_description ?? tokens.error ?? "no access_token"}`);
   }
 
   const expiresIn = typeof tokens.expires_in === "number" && Number.isFinite(tokens.expires_in)
     ? Math.max(60, tokens.expires_in)
     : 3600;
+
+  console.log(`[google-cal-oauth] Token exchange success: expiresIn=${expiresIn}s refreshToken=${tokens.refresh_token ? "present" : "MISSING"}`);
 
   return {
     accessToken: tokens.access_token,
