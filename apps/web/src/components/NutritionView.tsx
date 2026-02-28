@@ -1365,6 +1365,11 @@ export function NutritionView({ onNavigateToChat }: { onNavigateToChat?: () => v
     });
   };
 
+  const openManualFoodLogging = (): void => {
+    setActiveTab("settings");
+    setShowLogMealPanel(true);
+  };
+
   const handleDeleteCustomFood = async (foodId: string): Promise<void> => {
     const deleted = await deleteNutritionCustomFood(foodId);
     if (!deleted) {
@@ -1468,20 +1473,20 @@ export function NutritionView({ onNavigateToChat }: { onNavigateToChat?: () => v
                   alt="Log your first meal"
                   width="120"
                   height="120"
-                  onClick={onNavigateToChat}
-                  style={onNavigateToChat ? { cursor: "pointer" } : undefined}
-                  role={onNavigateToChat ? "button" : undefined}
-                  tabIndex={onNavigateToChat ? 0 : undefined}
-                  onKeyDown={onNavigateToChat ? (e) => { if (e.key === "Enter" || e.key === " ") onNavigateToChat(); } : undefined}
+                  onClick={openManualFoodLogging}
+                  style={{ cursor: "pointer" }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openManualFoodLogging(); }}
                 />
                 <p className="nutrition-empty-title">No meals logged yet</p>
-                <p className="nutrition-empty-hint">Try saying:</p>
+                <p className="nutrition-empty-hint">Get started:</p>
                 <div className="nutrition-empty-suggestions">
-                  <span className="nutrition-suggestion-pill" onClick={onNavigateToChat} role="button" tabIndex={0}>"Log my lunch"</span>
-                  <span className="nutrition-suggestion-pill" onClick={onNavigateToChat} role="button" tabIndex={0}>"I had 2 eggs and toast"</span>
-                  <span className="nutrition-suggestion-pill" onClick={onNavigateToChat} role="button" tabIndex={0}>"Add a coffee with milk"</span>
+                  <span className="nutrition-suggestion-pill" onClick={openManualFoodLogging} role="button" tabIndex={0}>Log a meal manually</span>
+                  <span className="nutrition-suggestion-pill" onClick={onNavigateToChat} role="button" tabIndex={0}>Snap a photo of your food</span>
+                  <span className="nutrition-suggestion-pill" onClick={openManualFoodLogging} role="button" tabIndex={0}>Create a custom food item</span>
                 </div>
-                <p className="nutrition-empty-hint">Tap the food icon above to open Chat</p>
+                <p className="nutrition-empty-hint">Tap the icon to start logging</p>
               </div>
             ) : (
               <div className="nutrition-list">
