@@ -1309,6 +1309,7 @@ function buildFunctionCallingSystemInstruction(
     `- For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.`,
     `- If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.`,
     ...(hasGitHubMcp ? [
+      `- When the user mentions a GitHub repository by name (e.g. "my dat520 repo"), do NOT guess the owner/repo path. Instead, call search_repositories first to find the correct full name (owner/repo), then use that for subsequent calls like get_file_contents or list_branches.`,
       `- For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.`,
       `- Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.`,
     ] : []),
