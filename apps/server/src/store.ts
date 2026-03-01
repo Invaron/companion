@@ -936,22 +936,64 @@ export class RuntimeStore {
       this.db.prepare("ALTER TABLE nutrition_target_profiles ADD COLUMN fatGramsPerLb REAL").run();
     }
 
-    const withingsColumns = this.db.prepare("PRAGMA table_info(withings_data)").all() as Array<{ name: string }>;
-    const hasWeightJsonColumn = withingsColumns.some((col) => col.name === "weightJson");
-    if (!hasWeightJsonColumn) {
-      this.db.prepare("ALTER TABLE withings_data ADD COLUMN weightJson TEXT NOT NULL DEFAULT '[]'").run();
-    }
-    const hasSleepJsonColumn = withingsColumns.some((col) => col.name === "sleepJson");
-    if (!hasSleepJsonColumn) {
-      this.db.prepare("ALTER TABLE withings_data ADD COLUMN sleepJson TEXT NOT NULL DEFAULT '[]'").run();
-    }
-    const hasWithingsLastSyncedAtColumn = withingsColumns.some((col) => col.name === "lastSyncedAt");
-    if (!hasWithingsLastSyncedAtColumn) {
-      this.db.prepare("ALTER TABLE withings_data ADD COLUMN lastSyncedAt TEXT").run();
-    }
-    const hasTokenSourceColumn = withingsColumns.some((col) => col.name === "tokenSource");
-    if (!hasTokenSourceColumn) {
-      this.db.prepare("ALTER TABLE withings_data ADD COLUMN tokenSource TEXT").run();
+    // Withings: ensure the table has userId as PRIMARY KEY (required for ON CONFLICT upsert).
+    // Old schemas may have created withings_data without a PRIMARY KEY. The only fix in SQLite
+    // is to recreate the table — ALTER TABLE cannot add a PRIMARY KEY after creation.
+    const withingsColumns = this.db.prepare("PRAGMA table_info(withings_data)").all() as Array<{ name: string; pk: number }>;
+    const userIdCol = withingsColumns.find((col) => col.name === "userId");
+    if (userIdCol && !userIdCol.pk) {
+      // userId exists but is NOT the primary key — recreate the table preserving data
+      console.log("[migration] withings_data: userId is not PRIMARY KEY — recreating table");
+      const hasTokenSource = withingsColumns.some((col) => col.name === "tokenSource");
+      const hasLastSyncedAt = withingsColumns.some((col) => col.name === "lastSyncedAt");
+      const hasWeightJson = withingsColumns.some((col) => col.name === "weightJson");
+      const hasSleepJson = withingsColumns.some((col) => col.name === "sleepJson");
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS withings_data_new (
+          userId TEXT PRIMARY KEY,
+          withingsUserId TEXT,
+          refreshToken TEXT,
+          accessToken TEXT,
+          tokenExpiresAt TEXT,
+          scope TEXT,
+          connectedAt TEXT,
+          tokenSource TEXT,
+          weightJson TEXT NOT NULL DEFAULT '[]',
+          sleepJson TEXT NOT NULL DEFAULT '[]',
+          lastSyncedAt TEXT
+        );
+        INSERT OR REPLACE INTO withings_data_new (
+          userId, withingsUserId, refreshToken, accessToken, tokenExpiresAt, scope, connectedAt,
+          tokenSource, weightJson, sleepJson, lastSyncedAt
+        )
+        SELECT
+          userId, withingsUserId, refreshToken, accessToken, tokenExpiresAt, scope, connectedAt,
+          ${hasTokenSource ? "tokenSource" : "NULL"},
+          ${hasWeightJson ? "weightJson" : "'[]'"},
+          ${hasSleepJson ? "sleepJson" : "'[]'"},
+          ${hasLastSyncedAt ? "lastSyncedAt" : "NULL"}
+        FROM withings_data;
+        DROP TABLE withings_data;
+        ALTER TABLE withings_data_new RENAME TO withings_data;
+      `);
+    } else {
+      // Table has correct PRIMARY KEY — just add missing columns
+      const hasWeightJsonColumn = withingsColumns.some((col) => col.name === "weightJson");
+      if (!hasWeightJsonColumn) {
+        this.db.prepare("ALTER TABLE withings_data ADD COLUMN weightJson TEXT NOT NULL DEFAULT '[]'").run();
+      }
+      const hasSleepJsonColumn = withingsColumns.some((col) => col.name === "sleepJson");
+      if (!hasSleepJsonColumn) {
+        this.db.prepare("ALTER TABLE withings_data ADD COLUMN sleepJson TEXT NOT NULL DEFAULT '[]'").run();
+      }
+      const hasWithingsLastSyncedAtColumn = withingsColumns.some((col) => col.name === "lastSyncedAt");
+      if (!hasWithingsLastSyncedAtColumn) {
+        this.db.prepare("ALTER TABLE withings_data ADD COLUMN lastSyncedAt TEXT").run();
+      }
+      const hasTokenSourceColumn = withingsColumns.some((col) => col.name === "tokenSource");
+      if (!hasTokenSourceColumn) {
+        this.db.prepare("ALTER TABLE withings_data ADD COLUMN tokenSource TEXT").run();
+      }
     }
 
     const studyPlanColumns = this.db.prepare("PRAGMA table_info(study_plan_sessions)").all() as Array<{ name: string }>;
