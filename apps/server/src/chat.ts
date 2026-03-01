@@ -1822,6 +1822,118 @@ function buildToolRateLimitFallbackReply(
   );
 }
 
+function buildSmartFallbackReply(
+  functionResponses: ExecutedFunctionResponse[],
+  pendingActions: ChatPendingAction[]
+): string {
+  if (pendingActions.length > 0) {
+    return buildPendingActionFallbackReply(pendingActions);
+  }
+
+  // Classify responses as successes or errors
+  const successes: { name: string; summary: string }[] = [];
+  const errors: { name: string; toolLabel: string; errorMsg: string }[] = [];
+
+  for (const resp of functionResponses) {
+    const raw = resp.rawResponse as Record<string, unknown> | undefined;
+    const isMcpError = resp.name.startsWith("mcp_") && isMcpErrorResponse(raw);
+    const isLocalError = typeof raw?.error === "string";
+    const isSkipped = typeof raw?.error === "string" && /skipped|disabled|blocked/i.test(raw.error as string);
+
+    if (isMcpError || isLocalError) {
+      // Extract a human-readable tool label
+      const mcpPayload = asRecord(raw);
+      const serverLabel = asNonEmptyString(mcpPayload?.serverLabel) ?? "";
+      const toolName = asNonEmptyString(mcpPayload?.tool)
+        ?? asNonEmptyString((asRecord(mcpPayload?.result) as Record<string, unknown> | undefined)?.tool as string)
+        ?? resp.name.replace(/^mcp_[a-z0-9_]+__/, "");
+      const label = serverLabel ? `${serverLabel} ${toolName}` : toolName;
+
+      // Extract the error message
+      let errorMsg = "";
+      if (isMcpError) {
+        const result = asRecord(mcpPayload?.result);
+        const resultText = asNonEmptyString(result?.text);
+        if (resultText) {
+          // Try to extract just the Notion error message from JSON
+          try {
+            const parsed = JSON.parse(resultText) as Record<string, unknown>;
+            const body = typeof parsed.body === "string" ? JSON.parse(parsed.body) as Record<string, unknown> : parsed;
+            errorMsg = asNonEmptyString(body?.message) ?? textSnippet(resultText, 120);
+          } catch {
+            errorMsg = textSnippet(resultText, 120);
+          }
+        } else {
+          errorMsg = asNonEmptyString(mcpPayload?.error) ?? "Unknown error";
+        }
+      } else {
+        errorMsg = textSnippet(raw?.error as string, 120);
+      }
+
+      if (!isSkipped) {
+        errors.push({ name: resp.name, toolLabel: label, errorMsg });
+      }
+    } else {
+      const section = resp.name.startsWith("mcp_")
+        ? buildMcpToolFallbackSection(resp.rawResponse)
+        : buildGenericToolFallbackSection(resp.name, resp.rawResponse);
+      if (section) {
+        successes.push({ name: resp.name, summary: section });
+      }
+    }
+  }
+
+  // If no errors, use the normal fallback
+  if (errors.length === 0) {
+    return buildToolDataFallbackReply(functionResponses, pendingActions, "Here's what I found:");
+  }
+
+  // If we have both successes and errors, show both
+  const lines: string[] = [];
+
+  if (successes.length > 0) {
+    lines.push("Here's what I was able to do:");
+    lines.push("");
+    const seenSummaries = new Set<string>();
+    for (const s of successes) {
+      if (!seenSummaries.has(s.summary)) {
+        seenSummaries.add(s.summary);
+        lines.push(s.summary);
+      }
+    }
+    lines.push("");
+  }
+
+  // Deduplicate errors by tool label (e.g. 5 failed notion-update-page calls → 1 line)
+  const errorsByTool = new Map<string, { count: number; lastMsg: string }>();
+  for (const err of errors) {
+    const existing = errorsByTool.get(err.toolLabel);
+    if (existing) {
+      existing.count += 1;
+      existing.lastMsg = err.errorMsg;
+    } else {
+      errorsByTool.set(err.toolLabel, { count: 1, lastMsg: err.errorMsg });
+    }
+  }
+
+  if (successes.length > 0) {
+    lines.push("However, some actions didn't work:");
+  } else {
+    lines.push("I ran into trouble completing your request:");
+  }
+  lines.push("");
+
+  for (const [label, { count, lastMsg }] of errorsByTool) {
+    const attempts = count > 1 ? ` (tried ${count} times)` : "";
+    lines.push(`- **${label}**${attempts}: ${lastMsg}`);
+  }
+
+  lines.push("");
+  lines.push("You could try rephrasing or simplifying the request.");
+
+  return lines.join("\n");
+}
+
 function buildToolDataFallbackReply(
   functionResponses: ExecutedFunctionResponse[],
   pendingActions: ChatPendingAction[],
@@ -3965,11 +4077,7 @@ export async function sendChatMessage(
   const rawReply = response && response.text.trim().length > 0
     ? response.text
     : executedFunctionResponses.length > 0
-      ? buildToolDataFallbackReply(
-          executedFunctionResponses,
-          pendingActionsFromTooling,
-          "Here's what I found:"
-        )
+      ? buildSmartFallbackReply(executedFunctionResponses, pendingActionsFromTooling)
       : pendingActionsFromTooling.length > 0
         ? buildPendingActionFallbackReply(pendingActionsFromTooling)
         : "Sorry, I wasn't able to generate a response. Could you try rephrasing your request?";
