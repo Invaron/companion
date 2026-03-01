@@ -101,6 +101,7 @@ import {
 import { nowIso } from "./utils.js";
 import {
   clearMcpServers,
+  getMcpServers,
   getMcpServersPublic,
   removeMcpServer,
   upsertMcpServer,
@@ -1468,15 +1469,33 @@ async function upsertMcpTemplateServerWithToken(
     throw new Error("MCP template not found");
   }
 
-  const mcpInput = {
+  const mcpInput: Parameters<typeof upsertMcpServer>[2] = {
     label: template.label,
     serverUrl: template.serverUrl,
     token: token.trim(),
     toolAllowlist: template.suggestedToolAllowlist
   };
 
+  // For OAuth flows (skipValidation), allow multiple connections to the same
+  // template (e.g. Notion workspaces). Generate a unique ID so each connect
+  // creates a new server entry instead of overwriting the existing one.
   if (opts?.skipValidation) {
     console.log(`[mcp] Skipping validation for ${template.label} (OAuth flow — will validate on first tool call)`);
+    const existing = getMcpServers(store, userId).filter(
+      (s) => s.serverUrl === template.serverUrl
+    );
+    if (existing.length > 0) {
+      // Find the next free counter to avoid ID collisions after disconnects
+      let suffix = existing.length + 1;
+      const existingIds = new Set(existing.map((s) => s.id));
+      while (existingIds.has(`${template.id}-${suffix}`)) {
+        suffix++;
+      }
+      const baseLabel = template.label;
+      mcpInput.label = `${baseLabel} ${suffix}`;
+      mcpInput.id = `${template.id}-${suffix}`;
+      console.log(`[mcp] Multiple connections for ${template.label}: creating entry #${suffix} (id=${mcpInput.id})`);
+    }
   } else {
     await validateMcpServerConnection(mcpInput);
   }

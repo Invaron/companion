@@ -863,10 +863,11 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                           {mcpTemplates.map((template) => {
                             const selected = selectedMcpTemplateId === template.id;
                             const templateIcon = getMcpTemplateIcon(template);
-                            const matchingServer = mcpServers.find(
-                              (server) => server.serverUrl === template.serverUrl || server.label === template.label
+                            const matchingServers = mcpServers.filter(
+                              (server) => server.serverUrl === template.serverUrl || server.label.startsWith(template.label)
                             );
-                            const templateConnected = !!matchingServer;
+                            const templateConnected = matchingServers.length > 0;
+                            const isOAuth = template.authType === "oauth" && template.oauthEnabled !== false;
                             return (
                               <div
                                 key={template.id}
@@ -884,7 +885,11 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                     <span className="connector-mcp-template-provider">{template.provider}</span>
                                   </span>
                                   {templateConnected ? (
-                                    <span className="connector-badge connector-badge-connected">{t("Connected")}</span>
+                                    <span className="connector-badge connector-badge-connected">
+                                      {matchingServers.length > 1
+                                        ? `${matchingServers.length} ${t("Connected")}`
+                                        : t("Connected")}
+                                    </span>
                                   ) : template.verified ? (
                                     <span className="connector-badge connector-badge-connected">{t("Verified")}</span>
                                   ) : null}
@@ -900,23 +905,31 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                   </ul>
                                 </details>
                                 <div className="connector-mcp-template-actions">
-                                  {templateConnected ? (
+                                  {templateConnected && matchingServers.map((server) => (
                                     <button
                                       type="button"
                                       className="connector-disconnect-btn"
-                                      onClick={() => void handleDeleteMcpServer(matchingServer!.id)}
+                                      key={server.id}
+                                      onClick={() => void handleDeleteMcpServer(server.id)}
                                       disabled={busy}
                                     >
-                                      {busy ? t("Disconnecting...") : t("Disconnect")}
+                                      {busy
+                                        ? t("Disconnecting...")
+                                        : matchingServers.length > 1
+                                          ? `${t("Disconnect")} ${server.label}`
+                                          : t("Disconnect")}
                                     </button>
-                                  ) : (
+                                  ))}
+                                  {(!templateConnected || isOAuth) && (
                                     <button
                                       type="button"
                                       className="connector-sync-btn"
                                       onClick={() => handleMcpTemplatePrimaryAction(template)}
                                       disabled={busy}
                                     >
-                                      {t("Connect")}
+                                      {templateConnected
+                                        ? t("Connect another workspace")
+                                        : t("Connect")}
                                     </button>
                                   )}
                                 </div>
