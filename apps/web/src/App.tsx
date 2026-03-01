@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import { createPortal } from "react-dom";
 import { ChatFab } from "./components/ChatFab";
 import { ChatTab } from "./components/ChatTab";
+import { ChatProvider } from "./components/ChatProvider";
 import { ConsentGate } from "./components/ConsentGate";
 import { LoginView } from "./components/LoginView";
 import { OnboardingFlow } from "./components/OnboardingFlow";
@@ -931,7 +932,7 @@ export default function App(): JSX.Element {
     ? createPortal(
         <>
           <div className={`chat-overlay-panel chat-overlay-panel-docked ${isOverlayDocked ? "" : "chat-overlay-panel-hidden"}`} onFocus={handleOverlayPanelFocus}>
-            <ChatTab mood={chatMood} onMoodChange={handleMoodChange} onDataMutated={handleDataMutated} />
+            <ChatTab mood={chatMood} />
           </div>
           {isOverlayDocked && (
             <button
@@ -959,12 +960,12 @@ export default function App(): JSX.Element {
       {error && <p className="error">{error}</p>}
 
       {data && (
-        <>
+        <ChatProvider onMoodChange={handleMoodChange} onDataMutated={handleDataMutated}>
           {/* Tab content area */}
           <div className="tab-content-area">
             {/* Chat panel — always mounted to preserve messages across tab switches */}
             <div className={`tab-panel ${isChatTab ? "tab-panel-active" : "tab-panel-hidden"}`}>
-              <ChatTab mood={chatMood} onMoodChange={handleMoodChange} onDataMutated={handleDataMutated} />
+              <ChatTab mood={chatMood} />
             </div>
             {activeTab === "schedule" && (
               <div key="schedule" className="tab-panel tab-panel-active">
@@ -1047,7 +1048,7 @@ export default function App(): JSX.Element {
                 </svg>
               </button>
             </div>
-            <ChatTab mood={chatMood} onMoodChange={handleMoodChange} onDataMutated={handleDataMutated} />
+            <ChatTab mood={chatMood} />
           </div>
           )}
 
@@ -1059,7 +1060,7 @@ export default function App(): JSX.Element {
 
           {/* Bottom tab bar */}
           <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
-        </>
+        </ChatProvider>
       )}
 
       {/* Upgrade modal */}

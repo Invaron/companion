@@ -1,10 +1,10 @@
 import { Fragment, ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { sendChatMessageStream, getChatHistory } from "../lib/api";
-import { ChatCitation, ChatImageAttachment, ChatMessage, ChatMood, ChatPendingAction } from "../types";
+import { ChatCitation, ChatImageAttachment, ChatMood, ChatPendingAction } from "../types";
 import {
   IconCalendar, IconTarget, IconStrength, IconStar, IconUtensils, IconMail,
   IconScale, IconMoon, IconFolder, IconSearch, IconPaperclip, IconWave
 } from "./Icons";
+import { useChat } from "./ChatProvider";
 
 const MOOD_PARTICLES: Record<Exclude<ChatMood, "neutral">, { emojis: string[]; count: number }> = {
   encouraging: { emojis: ["💪", "⭐", "🔥", "✨", "🚀"], count: 14 },
@@ -423,23 +423,18 @@ function renderMessageAttachments(attachments: ChatImageAttachment[]): ReactNode
 
 interface ChatViewProps {
   mood: ChatMood;
-  onMoodChange: (mood: ChatMood) => void;
-  onDataMutated?: (tools: string[]) => void;
 }
 
-export function ChatView({ mood, onMoodChange, onDataMutated }: ChatViewProps): JSX.Element {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function ChatView({ mood }: ChatViewProps): JSX.Element {
+  const chat = useChat();
+  const { messages, isSending, error, hasMore, loadingMore, historyLoaded, setError } = chat;
+
+  /* ── Local UI state (per-instance) ───────────────────────────────── */
   const [inputText, setInputText] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<ChatImageAttachment[]>([]);
-  const [isSending, setIsSending] = useState(false);
   const [sendFlying, setSendFlying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [expandedCitationMessageIds, setExpandedCitationMessageIds] = useState<Set<string>>(new Set());
   const [isListening, setIsListening] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
-  const nextPageRef = useRef(2);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -447,11 +442,7 @@ export function ChatView({ mood, onMoodChange, onDataMutated }: ChatViewProps): 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
-  const pendingInitialScrollRef = useRef(false);
-  const streamContentRef = useRef("");
-  const streamRafRef = useRef<number | null>(null);
-  const streamPlaceholderIdRef = useRef<string | null>(null);
-  const streamBubbleRef = useRef<HTMLSpanElement | null>(null);
+  const prevMessageCountRef = useRef(0);
 
   const recognitionCtor = getSpeechRecognitionCtor();
   const speechRecognitionSupported = Boolean(recognitionCtor);
@@ -498,78 +489,43 @@ export function ChatView({ mood, onMoodChange, onDataMutated }: ChatViewProps): 
   };
 
   const loadOlderMessages = async (): Promise<void> => {
-    if (loadingMore || !hasMore) return;
-    setLoadingMore(true);
-    try {
-      const container = messagesContainerRef.current;
-      const prevScrollHeight = container?.scrollHeight ?? 0;
-
-      const response = await getChatHistory(nextPageRef.current, 50);
-      const olderMessages = response.history.messages;
-      if (olderMessages.length > 0) {
-        setMessages((prev) => [...olderMessages, ...prev]);
-        nextPageRef.current += 1;
-        // Preserve scroll position after prepending
-        requestAnimationFrame(() => {
-          if (container) {
-            container.scrollTop = container.scrollHeight - prevScrollHeight;
-          }
-        });
+    const container = messagesContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight ?? 0;
+    await chat.loadOlderMessages();
+    // Preserve scroll position after prepending older messages
+    requestAnimationFrame(() => {
+      if (container) {
+        container.scrollTop = container.scrollHeight - prevScrollHeight;
       }
-      setHasMore(response.history.hasMore);
-    } catch (err) {
-      console.error("Failed to load older messages", err);
-    } finally {
-      setLoadingMore(false);
-    }
+    });
   };
 
-  // Load chat history on mount
+  // Scroll to bottom when history first loads
   useEffect(() => {
-    const loadHistory = async (): Promise<void> => {
-      try {
-        const response = await getChatHistory(1, 25);
-        const msgs = response.history.messages;
-        setHasMore(response.history.hasMore);
-        nextPageRef.current = 2;
-        if (msgs.length > 0) {
-          pendingInitialScrollRef.current = true;
-          setMessages(msgs);
-          // Restore mood from most recent assistant message
-          const lastAssistant = [...msgs].reverse().find((m) => m.role === "assistant");
-          if (lastAssistant?.metadata?.mood) {
-            onMoodChange(lastAssistant.metadata.mood);
-          }
-        } else {
-          // No messages — show welcome screen immediately
-          setHistoryLoaded(true);
-        }
-      } catch (err) {
-        setError("Failed to load chat history");
-        console.error(err);
-        setHistoryLoaded(true);
-      }
-    };
-
-    void loadHistory();
-  }, []);
-
-  useEffect(() => {
-    if (!pendingInitialScrollRef.current) {
-      return;
-    }
-
-    pendingInitialScrollRef.current = false;
-    // Scroll to bottom first, then reveal the view on the next frame
-    // so the user never sees the unscrolled layout.
+    if (!historyLoaded || messages.length === 0) return;
     const container = messagesContainerRef.current;
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
-    requestAnimationFrame(() => {
-      setHistoryLoaded(true);
-    });
-  }, [messages.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyLoaded]);
+
+  // Auto-scroll when new messages arrive or streaming content updates
+  useEffect(() => {
+    const count = messages.length;
+    const last = messages[count - 1];
+
+    // New message added (user or assistant placeholder)
+    if (count > prevMessageCountRef.current) {
+      scheduleScrollToBottom("auto");
+    }
+    // Streaming content update
+    if (last?.streaming && last.content.length > 0) {
+      scheduleScrollToBottom("auto");
+    }
+
+    prevMessageCountRef.current = count;
+  }, [messages]);
 
   useEffect(() => {
     return () => {
@@ -732,139 +688,6 @@ export function ChatView({ mood, onMoodChange, onDataMutated }: ChatViewProps): 
     startListening();
   };
 
-  const dispatchMessage = async (
-    messageText: string,
-    attachmentsToSend: ChatImageAttachment[] = []
-  ): Promise<void> => {
-    const trimmedText = messageText.trim();
-    if ((trimmedText.length === 0 && attachmentsToSend.length === 0) || isSending) {
-      return;
-    }
-
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: trimmedText,
-      timestamp: new Date().toISOString(),
-      ...(attachmentsToSend.length > 0
-        ? {
-            metadata: {
-              attachments: attachmentsToSend
-            }
-          }
-        : {})
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsSending(true);
-    setError(null);
-
-    const assistantPlaceholder: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "assistant",
-      content: "",
-      timestamp: new Date().toISOString(),
-      streaming: true
-    };
-    setMessages((prev) => [...prev, assistantPlaceholder]);
-
-    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
-
-    if (isMobile) {
-      // Blur FIRST so keyboard starts closing before we scroll
-      inputRef.current?.blur();
-
-      // Use ResizeObserver to continuously pin to bottom as keyboard animates closed
-      const container = messagesContainerRef.current;
-      if (container && typeof ResizeObserver !== "undefined") {
-        const ro = new ResizeObserver(() => {
-          // Scroll on EVERY resize frame — keeps pinned as keyboard shrinks
-          scrollToBottom("auto");
-        });
-        ro.observe(container);
-        // Also do an immediate scroll for the new messages
-        scheduleScrollToBottom("auto");
-        // Disconnect after keyboard animation completes (~400ms)
-        setTimeout(() => { ro.disconnect(); }, 600);
-      } else {
-        scheduleScrollToBottom("auto");
-        setTimeout(() => scrollToBottom("auto"), 300);
-      }
-    } else {
-      scheduleScrollToBottom("auto");
-    }
-
-    try {
-      streamContentRef.current = "";
-      streamPlaceholderIdRef.current = assistantPlaceholder.id;
-      streamBubbleRef.current = null;
-
-      const response = await sendChatMessageStream(
-        trimmedText,
-        {
-          onToken: (delta: string) => {
-            if (delta.length === 0) {
-              return;
-            }
-            streamContentRef.current += delta;
-            // Use rAF for native-framerate updates (120Hz on ProMotion, 60Hz otherwise)
-            if (streamRafRef.current === null) {
-              streamRafRef.current = requestAnimationFrame(() => {
-                streamRafRef.current = null;
-                const bubble = streamBubbleRef.current;
-                if (bubble) {
-                  // Direct DOM update — bypasses React reconciliation entirely
-                  bubble.textContent = streamContentRef.current;
-                } else {
-                  // First tokens: one React render to switch from typing dots to text
-                  const content = streamContentRef.current;
-                  const placeholderId = streamPlaceholderIdRef.current;
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === placeholderId
-                        ? { ...msg, content, streaming: true }
-                        : msg
-                    )
-                  );
-                }
-                scheduleScrollToBottom("auto");
-              });
-            }
-          }
-        },
-        attachmentsToSend
-      );
-      // Cancel any pending rAF before final commit
-      if (streamRafRef.current !== null) {
-        cancelAnimationFrame(streamRafRef.current);
-        streamRafRef.current = null;
-      }
-      streamBubbleRef.current = null;
-      if (response.message.metadata?.mood) {
-        onMoodChange(response.message.metadata.mood);
-      }
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantPlaceholder.id ? { ...response.message, streaming: false } : msg
-        )
-      );
-      if (response.executedTools?.length) {
-        onDataMutated?.(response.executedTools);
-      } else {
-        // Fire with empty array so plan usage counter refreshes even without tool calls
-        onDataMutated?.([]);
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error && err.message.trim().length > 0 ? err.message : "Failed to send message. Please try again.";
-      setError(errorMessage);
-      console.error(err);
-      setMessages((prev) => prev.filter((msg) => msg.id !== assistantPlaceholder.id));
-    } finally {
-      setIsSending(false);
-    }
-  };
-
   const handleSend = async (): Promise<void> => {
     const trimmedText = inputText.trim();
     const attachmentsToSend = pendingAttachments.slice(0, MAX_ATTACHMENTS);
@@ -874,14 +697,33 @@ export function ChatView({ mood, onMoodChange, onDataMutated }: ChatViewProps): 
     setInputText("");
     if (inputRef.current) inputRef.current.style.height = "auto";
     setPendingAttachments([]);
-    await dispatchMessage(trimmedText, attachmentsToSend);
+
+    // Mobile: blur keyboard and keep scroll pinned during keyboard animation
+    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
+    if (isMobile) {
+      inputRef.current?.blur();
+      const container = messagesContainerRef.current;
+      if (container && typeof ResizeObserver !== "undefined") {
+        const ro = new ResizeObserver(() => { scrollToBottom("auto"); });
+        ro.observe(container);
+        scheduleScrollToBottom("auto");
+        setTimeout(() => { ro.disconnect(); }, 600);
+      } else {
+        scheduleScrollToBottom("auto");
+        setTimeout(() => scrollToBottom("auto"), 300);
+      }
+    } else {
+      scheduleScrollToBottom("auto");
+    }
+
+    await chat.dispatchMessage(trimmedText, attachmentsToSend);
   };
 
   const handlePendingActionCommand = (action: ChatPendingAction, type: "confirm" | "cancel"): void => {
     if (isSending) {
       return;
     }
-    void dispatchMessage(`${type} ${action.id}`);
+    void chat.dispatchMessage(`${type} ${action.id}`);
   };
 
   const handleComposerKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -1076,7 +918,7 @@ export function ChatView({ mood, onMoodChange, onDataMutated }: ChatViewProps): 
                     <span></span>
                   </div>
                 ) : msg.streaming ? (
-                  <span ref={streamBubbleRef} className="chat-stream-text">{msg.content}</span>
+                  <span className="chat-stream-text">{msg.content}</span>
                 ) : msg.role === "assistant" ? (
                   renderAssistantContent(msg.content)
                 ) : msg.content.trim().length > 0 ? (
