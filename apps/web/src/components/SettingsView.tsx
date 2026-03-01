@@ -10,7 +10,7 @@ import { THEME_OPTIONS, DEFAULT_THEME } from "../lib/theme";
 import type { ThemePreference, UserPlanInfo } from "../types";
 import {
   IconGear, IconDiamond, IconSparkles, IconPalette, IconLink, IconGlobe,
-  IconTarget, IconBell, IconShield, IconTrash, IconWarning, IconCircleFilled, IconLock
+  IconBell, IconShield, IconTrash, IconWarning, IconCircleFilled, IconLock
 } from "./Icons";
 
 interface SettingsViewProps {
@@ -247,10 +247,7 @@ export function SettingsView({
         </div>
       </div>
 
-      <div className="settings-section">
-        <h3 className="settings-section-title"><IconTarget size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {t("Data Scope")}</h3>
-        <IntegrationScopeSettings />
-      </div>
+      <IntegrationScopeSettings />
 
       <div className="settings-section">
         <h3 className="settings-section-title"><IconBell size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {t("Notifications")}</h3>

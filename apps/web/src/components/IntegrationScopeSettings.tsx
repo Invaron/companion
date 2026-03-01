@@ -12,9 +12,10 @@ import type { CanvasStatus, IntegrationScopeSettings } from "../types";
 const DEFAULT_PAST_DAYS = 7;
 const DEFAULT_FUTURE_DAYS = 180;
 
-export function IntegrationScopeSettings(): JSX.Element {
+export function IntegrationScopeSettings(): JSX.Element | null {
   const { t } = useI18n();
   const [settings, setSettings] = useState<IntegrationScopeSettings>(loadIntegrationScopeSettings());
+  const [canvasConnected, setCanvasConnected] = useState(false);
   const [canvasStatus, setCanvasStatus] = useState<CanvasStatus>({
     baseUrl: "",
     lastSyncedAt: null,
@@ -28,6 +29,7 @@ export function IntegrationScopeSettings(): JSX.Element {
     const load = async (): Promise<void> => {
       const status = await getCanvasStatus();
       setCanvasStatus(status);
+      setCanvasConnected(!!status.baseUrl);
     };
 
     void load();
@@ -94,9 +96,15 @@ export function IntegrationScopeSettings(): JSX.Element {
     setApplyLoading(false);
   };
 
+  if (!canvasConnected) {
+    return null;
+  }
+
   return (
-    <section className="scope-settings">
-      <p className="scope-settings-desc">{t("Select which Canvas courses to track. TP schedule is managed via the iCal connector above.")}</p>
+    <div className="settings-section">
+      <h3 className="settings-section-title"><IconTarget size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {t("Data Scope")}</h3>
+      <section className="scope-settings">
+        <p className="scope-settings-desc">{t("Select which Canvas courses to track. TP schedule is managed via the iCal connector above.")}</p>
 
       <div className="scope-settings-card">
         <div className="scope-settings-card-header">
@@ -158,5 +166,6 @@ export function IntegrationScopeSettings(): JSX.Element {
       {message && <p className="scope-settings-message">{message}</p>}
       {error && <p className="scope-settings-error">{error}</p>}
     </section>
+    </div>
   );
 }
