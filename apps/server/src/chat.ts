@@ -1393,7 +1393,8 @@ function buildFunctionCallingSystemInstruction(
   sections.push(
     ``,
     `Available MCP external tools:`,
-    mcpToolNudge
+    mcpToolNudge,
+    `Note: Tools listed above (not marked "unavailable") are verified connected. If a tool call returns empty results, the connection is working — it simply means no matching items were found. Do not claim a connection is broken when a tool call succeeds.`
   );
 
   return sections.join("\n");

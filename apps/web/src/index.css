@@ -377,7 +377,10 @@ body.chat-tab-active {
     max(100px, calc(100px + env(safe-area-inset-bottom)))
     max(20px, calc(20px + env(safe-area-inset-left)));
   min-height: var(--app-viewport-height);
-  transition: background 1.2s ease, filter 0.18s ease, transform 0.18s ease;
+  /* Only transition background — including filter/transform here causes WebKit
+     to create a containing block, which makes position:fixed children (tab-bar)
+     resolve relative to .app-shell instead of the viewport. */
+  transition: background 1.2s ease;
 }
 
 .app-shell-chat-active {
@@ -4133,6 +4136,9 @@ body.keyboard-open.chat-overlay-docked .tab-content-area {
 body.ios-touch.keyboard-open.chat-overlay-active .app-shell {
   filter: blur(11px) saturate(86%) brightness(0.72);
   transform: none;
+  /* Scope the filter/transform transition here instead of .app-shell base rule
+     to avoid WebKit creating a permanent containing block on .app-shell */
+  transition: filter 0.18s ease;
 }
 
 body.ios-touch.keyboard-open.chat-overlay-active .app-shell::after {
