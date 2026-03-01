@@ -1,330 +1,168 @@
-2026-03-01T08:03:04.033997720Z [inf]  Starting Container
-2026-03-01T08:03:05.679927742Z [inf]  [orchestrator] delivering immediately: "Påminnelse" (category=user-reminder)
-2026-03-01T08:03:05.679945428Z [inf]  [push] delivering "Påminnelse" to 1 subscription(s)
-2026-03-01T08:03:05.679951501Z [inf]  [orchestrator] delivering immediately: "Påminnelse" (category=user-reminder)
-2026-03-01T08:03:05.679956746Z [inf]  [push] delivering "Påminnelse" to 9 subscription(s)
-2026-03-01T08:03:05.679961561Z [inf]  [orchestrator] delivering immediately: "Påminnelse 08:27" (category=user-reminder)
-2026-03-01T08:03:05.679966528Z [inf]  [migration] Found 4 table(s) missing userId column — dropping for fresh recreate...
-2026-03-01T08:03:05.679970904Z [inf]  [migration] Tables: push_delivery_metrics, push_delivery_failures, integration_sync_attempts, sync_queue
-2026-03-01T08:03:05.679974961Z [inf]  [migration] Dropped 4 tables. initializeSchema() will recreate them.
-2026-03-01T08:03:05.679982241Z [inf]  [auth] Admin email configured (wathne.sveinung@gmail.com) — will be promoted to admin on OAuth login.
-2026-03-01T08:03:05.679986788Z [inf]  [companion] listening on http://localhost:8080
-2026-03-01T08:03:05.679991309Z [inf]  [companion] storage backend=postgres-snapshot sqlite=/app/companion.db restoredSnapshotAt=2026-03-01T07:59:56.372Z
-2026-03-01T08:03:05.679996857Z [inf]  [push] VAPID keys=configured subject=mailto:wathne.sveinung@gmail.com
-2026-03-01T08:03:05.680001346Z [inf]  [push] subscriptions=15
-2026-03-01T08:03:05.680005386Z [inf]  [orchestrator] processing 7 due notification(s)
-2026-03-01T08:03:05.680009541Z [inf]  [orchestrator] delivering immediately: "Påminnelse" (category=user-reminder)
-2026-03-01T08:03:05.680014143Z [inf]  [push] delivering "Påminnelse" to 1 subscription(s)
-2026-03-01T08:03:05.680018708Z [inf]  [orchestrator] delivering immediately: "Påminnelse" (category=user-reminder)
-2026-03-01T08:03:05.680022948Z [inf]  [push] delivering "Påminnelse" to 1 subscription(s)
-2026-03-01T08:03:05.680498768Z [inf]  [push] delivering "Påminnelse 08:27" to 9 subscription(s)
-2026-03-01T08:03:05.680503811Z [inf]  [orchestrator] delivering immediately: "Høy prioritet ⚡" (category=user-reminder)
-2026-03-01T08:03:05.680507931Z [inf]  [push] delivering "Høy prioritet ⚡" to 9 subscription(s)
-2026-03-01T08:03:05.680513945Z [inf]  [orchestrator] delivering immediately: "Påminnelse" (category=user-reminder)
-2026-03-01T08:03:05.680519031Z [inf]  [push] delivering "Påminnelse" to 9 subscription(s)
-2026-03-01T08:03:05.680524389Z [inf]  [orchestrator] started — polling every 30s for due notifications
-2026-03-01T08:03:06.962644035Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:06.962648769Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:06.974781423Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:06.986722891Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:06.992505861Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:06.999841407Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.013033318Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.014410015Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.021815865Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.034326942Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.040145561Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.052276419Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.058140194Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.069567324Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.075752035Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.088114092Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.093891643Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.099465281Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.105239602Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.117726772Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.123767234Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.136715841Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.143275997Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.155368430Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.156732622Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.168248344Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.174684216Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.182996161Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.195511836Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.201184048Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.208132784Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.220661803Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.222378273Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.234663498Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.240575581Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.246899082Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.252745511Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.265452855Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:07.271395702Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T08:03:37.295822943Z [inf]  - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
-2026-03-01T08:03:37.295836410Z [inf]  - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
-2026-03-01T08:03:37.295844481Z [inf]  - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
-2026-03-01T08:03:37.295852221Z [inf]  - Applying a nutrition snapshot sets the default baseline plan for upcoming days.
-2026-03-01T08:03:37.295860833Z [inf]  - Daily meal edits are temporary for that day; a new day resets to the default baseline snapshot automatically.
-2026-03-01T08:03:37.295867931Z [inf]  - Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.
-2026-03-01T08:03:37.295879803Z [inf]  [chat] user message: userId=user-1772048934979-35991 text="Oppdater timeplanen ut fra det bildet jeg sendte"
-2026-03-01T08:03:37.295885228Z [inf]  [gemini] system prompt: userId=user-1772048934979-35991 length=11963 tools=47 messages=25
-2026-03-01T08:03:37.295889588Z [inf]  [gemini] system instruction:
-2026-03-01T08:03:37.295895628Z [inf]  You are Companion, a personal AI assistant for Solveig Wathne.
-2026-03-01T08:03:37.295901112Z [inf]  
-2026-03-01T08:03:37.295906400Z [inf]  Core behavior:
-2026-03-01T08:03:37.295911021Z [inf]  - For factual questions about schedule, deadlines, or connected external systems, use tools before answering.
-2026-03-01T08:03:37.295915421Z [inf]  - Companion has a built-in schedule ("in-app schedule") managed by createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/getSchedule/clearScheduleWindow. This always works — it does not require any external calendar integration.
-2026-03-01T08:03:37.295920088Z [inf]  - For simple greetings/small talk (for example "hi", "hello", "yo"), reply naturally without tool calls.
-2026-03-01T08:03:37.296629764Z [inf]  - When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).
-2026-03-01T08:03:37.296635786Z [inf]  - For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
-2026-03-01T08:03:37.296640323Z [inf]  - For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.
-2026-03-01T08:03:37.296644318Z [inf]  - If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.
-2026-03-01T08:03:37.296648538Z [inf]  - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
-2026-03-01T08:03:37.296652698Z [inf]  - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
-2026-03-01T08:03:37.296656746Z [inf]  - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
-2026-03-01T08:03:37.296661540Z [inf]  - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
-2026-03-01T08:03:37.296665680Z [inf]  - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
-2026-03-01T08:03:37.296670242Z [inf]  - CRITICAL timezone rule for deadlines: All stored dueDate values from getDeadlines are in UTC. The user sees and speaks in LOCAL time (see timezone in runtime context below). When the user says a date/time like "22.02.2026 23:59", that is LOCAL time — convert it to UTC before passing to queueDeadlineAction. For example, 23:59 Europe/Oslo (UTC+1 winter) = 22:59 UTC → newDueDate "2026-02-22T22:59:00.000Z". Similarly, when comparing a stored UTC dueDate against the user's stated local time, apply the timezone offset — a UTC date of 2026-02-22T23:59Z displays as 2026-02-23T00:59 in Europe/Oslo, NOT Feb 22 23:59. Always call queueDeadlineAction if the user's intended local time differs from the current local-time interpretation of the stored UTC dueDate.
-2026-03-01T08:03:37.297730266Z [inf]  - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
-2026-03-01T08:03:37.297735519Z [inf]  - CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
-2026-03-01T08:03:37.297740243Z [inf]  - CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
-2026-03-01T08:03:37.297744340Z [inf]  - IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
-2026-03-01T08:03:37.297749516Z [inf]  - When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
-2026-03-01T08:03:37.297754255Z [inf]  - For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
-2026-03-01T08:03:37.297758289Z [inf]  - IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
-2026-03-01T08:03:37.297762383Z [inf]  - To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
-2026-03-01T08:03:37.299038922Z [inf]  - After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
-2026-03-01T08:03:37.299044750Z [inf]  - When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
-2026-03-01T08:03:37.299049512Z [inf]  - Never claim a write action succeeded unless a tool call in this turn returned success.
-2026-03-01T08:03:37.299059816Z [inf]  - For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
-2026-03-01T08:03:37.299068263Z [inf]  - Treat habits/goals as conversation-managed: you should proactively ask lightweight check-in questions during natural pauses instead of directing users to manual check-in buttons.
-2026-03-01T08:03:37.299073675Z [inf]  - If habits/goals are pending today, include one brief check-in prompt in suitable replies (at most one per reply).
-2026-03-01T08:03:37.299078058Z [inf]  - When the user responds with yes/no/not yet/already done for a habit/goal check-in, call updateHabitCheckIn/updateGoalCheckIn immediately with the inferred item.
-2026-03-01T08:03:37.299082396Z [inf]  - If user intent is clear from context, do not ask for extra confirmation before logging a habit/goal check-in.
-2026-03-01T08:03:37.299086997Z [inf]  - Never tell the user to use the habits/goals tab for check-ins; handle it in chat.
-2026-03-01T08:03:37.299092127Z [inf]  - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
-2026-03-01T08:03:37.299096830Z [inf]  - If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
-2026-03-01T08:03:37.299102392Z [inf]  - For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
-2026-03-01T08:03:37.300215641Z [inf]    - '-' or '*' bullet lists for schedules and checklists
-2026-03-01T08:03:37.300221936Z [inf]    - plain paragraphs separated by blank lines
-2026-03-01T08:03:37.300228128Z [inf]  - Do not use HTML, tables, headings (#), blockquotes, or code fences.
-2026-03-01T08:03:37.300234227Z [inf]  - If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
-2026-03-01T08:03:37.300235145Z [inf]  - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
-2026-03-01T08:03:37.300243356Z [inf]  - Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
-2026-03-01T08:03:37.300243583Z [inf]  - Keep replies practical and conversational, and adapt response length to user intent:
-2026-03-01T08:03:37.300252956Z [inf]    - be brief for quick operational questions
-2026-03-01T08:03:37.300253409Z [inf]  - When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
-2026-03-01T08:03:37.300258924Z [inf]    - be fuller and reflective when the user wants to talk things through
-2026-03-01T08:03:37.300262791Z [inf]  - For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
-2026-03-01T08:03:37.300267177Z [inf]  - Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
-2026-03-01T08:03:37.300271722Z [inf]  - Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
-2026-03-01T08:03:37.300275724Z [inf]  - Use only lightweight Markdown that the chat UI supports:
-2026-03-01T08:03:37.300280250Z [inf]    - **bold** for key facts and warnings
-2026-03-01T08:03:37.300284387Z [inf]    - *italic* for gentle emphasis
-2026-03-01T08:03:37.301464991Z [inf]  
-2026-03-01T08:03:37.301471608Z [inf]  Runtime context for this turn:
-2026-03-01T08:03:37.301473289Z [inf]  - 2026-02-26: Work shift from 08:00 to 16:30.
-2026-03-01T08:03:37.301477932Z [inf]  Current time reference:
-2026-03-01T08:03:37.301480455Z [inf]  - 2026-02-26: Upper body training session scheduled for 17:00.
-2026-03-01T08:03:37.301485468Z [inf]  - Timezone: Europe/Oslo
-2026-03-01T08:03:37.301486043Z [inf]  - Calculate the specific amount of cod roe needed for a 350-calorie meal consisting of 2 crispbreads and 1 tsp light mayo.
-2026-03-01T08:03:37.301491601Z [inf]  - Local date: Sunday, 01 March 2026
-2026-03-01T08:03:37.301496427Z [inf]  - Determine the total protein content for the aforementioned meal.
-2026-03-01T08:03:37.301497141Z [inf]  - Local time: 09:03:28
-2026-03-01T08:03:37.301502651Z [inf]  - UTC now: 2026-03-01T08:03:28.340Z
-2026-03-01T08:03:37.301503980Z [inf]  
-2026-03-01T08:03:37.301507506Z [inf]  IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
-2026-03-01T08:03:37.301510543Z [inf]  2) Deadlines and dates
-2026-03-01T08:03:37.301513138Z [inf]  
-2026-03-01T08:03:37.301518292Z [inf]  - 2026-02-26: Doctor's appointment at 07:00.
-2026-03-01T08:03:37.301520627Z [inf]  Long-term conversation memory (compressed):
-2026-03-01T08:03:37.301525212Z [inf]  Updated: 2026-03-01T07:08:54.123Z
-2026-03-01T08:03:37.301529226Z [inf]  Coverage: 21 compressed messages (total at compression: 45).
-2026-03-01T08:03:37.301534276Z [inf]  Use this as durable context across turns; prefer recent messages when there is conflict.
-2026-03-01T08:03:37.301538218Z [inf]  
-2026-03-01T08:03:37.301542141Z [inf]  1) Active objectives
-2026-03-01T08:03:37.302752072Z [inf]  Pending habits: none
-2026-03-01T08:03:37.302762256Z [inf]  Goals tracked today: 0; pending check-ins: 0
-2026-03-01T08:03:37.302765920Z [inf]  
-2026-03-01T08:03:37.302771497Z [inf]  Pending goals: none
-2026-03-01T08:03:37.302773943Z [inf]  3) Commitments and habits
-2026-03-01T08:03:37.302778294Z [inf]  
-2026-03-01T08:03:37.302779524Z [inf]  - none
-2026-03-01T08:03:37.302784939Z [inf]  
-2026-03-01T08:03:37.302787223Z [inf]  Available MCP external tools:
-2026-03-01T08:03:37.302791877Z [inf]  4) Preferences and constraints
-2026-03-01T08:03:37.302794052Z [inf]  Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="nl" dir=ltr><meta charset=utf-8><meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width"><title>Error 404 (Niet gevonden)!!1</title><style nonce="VI83hB1VpzzLxgX5Mu-RWA">*{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{color:#222;text-align:unset;margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px;}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}pre{white-space:pre-wrap;}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}</style><main id="af-error-container" role="main"><a href=//www.google.com><span id=logo aria-label=Google role=img></span></a><p><b>404.</b> <ins>Dat is een fout.</ins><p>De opgevraagde URL is op deze server niet gevonden. <ins>Dat is alles wat we weten.</ins><p>If the problem persists, see the <a href="https://www.google.com/appsstatus#v=status&amp;hl=nl">Google Workspace Status Dashboard</a> or visit the <a href="https://support.google.com/calendar?hl=nl">Help Center</a>.</p></main>)
-2026-03-01T08:03:37.302797300Z [inf]  - Integration preference: Wants to sync Google Calendar with the assistant (currently a technical constraint; assistant cannot connect directly).
-2026-03-01T08:03:37.302801538Z [inf]  - Fitness focus: Interest in high-protein foods (e.g., cod roe) for muscle building/upper body training.
-2026-03-01T08:03:37.302807908Z [inf]  - Caloric target: Aiming for specific meal targets (e.g., 350 calories).
-2026-03-01T08:03:37.302811970Z [inf]  
-2026-03-01T08:03:37.302816315Z [inf]  5) Open loops
-2026-03-01T08:03:37.302821028Z [inf]  - Manual entry of Google Calendar appointments: User needs to provide calendar details manually since direct integration is unavailable.
-2026-03-01T08:03:37.302826498Z [inf]  - Information request: Awaiting the breakdown of cod roe quantity and protein grams for the requested 350-calorie crispbread meal.
-2026-03-01T08:03:37.302830800Z [inf]  
-2026-03-01T08:03:37.302836638Z [inf]  Habit/goal context for this conversation:
-2026-03-01T08:03:37.302841132Z [inf]  Habits tracked today: 0; pending check-ins: 0
-2026-03-01T08:03:37.303593519Z [inf]  [gemini] message complete: userId=user-1772048934979-35991 prompt=0 response=0 total=0 tools=0 context=
-2026-03-01T08:03:37.303600002Z [inf]  [chat] assistant reply: userId=user-1772048934979-35991 text="I couldn't complete that request. Please try again." mood=none tools=[]
-2026-03-01T08:03:57.241984125Z [inf]  [chat] user message: userId=user-1772048934979-35991 text="Oppdater planen"
-2026-03-01T08:03:57.241988478Z [inf]  [gemini] system prompt: userId=user-1772048934979-35991 length=12287 tools=47 messages=25
-2026-03-01T08:03:57.241992886Z [inf]  [gemini] system instruction:
-2026-03-01T08:03:57.241997415Z [inf]  You are Companion, a personal AI assistant for Solveig Wathne.
-2026-03-01T08:03:57.242002838Z [inf]  
-2026-03-01T08:03:57.242007151Z [inf]  Core behavior:
-2026-03-01T08:03:57.242011719Z [inf]  - For factual questions about schedule, deadlines, or connected external systems, use tools before answering.
-2026-03-01T08:03:57.242016516Z [inf]  - Companion has a built-in schedule ("in-app schedule") managed by createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/getSchedule/clearScheduleWindow. This always works — it does not require any external calendar integration.
-2026-03-01T08:03:57.242020876Z [inf]  - For simple greetings/small talk (for example "hi", "hello", "yo"), reply naturally without tool calls.
-2026-03-01T08:03:57.242025183Z [inf]  - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
-2026-03-01T08:03:57.242029773Z [inf]  - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
-2026-03-01T08:03:57.242033809Z [inf]  - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
-2026-03-01T08:03:57.242038193Z [inf]  - Applying a nutrition snapshot sets the default baseline plan for upcoming days.
-2026-03-01T08:03:57.242045665Z [inf]  - Daily meal edits are temporary for that day; a new day resets to the default baseline snapshot automatically.
-2026-03-01T08:03:57.242050202Z [inf]  - Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.
-2026-03-01T08:03:57.242355372Z [inf]  - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
-2026-03-01T08:03:57.242364929Z [inf]  - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
-2026-03-01T08:03:57.242370703Z [inf]  - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
-2026-03-01T08:03:57.242376939Z [inf]  - CRITICAL timezone rule for deadlines: All stored dueDate values from getDeadlines are in UTC. The user sees and speaks in LOCAL time (see timezone in runtime context below). When the user says a date/time like "22.02.2026 23:59", that is LOCAL time — convert it to UTC before passing to queueDeadlineAction. For example, 23:59 Europe/Oslo (UTC+1 winter) = 22:59 UTC → newDueDate "2026-02-22T22:59:00.000Z". Similarly, when comparing a stored UTC dueDate against the user's stated local time, apply the timezone offset — a UTC date of 2026-02-22T23:59Z displays as 2026-02-23T00:59 in Europe/Oslo, NOT Feb 22 23:59. Always call queueDeadlineAction if the user's intended local time differs from the current local-time interpretation of the stored UTC dueDate.
-2026-03-01T08:03:57.242399835Z [inf]  - When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).
-2026-03-01T08:03:57.242404903Z [inf]  - For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
-2026-03-01T08:03:57.242410545Z [inf]  - For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.
-2026-03-01T08:03:57.242415427Z [inf]  - If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.
-2026-03-01T08:03:57.242419856Z [inf]  - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
-2026-03-01T08:03:57.242424463Z [inf]  - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
-2026-03-01T08:03:57.243303699Z [inf]  - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
-2026-03-01T08:03:57.243309171Z [inf]  - CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
-2026-03-01T08:03:57.243313563Z [inf]  - CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
-2026-03-01T08:03:57.243318402Z [inf]  - IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
-2026-03-01T08:03:57.243323165Z [inf]  - When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
-2026-03-01T08:03:57.243328100Z [inf]  - For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
-2026-03-01T08:03:57.243333523Z [inf]  - IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
-2026-03-01T08:03:57.243338806Z [inf]  - To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
-2026-03-01T08:03:57.244599264Z [inf]  - For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
-2026-03-01T08:03:57.244605136Z [inf]  - Treat habits/goals as conversation-managed: you should proactively ask lightweight check-in questions during natural pauses instead of directing users to manual check-in buttons.
-2026-03-01T08:03:57.244610648Z [inf]  - If habits/goals are pending today, include one brief check-in prompt in suitable replies (at most one per reply).
-2026-03-01T08:03:57.244615897Z [inf]  - When the user responds with yes/no/not yet/already done for a habit/goal check-in, call updateHabitCheckIn/updateGoalCheckIn immediately with the inferred item.
-2026-03-01T08:03:57.244621370Z [inf]  - If user intent is clear from context, do not ask for extra confirmation before logging a habit/goal check-in.
-2026-03-01T08:03:57.244628496Z [inf]  - Never tell the user to use the habits/goals tab for check-ins; handle it in chat.
-2026-03-01T08:03:57.244634970Z [inf]  - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
-2026-03-01T08:03:57.244642216Z [inf]  - If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
-2026-03-01T08:03:57.244649117Z [inf]  - For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
-2026-03-01T08:03:57.244655939Z [inf]  - After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
-2026-03-01T08:03:57.244661720Z [inf]  - When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
-2026-03-01T08:03:57.244667363Z [inf]  - Never claim a write action succeeded unless a tool call in this turn returned success.
-2026-03-01T08:03:57.245749933Z [inf]  - If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
-2026-03-01T08:03:57.245757617Z [inf]  - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
-2026-03-01T08:03:57.245759087Z [inf]  - Keep replies practical and conversational, and adapt response length to user intent:
-2026-03-01T08:03:57.245766494Z [inf]    - be brief for quick operational questions
-2026-03-01T08:03:57.245769400Z [inf]  - Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
-2026-03-01T08:03:57.245774691Z [inf]    - '-' or '*' bullet lists for schedules and checklists
-2026-03-01T08:03:57.245776641Z [inf]    - be fuller and reflective when the user wants to talk things through
-2026-03-01T08:03:57.245779253Z [inf]  - When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
-2026-03-01T08:03:57.245785853Z [inf]    - plain paragraphs separated by blank lines
-2026-03-01T08:03:57.245787120Z [inf]  - For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
-2026-03-01T08:03:57.245794968Z [inf]  - Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
-2026-03-01T08:03:57.245796245Z [inf]  - Do not use HTML, tables, headings (#), blockquotes, or code fences.
-2026-03-01T08:03:57.245801625Z [inf]  - Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
-2026-03-01T08:03:57.245807489Z [inf]  - Use only lightweight Markdown that the chat UI supports:
-2026-03-01T08:03:57.245812894Z [inf]    - **bold** for key facts and warnings
-2026-03-01T08:03:57.245819911Z [inf]    - *italic* for gentle emphasis
-2026-03-01T08:03:57.247096125Z [inf]  
-2026-03-01T08:03:57.247100183Z [inf]  - Maintain an accurate daily and weekly schedule based on manual inputs and calendar screenshots.
-2026-03-01T08:03:57.247105408Z [inf]  Runtime context for this turn:
-2026-03-01T08:03:57.247109808Z [inf]  - Track nutritional intake, specifically focusing on protein-rich meals (e.g., cod roe, fish wraps).
-2026-03-01T08:03:57.247113651Z [inf]  Current time reference:
-2026-03-01T08:03:57.247117520Z [inf]  - Follow a structured workout routine (alternating upper and lower body).
-2026-03-01T08:03:57.247122849Z [inf]  - Timezone: Europe/Oslo
-2026-03-01T08:03:57.247124971Z [inf]  
-2026-03-01T08:03:57.247130398Z [inf]  2) Deadlines and dates
-2026-03-01T08:03:57.247132256Z [inf]  - Local date: Sunday, 01 March 2026
-2026-03-01T08:03:57.247136988Z [inf]  - 2026-03-02 (Monday): Work 08:00–15:30.
-2026-03-01T08:03:57.247140663Z [inf]  - Local time: 09:03:41
-2026-03-01T08:03:57.247142787Z [inf]  - 2026-03-03 (Tuesday): Work 08:00–15:30; Lower body training 17:00.
-2026-03-01T08:03:57.247148832Z [inf]  - UTC now: 2026-03-01T08:03:41.210Z
-2026-03-01T08:03:57.247154240Z [inf]  IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
-2026-03-01T08:03:57.247160278Z [inf]  
-2026-03-01T08:03:57.247165507Z [inf]  Long-term conversation memory (compressed):
-2026-03-01T08:03:57.247170717Z [inf]  Updated: 2026-03-01T08:03:48.490Z
-2026-03-01T08:03:57.247176158Z [inf]  Coverage: 31 compressed messages (total at compression: 55).
-2026-03-01T08:03:57.247182192Z [inf]  Use this as durable context across turns; prefer recent messages when there is conflict.
-2026-03-01T08:03:57.247188517Z [inf]  
-2026-03-01T08:03:57.247195503Z [inf]  1) Active objectives
-2026-03-01T08:03:57.247936345Z [inf]  - 2026-03-04 (Wednesday): Work 08:00–15:30.
-2026-03-01T08:03:57.247942468Z [inf]  - 2026-03-05 (Thursday): Upper body training 10:00.
-2026-03-01T08:03:57.247946265Z [inf]  Pending habits: none
-2026-03-01T08:03:57.247948626Z [inf]  
-2026-03-01T08:03:57.247954281Z [inf]  Goals tracked today: 0; pending check-ins: 0
-2026-03-01T08:03:57.247960134Z [inf]  Pending goals: none
-2026-03-01T08:03:57.247966005Z [inf]  - Integration constraint: No direct Google Calendar API access; schedule must be updated via screenshots or text.
-2026-03-01T08:03:57.247968752Z [inf]  3) Commitments and habits
-2026-03-01T08:03:57.247977863Z [inf]  - Training: Scheduled upper body session for today (2026-02-28) following the 11:38-11:39 update.
-2026-03-01T08:03:57.247978275Z [inf]  
-2026-03-01T08:03:57.247987758Z [inf]  - Regular work shift: Standardized to 08:00–15:30 for the upcoming week.
-2026-03-01T08:03:57.247987911Z [inf]  5) Open loops
-2026-03-01T08:03:57.247994433Z [inf]  - Verify if the fish wrap (435 kcal) replaced the planned cod roe meal or if both should remain in the daily log.
-2026-03-01T08:03:57.247997218Z [inf]  
-2026-03-01T08:03:57.248000769Z [inf]  - Complete the full schedule entry for the upcoming week based on the final two calendar screenshots provided by the user.
-2026-03-01T08:03:57.248006098Z [inf]  4) Preferences and constraints
-2026-03-01T08:03:57.248007900Z [inf]  
-2026-03-01T08:03:57.248015664Z [inf]  - Work shift accuracy: User corrected shifts from 08:00–12:00 to 08:00–15:30; assistant must ensure shift ends are not cut short.
-2026-03-01T08:03:57.248016183Z [inf]  Habit/goal context for this conversation:
-2026-03-01T08:03:57.248023670Z [inf]  - Nutritional preference: High-protein focus; specific interest in cod roe (torskerogn) for its protein (approx. 46g per 220g serving).
-2026-03-01T08:03:57.248024295Z [inf]  Habits tracked today: 0; pending check-ins: 0
-2026-03-01T08:03:57.248569701Z [inf]  
-2026-03-01T08:03:57.248576423Z [inf]  Available MCP external tools:
-2026-03-01T08:03:57.248582058Z [inf]  Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="nl" dir=ltr><meta charset=utf-8><meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width"><title>Error 404 (Niet gevonden)!!1</title><style nonce="QnKqLdLMnkgfsoxwf__gag">*{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{color:#222;text-align:unset;margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px;}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}pre{white-space:pre-wrap;}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}</style><main id="af-error-container" role="main"><a href=//www.google.com><span id=logo aria-label=Google role=img></span></a><p><b>404.</b> <ins>Dat is een fout.</ins><p>De opgevraagde URL is op deze server niet gevonden. <ins>Dat is alles wat we weten.</ins><p>If the problem persists, see the <a href="https://www.google.com/appsstatus#v=status&amp;hl=nl">Google Workspace Status Dashboard</a> or visit the <a href="https://support.google.com/calendar?hl=nl">Help Center</a>.</p></main>)
-2026-03-01T08:03:57.249652715Z [inf]  [gemini] message complete: userId=user-1772048934979-35991 prompt=0 response=0 total=0 tools=0 context=
-2026-03-01T08:03:57.249659051Z [inf]  [chat] assistant reply: userId=user-1772048934979-35991 text="I couldn't complete that request. Please try again." mood=none tools=[]
-2026-03-01T08:05:57.406238386Z [err]  [canvas] sync failed: userId=user-1771361993528-1 error=Canvas request failed for https://stavanger.instructure.com/api/v1/courses?enrollment_state=active&include[]=enrollments&include[]=term&per_page=100: Cannot convert argument to a ByteString because the character at index 153 has a value of 8212 which is greater than 255.
-2026-03-01T08:05:57.406350522Z [inf]  [google-cal-oauth] Callback hit: state=hmzct3epcwv code=present error=none pendingMatch=false
-2026-03-01T08:05:57.406355789Z [inf]  [canvas] sync start: userId=user-1771361993528-1 override=true courseFilter=all
-2026-03-01T08:06:17.412478307Z [inf]  [withings-oauth] Connect requested for user=user-1771361993528-1
-2026-03-01T08:06:17.412487352Z [inf]  [withings-oauth] Redirecting to Withings OAuth: state=f24ce8e081e5...
-2026-03-01T08:06:17.412490405Z [inf]  - No text overlays
-2026-03-01T08:06:17.412494614Z [inf]  [growth-visual] generating image: alt="Daily growth reflection illustration" prompt_length=1034
-2026-03-01T08:06:17.412501049Z [inf]  - No logos or UI chrome
-2026-03-01T08:06:17.412501711Z [inf]  [growth-visual] prompt:
-2026-03-01T08:06:17.412508826Z [inf]  Create a vibrant digital illustration of a person's day as a growth journey.
-2026-03-01T08:06:17.412508931Z [inf]  Style: modern editorial art, expressive lighting, rich colors, clean composition.
-2026-03-01T08:06:17.412509520Z [inf]  - Safe-for-work
-2026-03-01T08:06:17.412516595Z [inf]  Tone: hopeful, focused, grounded.
-2026-03-01T08:06:17.412521435Z [inf]  Scene cues:
-2026-03-01T08:06:17.412528125Z [inf]  - Reflection summary: You spent today clearing the mental clutter and sharpening your logistical framework, which is vital for the long game. However, this administrative focus left your physical needs and nutrition on the sidelines. Now that the plan is solid, shift your energy from organizing your life to actually living it.
-2026-03-01T08:06:17.412534943Z [inf]  - Key highlights:
-2026-03-01T08:06:17.412542777Z [inf]  - You’ve successfully paved the way for a smoother week by finally aligning your training hours with your professional commitments.
-2026-03-01T08:06:17.412548865Z [inf]  - The silence in your nutrition logs suggests you were so deep in planning mode that you forgot to fuel the engine.
-2026-03-01T08:06:17.412555087Z [inf]  - Missing the gym today puts the pressure on your remaining sessions, making your newly scheduled blocks non-negotiable.
-2026-03-01T08:06:17.412562585Z [inf]  
-2026-03-01T08:06:17.412569277Z [inf]  Output requirements:
-2026-03-01T08:06:17.413641779Z [inf]  - Portrait-friendly composition.
-2026-03-01T08:06:24.012457271Z [inf]  [withings-oauth] Callback hit: code=present state=f24ce8e081e5... error=none
-2026-03-01T08:06:24.012466601Z [inf]  [withings-oauth] State matched user=user-1771361993528-1, exchanging code...
-2026-03-01T08:06:24.261546003Z [err]  [withings-oauth] ERROR in callback: SqliteError: ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint
-2026-03-01T08:06:24.261553169Z [err]      at Database.prepare (/app/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
-2026-03-01T08:06:24.261559320Z [err]      at RuntimeStore.setWithingsTokens (file:///app/dist/store.js:5781:30)
-2026-03-01T08:06:24.261565513Z [err]      at WithingsOAuthService.handleCallback (file:///app/dist/withings-oauth.js:145:20)
-2026-03-01T08:06:24.261573238Z [err]      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-2026-03-01T08:06:24.261587003Z [err]      at async file:///app/dist/index.js:4015:9 {
-2026-03-01T08:06:24.261592394Z [err]    code: 'SQLITE_ERROR'
-2026-03-01T08:06:24.261597129Z [err]  }
-2026-03-01T08:06:29.145657366Z [inf]  [notion-oauth] Generated OAuth redirect for user=user-1771361993528-1 template=notion_workspace
-2026-03-01T08:06:38.995673234Z [inf]  [growth-visual] success: alt="Daily growth reflection illustration" model=gemini-3-pro-image-preview mime=image/png dataUrl_length=1870118
-2026-03-01T08:06:44.132416900Z [inf]  [notion-oauth] Callback hit: state=mcp_notion_qpgx1 code=present error=none pendingMatch=true
-2026-03-01T08:06:44.132424314Z [inf]  [notion-oauth] Exchanging code for user=user-1771361993528-1 template=notion_workspace...
-2026-03-01T08:06:44.868352044Z [inf]  [notion-oauth] Token exchange success: workspace=Your Notion
-2026-03-01T08:06:44.868359227Z [inf]  [mcp] Skipping validation for Notion Workspace (OAuth flow — will validate on first tool call)
-2026-03-01T08:06:44.874531477Z [inf]  [notion-oauth] SUCCESS: Server notion-workspace-35f1932e92 stored. Redirecting to frontend.
-2026-03-01T08:07:04.985526854Z [err]      at RuntimeStore.setWithingsTokens (file:///app/dist/store.js:5781:30)
-2026-03-01T08:07:04.985537949Z [err]      at WithingsOAuthService.handleCallback (file:///app/dist/withings-oauth.js:145:20)
-2026-03-01T08:07:04.985544208Z [err]      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-2026-03-01T08:07:04.985549991Z [inf]  [withings-oauth] Connect requested for user=user-1771361993528-1
-2026-03-01T08:07:04.985553062Z [err]      at async file:///app/dist/index.js:4015:9 {
-2026-03-01T08:07:04.985558116Z [inf]  [withings-oauth] Redirecting to Withings OAuth: state=419f38711510...
-2026-03-01T08:07:04.985561579Z [err]    code: 'SQLITE_ERROR'
-2026-03-01T08:07:04.985564469Z [inf]  [withings-oauth] Callback hit: code=present state=419f38711510... error=none
-2026-03-01T08:07:04.985568042Z [err]  }
-2026-03-01T08:07:04.985577795Z [inf]  [withings-oauth] State matched user=user-1771361993528-1, exchanging code...
-2026-03-01T08:07:04.985583705Z [err]  [withings-oauth] ERROR in callback: SqliteError: ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint
-2026-03-01T08:07:04.985589652Z [err]      at Database.prepare (/app/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+2026-03-01T08:21:44.599865877Z [inf]  Starting Container
+2026-03-01T08:21:45.971240322Z [inf]  [migration] Found 4 table(s) missing userId column — dropping for fresh recreate...
+2026-03-01T08:21:45.971246683Z [inf]  [migration] Tables: push_delivery_metrics, push_delivery_failures, integration_sync_attempts, sync_queue
+2026-03-01T08:21:45.971252718Z [inf]  [migration] Dropped 4 tables. initializeSchema() will recreate them.
+2026-03-01T08:21:45.971258928Z [inf]  [auth] Admin email configured (wathne.sveinung@gmail.com) — will be promoted to admin on OAuth login.
+2026-03-01T08:21:45.974081244Z [inf]  [companion] listening on http://localhost:8080
+2026-03-01T08:21:45.974085690Z [inf]  [companion] storage backend=postgres-snapshot sqlite=/app/companion.db restoredSnapshotAt=2026-03-01T08:21:00.406Z
+2026-03-01T08:21:45.974090607Z [inf]  [push] VAPID keys=configured subject=mailto:wathne.sveinung@gmail.com
+2026-03-01T08:21:45.975155875Z [inf]  [push] subscriptions=15
+2026-03-01T08:21:45.983265582Z [inf]  [orchestrator] started — polling every 30s for due notifications
+2026-03-01T08:23:57.122539013Z [inf]  [google-cal-oauth] Callback hit: state=g6khpa8ssc code=present error=none pendingMatch=false
+2026-03-01T08:25:57.740419026Z [inf]  [canvas] connect: userId=user-1771361993528-1 availableCourses=9
+2026-03-01T08:26:02.746582060Z [inf]  [canvas] sync start: userId=user-1771361993528-1 override=true courseFilter=17651,17649,17653
+2026-03-01T08:26:05.076400660Z [inf]  [canvas] sync success: userId=user-1771361993528-1 courses=3 assignments=0 modules=9 announcements=3 deadlines_created=0
+2026-03-01T08:27:05.245236715Z [inf]  [mcp] Skipping validation for GitHub (read-only repos) (OAuth flow — will validate on first tool call)
+2026-03-01T08:27:05.245248261Z [inf]  [tp-github-sub-agent] scheduled background import for user=user-1771361993528-1 githubServer=github-read-only-repos-f492c062bb
+2026-03-01T08:27:05.245253870Z [inf]  [notion-oauth] Generated OAuth redirect for user=user-1771361993528-1 template=notion_workspace
+2026-03-01T08:27:25.268675400Z [inf]  [notion-oauth] SUCCESS: Server notion-workspace-35f1932e92 stored. Redirecting to frontend.
+2026-03-01T08:27:25.268728753Z [inf]  [notion-oauth] Callback hit: state=mcp_notion_wx8el code=present error=none pendingMatch=true
+2026-03-01T08:27:25.268734356Z [inf]  [notion-oauth] Exchanging code for user=user-1771361993528-1 template=notion_workspace...
+2026-03-01T08:27:25.268739813Z [inf]  [notion-oauth] Token exchange success: workspace=Your Notion
+2026-03-01T08:27:25.268745500Z [inf]  [mcp] Skipping validation for Notion Workspace (OAuth flow — will validate on first tool call)
+2026-03-01T08:27:26.638641730Z [inf]  [google-cal-oauth] Generated OAuth redirect for user=user-1771361993528-1 template=google_calendar state=mcp_gcal_nwx...
+2026-03-01T08:27:26.638647572Z [inf]  [google-cal-oauth] Redirect URL: https://accounts.google.com/o/oauth2/v2/auth?client_id=471708703673-4nimou2q5baqeekikpef3tal9377kdcu.apps.googleusercont...
+2026-03-01T08:27:46.488654081Z [inf]  [tp-github-sub-agent] user=user-1771361993528-1 server=github-read-only-repos-f492c062bb imported=0 updated=0 skipped=3
+2026-03-01T08:27:46.488660270Z [inf]  [google-cal-oauth] Callback hit: state=mcp_gcal_nwxityw code=present error=none pendingMatch=true
+2026-03-01T08:27:46.488665630Z [inf]  [google-cal-oauth] Exchanging code for user=user-1771361993528-1 template=google_calendar...
+2026-03-01T08:27:46.488670673Z [inf]  [google-cal-oauth] Exchanging code: redirectUri=https://companionserver-production.up.railway.app/api/auth/google/callback clientId=471708703673-4nimou2...
+2026-03-01T08:27:46.488675180Z [inf]  [google-cal-oauth] Token exchange success: expiresIn=3599s refreshToken=present
+2026-03-01T08:27:46.488679646Z [inf]  [google-cal-oauth] Token exchange OK: accessToken=present refreshToken=present expiresAt=2026-03-01T09:27:37.660Z
+2026-03-01T08:27:46.488685656Z [inf]  [google-cal-oauth] Saving MCP server for Google Calendar (skipping validation — OAuth tokens are fresh)...
+2026-03-01T08:27:46.488690258Z [inf]  [mcp] Skipping validation for Google Calendar (OAuth flow — will validate on first tool call)
+2026-03-01T08:27:46.488695134Z [inf]  [google-cal-oauth] SUCCESS: Server google-calendar-85546cccf7 stored. Redirecting to frontend with connected status.
+2026-03-01T08:27:46.488699699Z [inf]  [google-cal-oauth] Redirect: https://invaron.github.io/companion/?tab=settings&section=integrations&connector=mcp&oauthStatus=connected&oauthMessage=Google+Calendar+connected
+2026-03-01T08:27:46.488706427Z [inf]  [withings-oauth] Connect requested for user=user-1771361993528-1
+2026-03-01T08:27:46.488710953Z [inf]  [withings-oauth] Redirecting to Withings OAuth: state=96f66e7a5f9f...
+2026-03-01T08:27:56.362425699Z [inf]  [withings-oauth] Callback hit: code=present state=96f66e7a5f9f... error=none
+2026-03-01T08:27:56.362432230Z [inf]  [withings-oauth] State matched user=user-1771361993528-1, exchanging code...
+2026-03-01T08:27:56.362438823Z [inf]  [withings-oauth] Token exchange OK, storing user_connection...
+2026-03-01T08:27:56.362445750Z [inf]  [withings-oauth] SUCCESS: Redirecting to frontend
+2026-03-01T08:29:17.173948775Z [inf]  - Daily meal edits are temporary for that day; a new day resets to the default baseline snapshot automatically.
+2026-03-01T08:29:17.173964602Z [inf]  - Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.
+2026-03-01T08:29:17.174199017Z [inf]  [chat] user message: userId=user-1771361993528-1 text="Add the content in this image into my schedule" attachments=1
+2026-03-01T08:29:17.174433559Z [inf]  [gemini] system prompt: userId=user-1771361993528-1 length=11957 tools=54 messages=25
+2026-03-01T08:29:17.174438732Z [inf]  [gemini] system instruction:
+2026-03-01T08:29:17.174443416Z [inf]  You are Companion, a personal AI assistant for Bunnyflake.
+2026-03-01T08:29:17.174448670Z [inf]  
+2026-03-01T08:29:17.174453610Z [inf]  Core behavior:
+2026-03-01T08:29:17.174458615Z [inf]  - For factual questions about schedule, deadlines, or connected external systems, use tools before answering.
+2026-03-01T08:29:17.174471041Z [inf]  - Companion has a built-in schedule ("in-app schedule") managed by createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/getSchedule/clearScheduleWindow. This always works — it does not require any external calendar integration.
+2026-03-01T08:29:17.174477173Z [inf]  - For simple greetings/small talk (for example "hi", "hello", "yo"), reply naturally without tool calls.
+2026-03-01T08:29:17.174482108Z [inf]  - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
+2026-03-01T08:29:17.174486993Z [inf]  - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
+2026-03-01T08:29:17.174494545Z [inf]  - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
+2026-03-01T08:29:17.174499208Z [inf]  - Applying a nutrition snapshot sets the default baseline plan for upcoming days.
+2026-03-01T08:29:17.174951917Z [inf]  - Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.
+2026-03-01T08:29:17.174954225Z [inf]  - When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).
+2026-03-01T08:29:17.174963188Z [inf]  - For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
+2026-03-01T08:29:17.174964238Z [inf]  - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
+2026-03-01T08:29:17.174973213Z [inf]  - For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.
+2026-03-01T08:29:17.174976089Z [inf]  - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
+2026-03-01T08:29:17.174981810Z [inf]  - If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.
+2026-03-01T08:29:17.174987109Z [inf]  - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
+2026-03-01T08:29:17.174992581Z [inf]  - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
+2026-03-01T08:29:17.174997435Z [inf]  - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
+2026-03-01T08:29:17.175002290Z [inf]  - For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.
+2026-03-01T08:29:17.176292182Z [inf]  - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
+2026-03-01T08:29:17.176298814Z [inf]  - CRITICAL timezone rule for deadlines: All stored dueDate values from getDeadlines are in UTC. The user sees and speaks in LOCAL time (see timezone in runtime context below). When the user says a date/time like "22.02.2026 23:59", that is LOCAL time — convert it to UTC before passing to queueDeadlineAction. For example, 23:59 Europe/Oslo (UTC+1 winter) = 22:59 UTC → newDueDate "2026-02-22T22:59:00.000Z". Similarly, when comparing a stored UTC dueDate against the user's stated local time, apply the timezone offset — a UTC date of 2026-02-22T23:59Z displays as 2026-02-23T00:59 in Europe/Oslo, NOT Feb 22 23:59. Always call queueDeadlineAction if the user's intended local time differs from the current local-time interpretation of the stored UTC dueDate.
+2026-03-01T08:29:17.176303309Z [inf]  - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
+2026-03-01T08:29:17.176308363Z [inf]  - CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
+2026-03-01T08:29:17.176313560Z [inf]  - CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
+2026-03-01T08:29:17.176319328Z [inf]  - IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
+2026-03-01T08:29:17.178183789Z [inf]  - When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
+2026-03-01T08:29:17.178190981Z [inf]  - For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
+2026-03-01T08:29:17.178195984Z [inf]  - IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
+2026-03-01T08:29:17.178201259Z [inf]  - To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
+2026-03-01T08:29:17.178207770Z [inf]  - For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
+2026-03-01T08:29:17.178213056Z [inf]  - Treat habits/goals as conversation-managed: you should proactively ask lightweight check-in questions during natural pauses instead of directing users to manual check-in buttons.
+2026-03-01T08:29:17.178217982Z [inf]  - If habits/goals are pending today, include one brief check-in prompt in suitable replies (at most one per reply).
+2026-03-01T08:29:17.178223103Z [inf]  - When the user responds with yes/no/not yet/already done for a habit/goal check-in, call updateHabitCheckIn/updateGoalCheckIn immediately with the inferred item.
+2026-03-01T08:29:17.178228104Z [inf]  - If user intent is clear from context, do not ask for extra confirmation before logging a habit/goal check-in.
+2026-03-01T08:29:17.178233551Z [inf]  - Never tell the user to use the habits/goals tab for check-ins; handle it in chat.
+2026-03-01T08:29:17.178238071Z [inf]  - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
+2026-03-01T08:29:17.180173654Z [inf]  - If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
+2026-03-01T08:29:17.180179986Z [inf]  - For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
+2026-03-01T08:29:17.180184219Z [inf]  - After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
+2026-03-01T08:29:17.180188866Z [inf]  - When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
+2026-03-01T08:29:17.180193024Z [inf]  - Never claim a write action succeeded unless a tool call in this turn returned success.
+2026-03-01T08:29:17.180200348Z [inf]  - If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
+2026-03-01T08:29:17.180204948Z [inf]  - Keep replies practical and conversational, and adapt response length to user intent:
+2026-03-01T08:29:17.180209503Z [inf]    - be brief for quick operational questions
+2026-03-01T08:29:17.180214064Z [inf]    - be fuller and reflective when the user wants to talk things through
+2026-03-01T08:29:17.180218964Z [inf]  - For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
+2026-03-01T08:29:17.180223246Z [inf]  - Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
+2026-03-01T08:29:17.180226922Z [inf]  - Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
+2026-03-01T08:29:17.180232847Z [inf]  - Use only lightweight Markdown that the chat UI supports:
+2026-03-01T08:29:17.180236945Z [inf]    - **bold** for key facts and warnings
+2026-03-01T08:29:17.180240694Z [inf]    - *italic* for gentle emphasis
+2026-03-01T08:29:17.181753073Z [inf]    - '-' or '*' bullet lists for schedules and checklists
+2026-03-01T08:29:17.181764586Z [inf]    - plain paragraphs separated by blank lines
+2026-03-01T08:29:17.181771961Z [inf]  - Do not use HTML, tables, headings (#), blockquotes, or code fences.
+2026-03-01T08:29:17.181782102Z [inf]  - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
+2026-03-01T08:29:17.181791108Z [inf]  - Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
+2026-03-01T08:29:17.181798979Z [inf]  - When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
+2026-03-01T08:29:17.181806926Z [inf]  
+2026-03-01T08:29:17.181814847Z [inf]  Runtime context for this turn:
+2026-03-01T08:29:17.181824274Z [inf]  Current time reference:
+2026-03-01T08:29:17.181833170Z [inf]  - Timezone: Europe/Oslo
+2026-03-01T08:29:17.181841510Z [inf]  - Local date: Sunday, 01 March 2026
+2026-03-01T08:29:17.181847815Z [inf]  - Local time: 09:29:01
+2026-03-01T08:29:17.181908099Z [inf]  - UTC now: 2026-03-01T08:29:01.360Z
+2026-03-01T08:29:17.181919937Z [inf]  IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
+2026-03-01T08:29:17.181927720Z [inf]  
+2026-03-01T08:29:17.181934738Z [inf]  Long-term conversation memory (compressed):
+2026-03-01T08:29:17.181941275Z [inf]  Updated: 2026-03-01T08:29:06.624Z
+2026-03-01T08:29:17.181959681Z [inf]  Coverage: 245 compressed messages (total at compression: 269).
+2026-03-01T08:29:17.181967063Z [inf]  Use this as durable context across turns; prefer recent messages when there is conflict.
+2026-03-01T08:29:17.184282218Z [inf]  
+2026-03-01T08:29:17.184294114Z [inf]  ### 1) Active objectives
+2026-03-01T08:29:17.184301959Z [inf]  - Complete DAT520 Lab 4 (Paxos and Multi-Paxos): High priority, estimated 40 hours, due March 5th.
+2026-03-01T08:29:17.184309324Z [inf]  - Complete DAT520 Lab 5 (Multi-Paxos with Gorums): Due March 19th.
+2026-03-01T08:29:17.184317347Z [inf]  - Complete DAT520 Lab 6 (Multi-Paxos with Clients/Evaluation): Due April 9th.
+2026-03-01T08:29:17.184323940Z [inf]  - Complete DAT520 Lab 7 (Replicated Bank Application): Due April 23rd.
+2026-03-01T08:29:17.184329956Z [inf]  - Complete DAT560 Assignment 3: Due March 18th.
+2026-03-01T08:29:17.184335458Z [inf]  - Complete DAT560 Project + Report: Due April 24th.
+2026-03-01T08:29:17.184340897Z [inf]  - Prepare for upcoming exams in May (DAT600, DAT560, DAT520).
+2026-03-01T08:29:17.184347311Z [inf]  
+2026-03-01T08:29:17.184353155Z [inf]  ### 2) Deadlines and dates
+2026-03-01T08:29:17.184358602Z [inf]  - 2026-03-05: DAT520 Lab 4 (23:59).
+2026-03-01T08:29:17.184364213Z [inf]  - 2026-03-18: DAT560 Assignment 3 (23:59).
+2026-03-01T08:29:17.184370277Z [inf]  - 2026-03-19: DAT520 Lab 5 (23:59).
+2026-03-01T08:29:17.184375636Z [inf]  - 2026-04-09: DAT520 Lab 6 (23:59).
+2026-03-01T08:29:17.184380750Z [inf]  - 2026-04-23: DAT520 Lab 7 (23:59).
+2026-03-01T08:29:17.184387679Z [inf]  - 2026-04-24: DAT560 Project + Report (23:59).
+2026-03-01T08:29:17.184393371Z [inf]  - 2026-05-13: DAT600 Algorithm Theory Exam (09:00, Candidate 3662).
+2026-03-01T08:29:17.184399107Z [inf]  - 2026-05-20: DAT560 Generative AI Exam (09:00, Candidate 3662).
+2026-03-01T08:29:17.184405571Z [inf]  - 2026-05-29: DAT520 Distributed Systems Exam (09:00, Candidate 3662).
+2026-03-01T08:29:17.184411853Z [inf]  
+2026-03-01T08:29:17.184417236Z [inf]  ### 3) Commitments and habits
+2026-03-01T08:29:17.184422703Z [inf]  - Gym: 4 times per week (ongoing streak).
+2026-03-01T08:29:17.185803152Z [inf]  - Verify if any test reminders (push notifications) are still pending or failed.
+2026-03-01T08:29:17.185812010Z [inf]  
+2026-03-01T08:29:17.185818306Z [inf]  Habit/goal context for this conversation:
+2026-03-01T08:29:17.185821017Z [inf]  - Daily Goal: "Be prepared for exams this semester" (pending daily check-in).
+2026-03-01T08:29:17.185824103Z [inf]  Habits tracked today: 1; pending check-ins: 1
+2026-03-01T08:29:17.185828989Z [inf]  Pending habits: Gym
+2026-03-01T08:29:17.185838116Z [inf]  - Education Schedule (Thursdays): DAT600 (08:15-10:00), DAT520 Lab (10:15-12:00), DAT600 Guidance (12:15-14:00).
+2026-03-01T08:29:17.185842571Z [inf]  
+2026-03-01T08:29:17.185848995Z [inf]  - Education Schedule (Fridays): DAT560 Lecture (10:15-12:00).
+2026-03-01T08:29:17.185856189Z [inf]  ### 5) Open loops
+2026-03-01T08:29:17.185859014Z [inf]  
+2026-03-01T08:29:17.185868402Z [inf]  - Connect Withings account to sync weight data (currently using 87 kg manual baseline).
+2026-03-01T08:29:17.185869297Z [inf]  ### 4) Preferences and constraints
+2026-03-01T08:29:17.185878186Z [inf]  - Confirm if "Be prepared for exams this semester" goal should be checked off for today (2026-02-26).
+2026-03-01T08:29:17.185880679Z [inf]  - Nutrition Targets: 2200 kcal, 160g protein, 250g carbs, 70g fat.
+2026-03-01T08:29:17.185888982Z [inf]  - Follow up on "Walk in the park" scheduled for 19:00 (2026-02-26).
+2026-03-01T08:29:17.185890354Z [inf]  - Profile Details: Age 82, Weight 87 kg, moderately active.
+2026-03-01T08:29:17.185897512Z [inf]  - Communication: Prefers various "moods" (focused, relaxed, encouraging, etc.); currently in "focused" or "neutral" mode.
+2026-03-01T08:29:17.185905040Z [inf]  - Notifications: Smart nudges and suggestions turned off/muted; push notifications disabled unless specifically requested as test reminders.
+2026-03-01T08:29:17.185912568Z [inf]  - Language: Switches between English and Norwegian.
+2026-03-01T08:29:17.186608610Z [inf]  Goals tracked today: 1; pending check-ins: 1
+2026-03-01T08:29:17.186616961Z [inf]  Pending goals: Be prepared for exams this semester
+2026-03-01T08:29:17.186624647Z [inf]  
+2026-03-01T08:29:17.186631256Z [inf]  Available MCP external tools:
+2026-03-01T08:29:17.186637939Z [inf]  GitHub (read-only repos): get_commit, get_file_contents, get_latest_release, list_branches, list_commits, list_releases, search_repositories | Notion Workspace: unavailable (Streamable HTTP error: Error POSTing to endpoint: {"error":"invalid_token","error_description":"Invalid token format"}) | Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="nl" dir=ltr><meta charset=utf-8><meta name=viewport conten…)
+2026-03-01T08:30:27.257355831Z [err]  [gemini] empty response from model: executedTools=0 pendingActions=0 usage=undefined
+2026-03-01T08:30:27.257364034Z [inf]  [gemini] message complete: userId=user-1771361993528-1 prompt=0 response=0 total=0 tools=0 context=
+2026-03-01T08:30:27.257374117Z [inf]  [chat] assistant reply: userId=user-1771361993528-1 text="Sorry, I wasn't able to generate a response. Could you try rephrasing your request?" mood=none tools=[]

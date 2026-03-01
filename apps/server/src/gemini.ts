@@ -546,8 +546,17 @@ export class GeminiClient {
         }>;
         usageMetadata?: unknown;
         usage_metadata?: unknown;
+        promptFeedback?: { blockReason?: string; block_reason?: string };
+        prompt_feedback?: { blockReason?: string; block_reason?: string };
       };
       const firstCandidate = payload.candidates?.[0];
+      const promptFeedback = payload.promptFeedback ?? payload.prompt_feedback;
+      const blockReason = promptFeedback?.blockReason ?? promptFeedback?.block_reason;
+      if (!firstCandidate && blockReason) {
+        console.warn(`[gemini] prompt blocked by Vertex: blockReason=${blockReason}`);
+      } else if (!firstCandidate) {
+        console.warn(`[gemini] no candidates in Vertex response: keys=${Object.keys(payload).join(",")}`);
+      }
       const parts = firstCandidate?.content?.parts ?? [];
       const text = parts
         .map((part) => {

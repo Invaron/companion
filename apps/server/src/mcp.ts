@@ -467,6 +467,10 @@ async function withMcpClient<T>(
   if (bearerToken) {
     headers.Authorization = `Bearer ${bearerToken}`;
   }
+  // Notion's MCP endpoint requires Notion-Version header alongside the bearer token
+  if (server.serverUrl.includes("mcp.notion.com")) {
+    headers["Notion-Version"] = "2022-06-28";
+  }
 
   const transport = new StreamableHTTPClientTransport(new URL(server.serverUrl), {
     requestInit: {

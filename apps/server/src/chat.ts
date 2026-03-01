@@ -3932,7 +3932,7 @@ export async function sendChatMessage(
   }
 
   if (!response || response.text.trim().length === 0) {
-    console.warn(`[gemini] empty response from model: executedTools=${executedFunctionResponses.length} pendingActions=${pendingActionsFromTooling.length} usage=${JSON.stringify(totalUsage)}`);
+    console.warn(`[gemini] empty response from model: executedTools=${executedFunctionResponses.length} pendingActions=${pendingActionsFromTooling.length} usage=${JSON.stringify(totalUsage)} finishReason=${response?.finishReason ?? "none"}`);
   }
 
   const rawReply = response && response.text.trim().length > 0
