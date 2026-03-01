@@ -867,7 +867,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                               (server) => server.serverUrl === template.serverUrl || server.label.startsWith(template.label)
                             );
                             const templateConnected = matchingServers.length > 0;
-                            const isOAuth = template.authType === "oauth" && template.oauthEnabled !== false;
+                            const supportsMultiple = template.oauthProvider === "notion";
                             return (
                               <div
                                 key={template.id}
@@ -920,7 +920,7 @@ export function ConnectorsView({ planInfo, onUpgrade }: ConnectorsViewProps): JS
                                           : t("Disconnect")}
                                     </button>
                                   ))}
-                                  {(!templateConnected || isOAuth) && (
+                                  {(!templateConnected || supportsMultiple) && (
                                     <button
                                       type="button"
                                       className="connector-sync-btn"

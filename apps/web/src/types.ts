@@ -548,7 +548,7 @@ export interface McpServerTemplate {
   docsUrl: string;
   verified: boolean;
   authType: "bearer" | "oauth";
-  oauthProvider?: "github";
+  oauthProvider?: "github" | "google" | "notion";
   oauthEnabled?: boolean;
   tokenLabel: string;
   tokenPlaceholder: string;
