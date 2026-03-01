@@ -7516,6 +7516,10 @@ body.keyboard-open .app-shell {
   width: 100%;
   margin: 0;
   padding: 0;
+  /* Kill all transitions so filter/background changes apply instantly
+     when the keyboard opens — avoids a slow background fade that is out
+     of sync with the instant filter blur. */
+  transition: none;
 }
 
 /* Non-chat tabs: keep horizontal padding when keyboard is up */
