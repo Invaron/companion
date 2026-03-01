@@ -21,7 +21,7 @@ const MCP_SERVER_TEMPLATES: readonly McpServerTemplate[] = [
     provider: "GitHub",
     label: "GitHub (read-only repos)",
     description: "Read repository files, history, and releases. Search finds public repos only; direct file access works on private repos too.",
-    serverUrl: "https://api.githubcopilot.com/mcp/x/repos/readonly",
+    serverUrl: "https://api.githubcopilot.com/mcp/readonly",
     docsUrl: "https://github.com/github/github-mcp-server/blob/main/docs/remote-server.md",
     verified: true,
     authType: "oauth",
@@ -31,6 +31,7 @@ const MCP_SERVER_TEMPLATES: readonly McpServerTemplate[] = [
     tokenHelp:
       "Optional fallback if OAuth is unavailable. Create a fine-grained token with read access to the repositories you want Gemini to use.",
     suggestedToolAllowlist: [
+      "get_me",
       "search_repositories",
       "get_file_contents",
       "list_branches",
