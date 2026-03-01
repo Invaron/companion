@@ -107,7 +107,7 @@ async function handleListGitHubOrgRepos(
     };
     // If all returned repos are public, the org may restrict third-party access
     if (repos.length > 0 && !hasPrivate) {
-      result.accessHint = "Only public repos were returned. If the user expects private repos, the org may restrict third-party OAuth app access. The user should visit https://github.com/settings/applications, find the Companion OAuth app, and click 'Grant' next to this org.";
+      result.accessHint = "Only public repos were returned. If the user expects private repos, this org likely restricts third-party OAuth app access. Tell the user: go to https://github.com/settings/applications, click on the Companion OAuth app, and next to this org click 'Grant' (if they own it) or 'Request' (if someone else administers it — the org admin must then approve).";
     } else if (repos.length === 0) {
       result.accessHint = "No repos found. The org may be empty, the name may be wrong, or the org restricts third-party access. Granted scopes: " + grantedScopes;
     }
@@ -145,7 +145,7 @@ async function handleListGitHubUserOrgs(
     if (orgs.length === 0) {
       const hasReadOrg = grantedScopes.split(",").map((s) => s.trim()).includes("read:org");
       const hint = hasReadOrg
-        ? "The token has read:org scope, but 0 orgs were returned. The user's GitHub organizations may restrict third-party OAuth app access. Ask the user to grant organization access for this app at https://github.com/settings/applications — find the Companion OAuth app and click 'Grant' next to each org."
+        ? "The token has read:org scope, but 0 orgs were returned. The user's GitHub organizations likely restrict third-party OAuth app access. Tell the user: go to https://github.com/settings/applications, click on the Companion OAuth app, and next to each org they want to use, click 'Grant' (if they own the org) or 'Request' (if someone else administers it — the org admin must then approve). Until access is granted, Companion cannot see org memberships or private repos."
         : "The token is MISSING the read:org scope. The user needs to disconnect and reconnect GitHub in Settings → Integrations to get updated permissions. Their current token was created before org-access permissions were added.";
       return { count: 0, orgs: [], scopeHint: hint, grantedScopes };
     }

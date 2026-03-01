@@ -190,6 +190,7 @@ describe("handleListGitHubUserOrgs", () => {
     expect(result.count).toBe(0);
     expect(result.scopeHint).toContain("restrict third-party OAuth app access");
     expect(result.scopeHint).toContain("github.com/settings/applications");
+    expect(result.scopeHint).toContain("'Grant' (if they own the org) or 'Request'");
   });
 
   it("returns error on API failure", async () => {
