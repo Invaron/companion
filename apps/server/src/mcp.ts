@@ -12,7 +12,7 @@ const MCP_TOOLS_TOTAL_STEP_PER_SERVER = 8;
 const MCP_TOOLS_TOTAL_CAP = 48;
 const MCP_FETCH_TOOLS_HARD_CAP = 128;
 const MCP_TOOL_LIST_CACHE_MS = 2 * 60 * 1000;
-const TOOL_NAME_REGEX = /^[a-zA-Z0-9_]+$/;
+const TOOL_NAME_REGEX = /^[a-zA-Z0-9_-]+$/;
 
 interface McpStoredConfig {
   servers?: unknown;
@@ -561,7 +561,19 @@ async function listRemoteTools(userId: string, server: McpServerConfig, store?: 
 
   if (server.toolAllowlist.length > 0) {
     const allow = new Set(server.toolAllowlist);
+    const before = tools.length;
     tools = tools.filter((tool) => allow.has(tool.name));
+    if (tools.length === 0 && before > 0) {
+      console.warn(`[mcp] ${server.label}: allowlist filtered ALL ${before} tools — passing through unfiltered`);
+      tools = (response.tools ?? []).map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema:
+          tool.inputSchema && typeof tool.inputSchema === "object"
+            ? (tool.inputSchema as Record<string, unknown>)
+            : undefined
+      }));
+    }
   }
 
   tools = tools.slice(0, MCP_FETCH_TOOLS_HARD_CAP);
