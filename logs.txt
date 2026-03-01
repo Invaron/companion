@@ -1,168 +1,193 @@
-2026-03-01T08:21:44.599865877Z [inf]  Starting Container
-2026-03-01T08:21:45.971240322Z [inf]  [migration] Found 4 table(s) missing userId column — dropping for fresh recreate...
-2026-03-01T08:21:45.971246683Z [inf]  [migration] Tables: push_delivery_metrics, push_delivery_failures, integration_sync_attempts, sync_queue
-2026-03-01T08:21:45.971252718Z [inf]  [migration] Dropped 4 tables. initializeSchema() will recreate them.
-2026-03-01T08:21:45.971258928Z [inf]  [auth] Admin email configured (wathne.sveinung@gmail.com) — will be promoted to admin on OAuth login.
-2026-03-01T08:21:45.974081244Z [inf]  [companion] listening on http://localhost:8080
-2026-03-01T08:21:45.974085690Z [inf]  [companion] storage backend=postgres-snapshot sqlite=/app/companion.db restoredSnapshotAt=2026-03-01T08:21:00.406Z
-2026-03-01T08:21:45.974090607Z [inf]  [push] VAPID keys=configured subject=mailto:wathne.sveinung@gmail.com
-2026-03-01T08:21:45.975155875Z [inf]  [push] subscriptions=15
-2026-03-01T08:21:45.983265582Z [inf]  [orchestrator] started — polling every 30s for due notifications
-2026-03-01T08:23:57.122539013Z [inf]  [google-cal-oauth] Callback hit: state=g6khpa8ssc code=present error=none pendingMatch=false
-2026-03-01T08:25:57.740419026Z [inf]  [canvas] connect: userId=user-1771361993528-1 availableCourses=9
-2026-03-01T08:26:02.746582060Z [inf]  [canvas] sync start: userId=user-1771361993528-1 override=true courseFilter=17651,17649,17653
-2026-03-01T08:26:05.076400660Z [inf]  [canvas] sync success: userId=user-1771361993528-1 courses=3 assignments=0 modules=9 announcements=3 deadlines_created=0
-2026-03-01T08:27:05.245236715Z [inf]  [mcp] Skipping validation for GitHub (read-only repos) (OAuth flow — will validate on first tool call)
-2026-03-01T08:27:05.245248261Z [inf]  [tp-github-sub-agent] scheduled background import for user=user-1771361993528-1 githubServer=github-read-only-repos-f492c062bb
-2026-03-01T08:27:05.245253870Z [inf]  [notion-oauth] Generated OAuth redirect for user=user-1771361993528-1 template=notion_workspace
-2026-03-01T08:27:25.268675400Z [inf]  [notion-oauth] SUCCESS: Server notion-workspace-35f1932e92 stored. Redirecting to frontend.
-2026-03-01T08:27:25.268728753Z [inf]  [notion-oauth] Callback hit: state=mcp_notion_wx8el code=present error=none pendingMatch=true
-2026-03-01T08:27:25.268734356Z [inf]  [notion-oauth] Exchanging code for user=user-1771361993528-1 template=notion_workspace...
-2026-03-01T08:27:25.268739813Z [inf]  [notion-oauth] Token exchange success: workspace=Your Notion
-2026-03-01T08:27:25.268745500Z [inf]  [mcp] Skipping validation for Notion Workspace (OAuth flow — will validate on first tool call)
-2026-03-01T08:27:26.638641730Z [inf]  [google-cal-oauth] Generated OAuth redirect for user=user-1771361993528-1 template=google_calendar state=mcp_gcal_nwx...
-2026-03-01T08:27:26.638647572Z [inf]  [google-cal-oauth] Redirect URL: https://accounts.google.com/o/oauth2/v2/auth?client_id=471708703673-4nimou2q5baqeekikpef3tal9377kdcu.apps.googleusercont...
-2026-03-01T08:27:46.488654081Z [inf]  [tp-github-sub-agent] user=user-1771361993528-1 server=github-read-only-repos-f492c062bb imported=0 updated=0 skipped=3
-2026-03-01T08:27:46.488660270Z [inf]  [google-cal-oauth] Callback hit: state=mcp_gcal_nwxityw code=present error=none pendingMatch=true
-2026-03-01T08:27:46.488665630Z [inf]  [google-cal-oauth] Exchanging code for user=user-1771361993528-1 template=google_calendar...
-2026-03-01T08:27:46.488670673Z [inf]  [google-cal-oauth] Exchanging code: redirectUri=https://companionserver-production.up.railway.app/api/auth/google/callback clientId=471708703673-4nimou2...
-2026-03-01T08:27:46.488675180Z [inf]  [google-cal-oauth] Token exchange success: expiresIn=3599s refreshToken=present
-2026-03-01T08:27:46.488679646Z [inf]  [google-cal-oauth] Token exchange OK: accessToken=present refreshToken=present expiresAt=2026-03-01T09:27:37.660Z
-2026-03-01T08:27:46.488685656Z [inf]  [google-cal-oauth] Saving MCP server for Google Calendar (skipping validation — OAuth tokens are fresh)...
-2026-03-01T08:27:46.488690258Z [inf]  [mcp] Skipping validation for Google Calendar (OAuth flow — will validate on first tool call)
-2026-03-01T08:27:46.488695134Z [inf]  [google-cal-oauth] SUCCESS: Server google-calendar-85546cccf7 stored. Redirecting to frontend with connected status.
-2026-03-01T08:27:46.488699699Z [inf]  [google-cal-oauth] Redirect: https://invaron.github.io/companion/?tab=settings&section=integrations&connector=mcp&oauthStatus=connected&oauthMessage=Google+Calendar+connected
-2026-03-01T08:27:46.488706427Z [inf]  [withings-oauth] Connect requested for user=user-1771361993528-1
-2026-03-01T08:27:46.488710953Z [inf]  [withings-oauth] Redirecting to Withings OAuth: state=96f66e7a5f9f...
-2026-03-01T08:27:56.362425699Z [inf]  [withings-oauth] Callback hit: code=present state=96f66e7a5f9f... error=none
-2026-03-01T08:27:56.362432230Z [inf]  [withings-oauth] State matched user=user-1771361993528-1, exchanging code...
-2026-03-01T08:27:56.362438823Z [inf]  [withings-oauth] Token exchange OK, storing user_connection...
-2026-03-01T08:27:56.362445750Z [inf]  [withings-oauth] SUCCESS: Redirecting to frontend
-2026-03-01T08:29:17.173948775Z [inf]  - Daily meal edits are temporary for that day; a new day resets to the default baseline snapshot automatically.
-2026-03-01T08:29:17.173964602Z [inf]  - Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.
-2026-03-01T08:29:17.174199017Z [inf]  [chat] user message: userId=user-1771361993528-1 text="Add the content in this image into my schedule" attachments=1
-2026-03-01T08:29:17.174433559Z [inf]  [gemini] system prompt: userId=user-1771361993528-1 length=11957 tools=54 messages=25
-2026-03-01T08:29:17.174438732Z [inf]  [gemini] system instruction:
-2026-03-01T08:29:17.174443416Z [inf]  You are Companion, a personal AI assistant for Bunnyflake.
-2026-03-01T08:29:17.174448670Z [inf]  
-2026-03-01T08:29:17.174453610Z [inf]  Core behavior:
-2026-03-01T08:29:17.174458615Z [inf]  - For factual questions about schedule, deadlines, or connected external systems, use tools before answering.
-2026-03-01T08:29:17.174471041Z [inf]  - Companion has a built-in schedule ("in-app schedule") managed by createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/getSchedule/clearScheduleWindow. This always works — it does not require any external calendar integration.
-2026-03-01T08:29:17.174477173Z [inf]  - For simple greetings/small talk (for example "hi", "hello", "yo"), reply naturally without tool calls.
-2026-03-01T08:29:17.174482108Z [inf]  - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
-2026-03-01T08:29:17.174486993Z [inf]  - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
-2026-03-01T08:29:17.174494545Z [inf]  - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
-2026-03-01T08:29:17.174499208Z [inf]  - Applying a nutrition snapshot sets the default baseline plan for upcoming days.
-2026-03-01T08:29:17.174951917Z [inf]  - Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.
-2026-03-01T08:29:17.174954225Z [inf]  - When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).
-2026-03-01T08:29:17.174963188Z [inf]  - For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
-2026-03-01T08:29:17.174964238Z [inf]  - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
-2026-03-01T08:29:17.174973213Z [inf]  - For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.
-2026-03-01T08:29:17.174976089Z [inf]  - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
-2026-03-01T08:29:17.174981810Z [inf]  - If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.
-2026-03-01T08:29:17.174987109Z [inf]  - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
-2026-03-01T08:29:17.174992581Z [inf]  - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
-2026-03-01T08:29:17.174997435Z [inf]  - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
-2026-03-01T08:29:17.175002290Z [inf]  - For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.
-2026-03-01T08:29:17.176292182Z [inf]  - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
-2026-03-01T08:29:17.176298814Z [inf]  - CRITICAL timezone rule for deadlines: All stored dueDate values from getDeadlines are in UTC. The user sees and speaks in LOCAL time (see timezone in runtime context below). When the user says a date/time like "22.02.2026 23:59", that is LOCAL time — convert it to UTC before passing to queueDeadlineAction. For example, 23:59 Europe/Oslo (UTC+1 winter) = 22:59 UTC → newDueDate "2026-02-22T22:59:00.000Z". Similarly, when comparing a stored UTC dueDate against the user's stated local time, apply the timezone offset — a UTC date of 2026-02-22T23:59Z displays as 2026-02-23T00:59 in Europe/Oslo, NOT Feb 22 23:59. Always call queueDeadlineAction if the user's intended local time differs from the current local-time interpretation of the stored UTC dueDate.
-2026-03-01T08:29:17.176303309Z [inf]  - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
-2026-03-01T08:29:17.176308363Z [inf]  - CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
-2026-03-01T08:29:17.176313560Z [inf]  - CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
-2026-03-01T08:29:17.176319328Z [inf]  - IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
-2026-03-01T08:29:17.178183789Z [inf]  - When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
-2026-03-01T08:29:17.178190981Z [inf]  - For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
-2026-03-01T08:29:17.178195984Z [inf]  - IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
-2026-03-01T08:29:17.178201259Z [inf]  - To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
-2026-03-01T08:29:17.178207770Z [inf]  - For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
-2026-03-01T08:29:17.178213056Z [inf]  - Treat habits/goals as conversation-managed: you should proactively ask lightweight check-in questions during natural pauses instead of directing users to manual check-in buttons.
-2026-03-01T08:29:17.178217982Z [inf]  - If habits/goals are pending today, include one brief check-in prompt in suitable replies (at most one per reply).
-2026-03-01T08:29:17.178223103Z [inf]  - When the user responds with yes/no/not yet/already done for a habit/goal check-in, call updateHabitCheckIn/updateGoalCheckIn immediately with the inferred item.
-2026-03-01T08:29:17.178228104Z [inf]  - If user intent is clear from context, do not ask for extra confirmation before logging a habit/goal check-in.
-2026-03-01T08:29:17.178233551Z [inf]  - Never tell the user to use the habits/goals tab for check-ins; handle it in chat.
-2026-03-01T08:29:17.178238071Z [inf]  - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
-2026-03-01T08:29:17.180173654Z [inf]  - If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
-2026-03-01T08:29:17.180179986Z [inf]  - For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
-2026-03-01T08:29:17.180184219Z [inf]  - After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
-2026-03-01T08:29:17.180188866Z [inf]  - When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
-2026-03-01T08:29:17.180193024Z [inf]  - Never claim a write action succeeded unless a tool call in this turn returned success.
-2026-03-01T08:29:17.180200348Z [inf]  - If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
-2026-03-01T08:29:17.180204948Z [inf]  - Keep replies practical and conversational, and adapt response length to user intent:
-2026-03-01T08:29:17.180209503Z [inf]    - be brief for quick operational questions
-2026-03-01T08:29:17.180214064Z [inf]    - be fuller and reflective when the user wants to talk things through
-2026-03-01T08:29:17.180218964Z [inf]  - For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
-2026-03-01T08:29:17.180223246Z [inf]  - Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
-2026-03-01T08:29:17.180226922Z [inf]  - Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
-2026-03-01T08:29:17.180232847Z [inf]  - Use only lightweight Markdown that the chat UI supports:
-2026-03-01T08:29:17.180236945Z [inf]    - **bold** for key facts and warnings
-2026-03-01T08:29:17.180240694Z [inf]    - *italic* for gentle emphasis
-2026-03-01T08:29:17.181753073Z [inf]    - '-' or '*' bullet lists for schedules and checklists
-2026-03-01T08:29:17.181764586Z [inf]    - plain paragraphs separated by blank lines
-2026-03-01T08:29:17.181771961Z [inf]  - Do not use HTML, tables, headings (#), blockquotes, or code fences.
-2026-03-01T08:29:17.181782102Z [inf]  - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
-2026-03-01T08:29:17.181791108Z [inf]  - Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
-2026-03-01T08:29:17.181798979Z [inf]  - When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
-2026-03-01T08:29:17.181806926Z [inf]  
-2026-03-01T08:29:17.181814847Z [inf]  Runtime context for this turn:
-2026-03-01T08:29:17.181824274Z [inf]  Current time reference:
-2026-03-01T08:29:17.181833170Z [inf]  - Timezone: Europe/Oslo
-2026-03-01T08:29:17.181841510Z [inf]  - Local date: Sunday, 01 March 2026
-2026-03-01T08:29:17.181847815Z [inf]  - Local time: 09:29:01
-2026-03-01T08:29:17.181908099Z [inf]  - UTC now: 2026-03-01T08:29:01.360Z
-2026-03-01T08:29:17.181919937Z [inf]  IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
-2026-03-01T08:29:17.181927720Z [inf]  
-2026-03-01T08:29:17.181934738Z [inf]  Long-term conversation memory (compressed):
-2026-03-01T08:29:17.181941275Z [inf]  Updated: 2026-03-01T08:29:06.624Z
-2026-03-01T08:29:17.181959681Z [inf]  Coverage: 245 compressed messages (total at compression: 269).
-2026-03-01T08:29:17.181967063Z [inf]  Use this as durable context across turns; prefer recent messages when there is conflict.
-2026-03-01T08:29:17.184282218Z [inf]  
-2026-03-01T08:29:17.184294114Z [inf]  ### 1) Active objectives
-2026-03-01T08:29:17.184301959Z [inf]  - Complete DAT520 Lab 4 (Paxos and Multi-Paxos): High priority, estimated 40 hours, due March 5th.
-2026-03-01T08:29:17.184309324Z [inf]  - Complete DAT520 Lab 5 (Multi-Paxos with Gorums): Due March 19th.
-2026-03-01T08:29:17.184317347Z [inf]  - Complete DAT520 Lab 6 (Multi-Paxos with Clients/Evaluation): Due April 9th.
-2026-03-01T08:29:17.184323940Z [inf]  - Complete DAT520 Lab 7 (Replicated Bank Application): Due April 23rd.
-2026-03-01T08:29:17.184329956Z [inf]  - Complete DAT560 Assignment 3: Due March 18th.
-2026-03-01T08:29:17.184335458Z [inf]  - Complete DAT560 Project + Report: Due April 24th.
-2026-03-01T08:29:17.184340897Z [inf]  - Prepare for upcoming exams in May (DAT600, DAT560, DAT520).
-2026-03-01T08:29:17.184347311Z [inf]  
-2026-03-01T08:29:17.184353155Z [inf]  ### 2) Deadlines and dates
-2026-03-01T08:29:17.184358602Z [inf]  - 2026-03-05: DAT520 Lab 4 (23:59).
-2026-03-01T08:29:17.184364213Z [inf]  - 2026-03-18: DAT560 Assignment 3 (23:59).
-2026-03-01T08:29:17.184370277Z [inf]  - 2026-03-19: DAT520 Lab 5 (23:59).
-2026-03-01T08:29:17.184375636Z [inf]  - 2026-04-09: DAT520 Lab 6 (23:59).
-2026-03-01T08:29:17.184380750Z [inf]  - 2026-04-23: DAT520 Lab 7 (23:59).
-2026-03-01T08:29:17.184387679Z [inf]  - 2026-04-24: DAT560 Project + Report (23:59).
-2026-03-01T08:29:17.184393371Z [inf]  - 2026-05-13: DAT600 Algorithm Theory Exam (09:00, Candidate 3662).
-2026-03-01T08:29:17.184399107Z [inf]  - 2026-05-20: DAT560 Generative AI Exam (09:00, Candidate 3662).
-2026-03-01T08:29:17.184405571Z [inf]  - 2026-05-29: DAT520 Distributed Systems Exam (09:00, Candidate 3662).
-2026-03-01T08:29:17.184411853Z [inf]  
-2026-03-01T08:29:17.184417236Z [inf]  ### 3) Commitments and habits
-2026-03-01T08:29:17.184422703Z [inf]  - Gym: 4 times per week (ongoing streak).
-2026-03-01T08:29:17.185803152Z [inf]  - Verify if any test reminders (push notifications) are still pending or failed.
-2026-03-01T08:29:17.185812010Z [inf]  
-2026-03-01T08:29:17.185818306Z [inf]  Habit/goal context for this conversation:
-2026-03-01T08:29:17.185821017Z [inf]  - Daily Goal: "Be prepared for exams this semester" (pending daily check-in).
-2026-03-01T08:29:17.185824103Z [inf]  Habits tracked today: 1; pending check-ins: 1
-2026-03-01T08:29:17.185828989Z [inf]  Pending habits: Gym
-2026-03-01T08:29:17.185838116Z [inf]  - Education Schedule (Thursdays): DAT600 (08:15-10:00), DAT520 Lab (10:15-12:00), DAT600 Guidance (12:15-14:00).
-2026-03-01T08:29:17.185842571Z [inf]  
-2026-03-01T08:29:17.185848995Z [inf]  - Education Schedule (Fridays): DAT560 Lecture (10:15-12:00).
-2026-03-01T08:29:17.185856189Z [inf]  ### 5) Open loops
-2026-03-01T08:29:17.185859014Z [inf]  
-2026-03-01T08:29:17.185868402Z [inf]  - Connect Withings account to sync weight data (currently using 87 kg manual baseline).
-2026-03-01T08:29:17.185869297Z [inf]  ### 4) Preferences and constraints
-2026-03-01T08:29:17.185878186Z [inf]  - Confirm if "Be prepared for exams this semester" goal should be checked off for today (2026-02-26).
-2026-03-01T08:29:17.185880679Z [inf]  - Nutrition Targets: 2200 kcal, 160g protein, 250g carbs, 70g fat.
-2026-03-01T08:29:17.185888982Z [inf]  - Follow up on "Walk in the park" scheduled for 19:00 (2026-02-26).
-2026-03-01T08:29:17.185890354Z [inf]  - Profile Details: Age 82, Weight 87 kg, moderately active.
-2026-03-01T08:29:17.185897512Z [inf]  - Communication: Prefers various "moods" (focused, relaxed, encouraging, etc.); currently in "focused" or "neutral" mode.
-2026-03-01T08:29:17.185905040Z [inf]  - Notifications: Smart nudges and suggestions turned off/muted; push notifications disabled unless specifically requested as test reminders.
-2026-03-01T08:29:17.185912568Z [inf]  - Language: Switches between English and Norwegian.
-2026-03-01T08:29:17.186608610Z [inf]  Goals tracked today: 1; pending check-ins: 1
-2026-03-01T08:29:17.186616961Z [inf]  Pending goals: Be prepared for exams this semester
-2026-03-01T08:29:17.186624647Z [inf]  
-2026-03-01T08:29:17.186631256Z [inf]  Available MCP external tools:
-2026-03-01T08:29:17.186637939Z [inf]  GitHub (read-only repos): get_commit, get_file_contents, get_latest_release, list_branches, list_commits, list_releases, search_repositories | Notion Workspace: unavailable (Streamable HTTP error: Error POSTing to endpoint: {"error":"invalid_token","error_description":"Invalid token format"}) | Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="nl" dir=ltr><meta charset=utf-8><meta name=viewport conten…)
-2026-03-01T08:30:27.257355831Z [err]  [gemini] empty response from model: executedTools=0 pendingActions=0 usage=undefined
-2026-03-01T08:30:27.257364034Z [inf]  [gemini] message complete: userId=user-1771361993528-1 prompt=0 response=0 total=0 tools=0 context=
-2026-03-01T08:30:27.257374117Z [inf]  [chat] assistant reply: userId=user-1771361993528-1 text="Sorry, I wasn't able to generate a response. Could you try rephrasing your request?" mood=none tools=[]
+- For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
+- CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
+- CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
+- IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
+- When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
+- For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
+- IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
+- To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
+- For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
+- If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
+- If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
+- For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
+- After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
+- When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
+- Never claim a write action succeeded unless a tool call in this turn returned success.
+- If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
+- Keep replies practical and conversational, and adapt response length to user intent:
+  - be brief for quick operational questions
+  - be fuller and reflective when the user wants to talk things through
+- For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
+- Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
+- Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
+- Use only lightweight Markdown that the chat UI supports:
+  - **bold** for key facts and warnings
+  - *italic* for gentle emphasis
+  - '-' or '*' bullet lists for schedules and checklists
+  - plain paragraphs separated by blank lines
+- Do not use HTML, tables, headings (#), blockquotes, or code fences.
+- If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
+- Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
+- When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
+Runtime context for this turn:
+Current time reference:
+- Timezone: Europe/Oslo
+- Local date: Sunday, 01 March 2026
+- Local time: 16:22:47
+- UTC now: 2026-03-01T15:22:47.425Z
+IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
+GitHub (read-only repos): get_commit, get_file_contents, get_latest_release, list_branches, list_commits, list_releases, search_repositories | Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="en" dir=ltr><meta charset=utf-8><meta name=viewport conten…) | Notion Workspace: notion-search, notion-fetch, notion-create-pages, notion-update-page | Notion Workspace 2: notion-search, notion-fetch, notion-create-pages, notion-update-page
+3) Commitments and habits
+- none
+Long-term conversation memory (compressed):
+- Model maintains safety and respect boundaries; refuses to log offensive, disrespectful, or sexually explicit content in the user's schedule.
+Updated: 2026-03-01T14:33:38.882Z
+4) Preferences and constraints
+Coverage: 22 compressed messages (total at compression: 46).
+5) Open loops
+Use this as durable context across turns; prefer recent messages when there is conflict.
+- none
+1) Active objectives
+- Maintain personal schedule and productivity tracking.
+Available MCP external tools:
+2) Deadlines and dates
+- Walk scheduled for today (Friday, February 27, 2026) at 15:00.
+Note: Tools listed above (not marked "unavailable") are verified connected. If a tool call returns empty results, the connection is working — it simply means no matching items were found. Do not claim a connection is broken when a tool call succeeds.
+[tool] Round 1/1: mcp_notion_workspace_35f1932e92__notion_search({"query":"Companion notes"})
+[tool] mcp_notion_workspace_35f1932e92__notion_search → {"serverId":"notion-workspace-35f1932e92","serverLabel":"Notion Workspace","tool":"notion-search","result":{"text":"{\"results\":[],\"type\":\"workspace_search\"}","raw":{"content":[{"type":"text","text":"{\"results\":[],\"type\":\"workspace_search\"}"}]}}}
+[tool] Round 1/2: setResponseMood({"mood":"focused"})
+[tool] setResponseMood → {"mood":"focused"}
+[gemini] Round 1 tool results for next prompt:
+  mcp_notion_workspace_35f1932e92__notion_search: {"serverLabel":"Notion Workspace","tool":"notion-search","isError":false,"statusText":"{\"results\":[],\"type\":\"workspace_search\"}","contentText":null}
+  setResponseMood: {"mood":"focused"}
+[tool] Round 2/1: mcp_notion_workspace_35f1932e92__notion_search({"query":"Companion"})
+[tool] mcp_notion_workspace_35f1932e92__notion_search → {"serverId":"notion-workspace-35f1932e92","serverLabel":"Notion Workspace","tool":"notion-search","result":{"text":"{\"results\":[],\"type\":\"workspace_search\"}","raw":{"content":[{"type":"text","text":"{\"results\":[],\"type\":\"workspace_search\"}"}]}}}
+[gemini] Round 2 tool results for next prompt:
+  mcp_notion_workspace_35f1932e92__notion_search: {"serverLabel":"Notion Workspace","tool":"notion-search","isError":false,"statusText":"{\"results\":[],\"type\":\"workspace_search\"}","contentText":null}
+[tool] Round 3/1: mcp_notion_workspace_2__notion_search({"query":"Companion notes"})
+[tool] mcp_notion_workspace_2__notion_search → {"serverId":"notion_workspace-2","serverLabel":"Notion Workspace 2","tool":"notion-search","result":{"text":"{\"results\":[{\"id\":\"315098e1-2e06-8088-aea3-f69e1ed09829\",\"title\":\"Companion notes\",\"url\":\"https://www.notion.so/315098e12e068088aea3f69e1ed09829\",\"type\":\"page\",\"highlight\"...
+[gemini] Round 3 tool results for next prompt:
+  mcp_notion_workspace_2__notion_search: {"serverLabel":"Notion Workspace 2","tool":"notion-search","isError":false,"statusText":"{\"results\":[{\"id\":\"315098e1-2e06-8088-aea3-f69e1ed09829\",\"title\":\"Companion notes\",\"url\":\"https://www.notion.so/315098e12e068088aea3f69e1ed09829\",\"type\":\"page\",\"highlight\":\"Companion notes\",\"timestamp\":\"2026-03-01T13:48:00.000Z\"},{\"id\":\"315098e1-2e06-80f6-8bb4-e68ff36f8b2b\",\"title\":\"📁Companion\",\"url\":\"https://www.notion.so/315098e12e0680f68bb4e68ff36f8b2b\",\"type\":\"pa...
+[tool] Round 4/1: mcp_notion_workspace_2__notion_update_page({"page_id":"315098e1-2e06-8088-aea3-f69e1ed09829","command":"insert_content_after","new_str":"\n- Feedback: The app should be able to take a picture directly (likely a file upload type issue).","selec)
+[tool] mcp_notion_workspace_2__notion_update_page → {"serverId":"notion_workspace-2","serverLabel":"Notion Workspace 2","tool":"notion-update-page","result":{"isError":true,"text":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"val...
+[gemini] Round 4 tool results for next prompt:
+  mcp_notion_workspace_2__notion_update_page: {"serverLabel":"Notion Workspace 2","tool":"notion-update-page","isError":true,"statusText":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"validation_error\\\",\\\"message\\\":\\\"String not found: <pattern>.........</pattern> in current version of the page <target>**Dany**:\\\\n-\\\\n<empty-block/>\\\\n<empty-block/>\\\\n**Jonas**:\\\\n-\\\\n<empty-block/>\\\\n<empty-block/>...
+[tool] Round 5/1: mcp_notion_workspace_2__notion_update_page({"command":"insert_content_after","page_id":"315098e1-2e06-8088-aea3-f69e1ed09829","selection_with_ellipsis":"**Dany**:...-","new_str":"\n\n- Feedback: The app should be able to take a picture directl)
+[tool] mcp_notion_workspace_2__notion_update_page → {"serverId":"notion_workspace-2","serverLabel":"Notion Workspace 2","tool":"notion-update-page","result":{"isError":true,"text":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"val...
+[gemini] Round 5 tool results for next prompt:
+  mcp_notion_workspace_2__notion_update_page: {"serverLabel":"Notion Workspace 2","tool":"notion-update-page","isError":true,"statusText":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"validation_error\\\",\\\"message\\\":\\\"Multiple occurrences found: 22 occurrences of <pattern>**Dany**:...-</pattern> in current version of the page <target>**Dany**:\\\\n-\\\\n<empty-block/>\\\\n<empty-block/>\\\\n**Jonas**:\\\\n-\\\\n<...
+[tool] Round 6/1: mcp_notion_workspace_2__notion_update_page({"command":"insert_content_after","selection_with_ellipsis":"**Dany**:\\n-...<empty-block/>","new_str":"\n- Feedback: The app should be able to take a picture directly (likely a file upload type issue)
+[tool] mcp_notion_workspace_2__notion_update_page → {"serverId":"notion_workspace-2","serverLabel":"Notion Workspace 2","tool":"notion-update-page","result":{"isError":true,"text":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"val...
+[gemini] Round 6 tool results for next prompt:
+  mcp_notion_workspace_2__notion_update_page: {"serverLabel":"Notion Workspace 2","tool":"notion-update-page","isError":true,"statusText":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"validation_error\\\",\\\"message\\\":\\\"String not found: <pattern>**Dany**:\\\\\\\\n-...<empty-block/></pattern> in current version of the page <target>**Dany**:\\\\n-\\\\n<empty-block/>\\\\n<empty-block/>\\\\n**Jonas**:\\\\n-\\\\n<empty...
+[tool] Round 7/1: mcp_notion_workspace_2__notion_fetch({"id":"315098e1-2e06-8088-aea3-f69e1ed09829"})
+[tool] mcp_notion_workspace_2__notion_fetch → {"serverId":"notion_workspace-2","serverLabel":"Notion Workspace 2","tool":"notion-fetch","result":{"text":"{\"metadata\":{\"type\":\"page\"},\"title\":\"Companion notes\",\"url\":\"https://www.notion.so/315098e12e068088aea3f69e1ed09829\",\"text\":\"Here is the result of \\\"view\\\" for the Page wi...
+[gemini] Round 7 tool results for next prompt:
+  mcp_notion_workspace_2__notion_fetch: {"serverLabel":"Notion Workspace 2","tool":"notion-fetch","isError":false,"statusText":"{\"metadata\":{\"type\":\"page\"},\"title\":\"Companion notes\",\"url\":\"https://www.notion.so/315098e12e068088aea3f69e1ed09829\",\"text\":\"Here is the result of \\\"view\\\" for the Page with URL https://www.notion.so/315098e12e068088aea3f69e1ed09829 as of 2026-03-01T13:01:32.068Z:\\n<page url=\\\"https://www.notion.so/315098e12e068088aea3f69e1ed09829\\\">\\n<ancestor-path>\\n<parent-page url=\\\"https://w...
+[tool] Round 8/1: mcp_notion_workspace_2__notion_update_page({"page_id":"315098e1-2e06-8088-aea3-f69e1ed09829","selection_with_ellipsis":"**Dany**:\\n-...<empty-block/>\\n<empty-block/>\\n**Jonas**:","command":"insert_content_after","new_str":"\n- Feedback: The)
+[tool] mcp_notion_workspace_2__notion_update_page → {"serverId":"notion_workspace-2","serverLabel":"Notion Workspace 2","tool":"notion-update-page","result":{"isError":true,"text":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"val...
+[gemini] Round 8 tool results for next prompt:
+  mcp_notion_workspace_2__notion_update_page: {"serverLabel":"Notion Workspace 2","tool":"notion-update-page","isError":true,"statusText":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"validation_error\\\",\\\"message\\\":\\\"String not found: <pattern>**Dany**:\\\\\\\\n-...<empty-block/>\\\\\\\\n<empty-block/>\\\\\\\\n**Jonas**:</pattern> in current version of the page <target>**Dany**:\\\\n-\\\\n<empty-block/>\\\\n<emp...
+[gemini] empty response from model: executedTools=9 pendingActions=0 usage={"promptTokens":118127,"responseTokens":644,"totalTokens":118771} finishReason=none
+[gemini] message complete: userId=user-1772134486134-6 prompt=118127 response=644 total=118771 tools=9 context=
+[chat] assistant reply: userId=user-1772134486134-6 text="I pulled this from your connected tools:\n\nNotion Workspace notion-search: {\"results\":[],\"type\":\"workspace_search\"}\n\nsetResponseMood completed.\n\nNotion Workspace 2 notion-search: {\"results\":[{\"id\":\"315098e1-2e06-8088-aea3-f69e1ed09829\",\"title\":\"Companion notes\",\"url\":\"https://www.notion.so/315098e12e068088aea3f69e1ed09829\",\"type\":\"page\",\"highlight\":\"Companion notes\",\"timestamp\":\"2026-03-01T13:48:00.000Z\"},{\"id\":\"315098e1-2e06-80f6-8bb4-e68ff36f8b2b\",\"ti mood=focused tools=[mcp_notion_workspace_35f1932e92__notion_search, setResponseMood, mcp_notion_workspace_35f1932e92__notion_search, mcp_notion_workspace_2__notion_search, mcp_notion_workspace_2__notion_update_page, mcp_notion_workspace_2__notion_update_page, mcp_notion_workspace_2__notion_update_page, mcp_notion_workspace_2__notion_fetch, mcp_notion_workspace_2__notion_update_page]
+
+- After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
+- When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
+- Never claim a write action succeeded unless a tool call in this turn returned success.
+- If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
+- Keep replies practical and conversational, and adapt response length to user intent:
+  - be brief for quick operational questions
+  - be fuller and reflective when the user wants to talk things through
+- For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
+- Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
+- Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
+- Use only lightweight Markdown that the chat UI supports:
+  - **bold** for key facts and warnings
+  - *italic* for gentle emphasis
+  - '-' or '*' bullet lists for schedules and checklists
+  - plain paragraphs separated by blank lines
+- Do not use HTML, tables, headings (#), blockquotes, or code fences.
+- If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
+- Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
+- When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
+Runtime context for this turn:
+Current time reference:
+- Timezone: Europe/Oslo
+- Local date: Sunday, 01 March 2026
+- Local time: 19:16:22
+- UTC now: 2026-03-01T18:16:22.708Z
+IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
+Long-term conversation memory (compressed):
+Updated: 2026-03-01T18:16:27.693Z
+Coverage: 325 compressed messages (total at compression: 349).
+Use this as durable context across turns; prefer recent messages when there is conflict.
+### Commitments and habits
+- **Gym**: Goal of 4 sessions per week (currently on a 3-day streak as of Feb 28).
+- **Deep Work Focus**: Daily habit for uninterrupted study sessions.
+- **Nutrition**: Daily targets set to 2200 kcal, 160g protein, 250g carbs, 70g fat.
+### Preferences and constraints
+### Active objectives
+- Prepare for upcoming exams in May (DAT600, DAT560, DAT520).
+- Complete DAT520 Lab 4 (Paxos), estimated at 40 hours of effort.
+- Track daily fitness and study habits.
+### Deadlines and dates
+- **2026-03-05**: DAT520 Lab 4: Paxos and Multi-Paxos (High priority, 23:59).
+- **2026-03-18**: DAT560 Assignment 3 (23:59).
+- **2026-03-19**: DAT520 Lab 5: Multi-Paxos with Gorums (23:59).
+- **2026-04-09**: DAT520 Lab 6: Multi-Paxos with Clients and Evaluation (23:59).
+- **2026-04-23**: DAT520 Lab 7: Replicated Bank Application (23:59).
+- **2026-04-24**: DAT560 Project + report (23:59).
+- **2026-05-13**: DAT600 Algoritmeteori Exam (09:00, 4 hours).
+- **2026-05-20**: DAT560 Generativ AI Exam (09:00, 4 hours).
+- **2026-05-29**: DAT520 Distribuerte systemer Exam (09:00, 4 hours).
+Habit/goal context for this conversation:
+- **User Profile**: 82 years old, 87 kg, active (trains 4x/week).
+Habits tracked today: 0; pending check-ins: 0
+- **Location**: University of Stavanger (UiS) / Stavanger area.
+Pending habits: none
+- **Communication**: Prefers various "moods" (Fokusert, Oppmuntrende, Empatisk, etc.).
+Goals tracked today: 0; pending check-ins: 0
+- **Notifications**: Smart nudges and push notifications have been toggled frequently; currently active for specific reminders.
+Pending goals: none
+- **Tools**: Uses GitHub for course materials, Notion for documentation (Work/School/Self structure), and Withings (currently disconnected).
+Available MCP external tools:
+### Open loops
+- **Notion Integration**: Recently restored; user is testing writing to specific files like "Companion notes" and "Invaron".
+Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="en" dir=ltr><meta charset=utf-8><meta name=viewport conten…) | GitHub (read-only repos): get_commit, get_file_contents, get_latest_release, list_branches, list_commits, list_releases, search_repositories | Notion Workspace: notion-search, notion-fetch, notion-create-pages, notion-update-page
+- **Withings Connection**: Account is not linked; weight data (87kg) is currently a manual baseline.
+- **Study Planning**: Assistant suggested creating a study plan for the heavy May exam period and the 40-hour Paxos lab.
+Note: Tools listed above (not marked "unavailable") are verified connected. If a tool call returns empty results, the connection is working — it simply means no matching items were found. Do not claim a connection is broken when a tool call succeeds.
+[tool] Round 1/1: mcp_notion_workspace_35f1932e92__notion_search({"query":"Companion notes"})
+[tool] mcp_notion_workspace_35f1932e92__notion_search → {"serverId":"notion-workspace-35f1932e92","serverLabel":"Notion Workspace","tool":"notion-search","result":{"text":"{\"results\":[{\"id\":\"315098e1-2e06-8088-aea3-f69e1ed09829\",\"title\":\"Companion notes\",\"url\":\"https://www.notion.so/315098e12e068088aea3f69e1ed09829\",\"type\":\"page\",\"high...
+[tool] Round 1/2: setResponseMood({"mood":"celebratory"})
+[tool] setResponseMood → {"mood":"celebratory"}
+[gemini] Round 1 tool results for next prompt:
+  mcp_notion_workspace_35f1932e92__notion_search: {"serverLabel":"Notion Workspace","tool":"notion-search","isError":false,"statusText":"{\"results\":[{\"id\":\"315098e1-2e06-8088-aea3-f69e1ed09829\",\"title\":\"Companion notes\",\"url\":\"https://www.notion.so/315098e12e068088aea3f69e1ed09829\",\"type\":\"page\",\"highlight\":\"hello from companion\",\"timestamp\":\"2026-03-01T17:29:00.000Z\"},{\"id\":\"315098e1-2e06-80f6-8bb4-e68ff36f8b2b\",\"title\":\"📁Companion\",\"url\":\"https://www.notion.so/315098e12e0680f68bb4e68ff36f8b2b\",\"type\":\...
+  setResponseMood: {"mood":"celebratory"}
+[tool] Round 2/1: mcp_notion_workspace_35f1932e92__notion_update_page({"command":"insert_content_after","new_str":"\n\n**Random Fact**: \nDid you know that the first computer bug was an actual moth trapped in a relay? 🦋 Programmers literally had to \"debug\" the machin)
+[tool] mcp_notion_workspace_35f1932e92__notion_update_page → {"serverId":"notion-workspace-35f1932e92","serverLabel":"Notion Workspace","tool":"notion-update-page","result":{"isError":true,"text":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":...
+[gemini] Round 2 tool results for next prompt:
+  mcp_notion_workspace_35f1932e92__notion_update_page: {"serverLabel":"Notion Workspace","tool":"notion-update-page","isError":true,"statusText":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"validation_error\\\",\\\"message\\\":\\\"String not found: <pattern>type issue) ... ---</pattern> in current version of the page <target>**Gemini**:\\\\n- hello from companion\\\\n- feature request: support direct camera capture/picture taki...
+[tool] Round 3/1: mcp_notion_workspace_35f1932e92__notion_update_page({"new_str":"\n\n**Random Fact**: \nDid you know that the first computer bug was an actual moth trapped in a relay? 🦋 Programmers literally had to \"debug\" the machine.\n","page_id":"315098e1-2e06-80)
+[tool] mcp_notion_workspace_35f1932e92__notion_update_page → {"serverId":"notion-workspace-35f1932e92","serverLabel":"Notion Workspace","tool":"notion-update-page","result":{"isError":true,"text":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":...
+[gemini] Round 3 tool results for next prompt:
+  mcp_notion_workspace_35f1932e92__notion_update_page: {"serverLabel":"Notion Workspace","tool":"notion-update-page","isError":true,"statusText":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"validation_error\\\",\\\"message\\\":\\\"Multiple matches found: 3 occurrences of <pattern>type issue) ... type issue)</pattern> in current version of the page <target>**Gemini**:\\\\n- hello from companion\\\\n- feature request: support dir...
+[tool] Round 4/1: mcp_notion_workspace_35f1932e92__notion_update_page({"page_id":"315098e1-2e06-8088-aea3-f69e1ed09829","command":"insert_content_after","selection_with_ellipsis":"**Dany**:\\\\n- hello from companion\\\\n- feature request: support direct camera capture/)
+[tool] mcp_notion_workspace_35f1932e92__notion_update_page → {"serverId":"notion-workspace-35f1932e92","serverLabel":"Notion Workspace","tool":"notion-update-page","result":{"isError":true,"text":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":...
+[gemini] Round 4 tool results for next prompt:
+  mcp_notion_workspace_35f1932e92__notion_update_page: {"serverLabel":"Notion Workspace","tool":"notion-update-page","isError":true,"statusText":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"validation_error\\\",\\\"message\\\":\\\"String not found: <pattern>**Dany**:\\\\\\\\\\\\\\\\n- hello from companion\\\\\\\\\\\\\\\\n- feature request: support direct camera capture/picture taking from app (potential file upload type issue) ...
+[tool] Round 5/1: mcp_notion_workspace_35f1932e92__notion_update_page({"command":"replace_content_after","page_id":"315098e1-2e06-8088-aea3-f69e1ed09829","selection_with_ellipsis":"**Gemini**: ... type issue)","new_str":"**Gemini**:\n- hello from companion\n- feature re)
+[gemini] Round 5 tool results for next prompt:
+  mcp_notion_workspace_35f1932e92__notion_update_page: {"error":"MCP error -32602: MCP error -32602: Invalid arguments for tool notion-update-page: [\n  {\n    \"received\": \"replace_content_after\",\n    \"code\": \"invalid_enum_value\",\n    \"options\": [\n      \"update_properties\",\n      \"replace_content\",\n      \"replace_content_range\",\n      \"insert_content_after\",\n      \"apply_template\",\n      \"update_verification\"\n    ],\n    \"path\": [\n      \"command\"\n    ],\n    \"message\": \"Invalid enum value. Expected 'update_pro...
+[tool] Round 6/1: mcp_notion_workspace_35f1932e92__notion_update_page({"command":"replace_content_range","page_id":"315098e1-2e06-8088-aea3-f69e1ed09829","new_str":"**Gemini**:\n- hello from companion\n- feature request: support direct camera capture/picture taking from)
+[tool] mcp_notion_workspace_35f1932e92__notion_update_page → {"serverId":"notion-workspace-35f1932e92","serverLabel":"Notion Workspace","tool":"notion-update-page","result":{"isError":true,"text":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":...
+[gemini] Round 6 tool results for next prompt:
+  mcp_notion_workspace_35f1932e92__notion_update_page: {"serverLabel":"Notion Workspace","tool":"notion-update-page","isError":true,"statusText":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"validation_error\\\",\\\"message\\\":\\\"Multiple matches found: 2 occurrences of <pattern>**Gemini**: ... type issue)</pattern> in current version of the page <target>**Gemini**:\\\\n- hello from companion\\\\n- feature request: support dir...
+[tool] Round 7/1: mcp_notion_workspace_35f1932e92__notion_update_page({"command":"replace_content_range","page_id":"315098e1-2e06-8088-aea3-f69e1ed09829","selection_with_ellipsis":"**Gemini**: ... type issue)\\\\n**Dany**: ... type issue)","new_str":"**Gemini**:\n- hell)
+[tool] mcp_notion_workspace_35f1932e92__notion_update_page → {"serverId":"notion-workspace-35f1932e92","serverLabel":"Notion Workspace","tool":"notion-update-page","result":{"isError":true,"text":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":...
+[gemini] Round 7 tool results for next prompt:
+  mcp_notion_workspace_35f1932e92__notion_update_page: {"serverLabel":"Notion Workspace","tool":"notion-update-page","isError":true,"statusText":"{\"name\":\"APIResponseError\",\"code\":\"validation_error\",\"status\":400,\"headers\":{},\"body\":\"{\\\"object\\\":\\\"error\\\",\\\"status\\\":400,\\\"code\\\":\\\"validation_error\\\",\\\"message\\\":\\\"String not found: <pattern>**Gemini**: ... type issue)\\\\\\\\\\\\\\\\n**Dany**: ... type issue)</pattern> in current version of the page <target>**Gemini**:\\\\n- hello from companion\\\\n- feature r...
+[gemini] empty response from model: executedTools=8 pendingActions=0 usage={"promptTokens":99212,"responseTokens":1207,"totalTokens":100419} finishReason=MALFORMED_FUNCTION_CALL
+[gemini] message complete: userId=user-1771361993528-1 prompt=99212 response=1207 total=100419 tools=8 context=
+[chat] assistant reply: userId=user-1771361993528-1 text="I pulled this from your connected tools:\n\nNotion Workspace notion-search: {\"results\":[{\"id\":\"315098e1-2e06-8088-aea3-f69e1ed09829\",\"title\":\"Companion notes\",\"url\":\"https://www.notion.so/315098e12e068088aea3f69e1ed09829\",\"type\":\"page\",\"highlight\":\"hello from companion\",\"timestamp\":\"2026-03-01T17:29:00.000Z\"},{\"id\":\"315098e1-2e06-80f6-8bb4-e68ff36f8b2b\",\"title\":\"📁Companion\",\"url\":\"https://www...\n\nsetResponseMood completed.\n\nNotion Workspace notion-updat mood=celebratory tools=[mcp_notion_workspace_35f1932e92__notion_search, setResponseMood, mcp_notion_workspace_35f1932e92__notion_update_page, mcp_notion_workspace_35f1932e92__notion_update_page, mcp_notion_workspace_35f1932e92__notion_update_page, mcp_notion_workspace_35f1932e92__notion_update_page, mcp_notion_workspace_35f1932e92__notion_update_page, mcp_notion_workspace_35f1932e92__notion_update_page]

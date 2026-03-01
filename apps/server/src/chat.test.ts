@@ -362,7 +362,7 @@ describe("chat service", () => {
     });
 
     expect(generateChatResponse).toHaveBeenCalledTimes(3);
-    expect(result.reply).toContain("I pulled this from your connected tools");
+    expect(result.reply).toContain("Here's what I found:");
     expect(result.reply).toContain("Schedule (");
   });
 
@@ -406,7 +406,7 @@ describe("chat service", () => {
     });
 
     expect(generateChatResponse).toHaveBeenCalledTimes(3);
-    expect(result.reply).toContain("I pulled this from your connected tools");
+    expect(result.reply).toContain("Here's what I found:");
     expect(result.reply).toContain("Routine presets");
     expect(result.reply).toContain("Morning gym");
     expect(result.reply).not.toContain("I couldn't finish the response from tool data right now");

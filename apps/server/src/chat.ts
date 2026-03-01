@@ -2003,12 +2003,24 @@ function isMcpRateLimitedResponse(response: unknown): boolean {
   return /rate limit exceeded|secondary rate limit|too many requests|retry after/i.test(text);
 }
 
+function isMcpErrorResponse(response: unknown): boolean {
+  const payload = asRecord(response);
+  if (!payload) {
+    return typeof (response as Record<string, unknown>)?.error === "string";
+  }
+  const result = asRecord(payload.result);
+  if (result?.isError === true) {
+    return true;
+  }
+  return typeof payload.error === "string";
+}
+
 function maxCallsPerToolInTurn(toolName: string, binding: McpToolBinding | undefined): number {
   // External / quota-sensitive MCP tools — keep tight limits
   if (binding?.remoteToolName === "search_code") return 2;
   if (binding?.remoteToolName === "search_repositories") return 4;
   // MCP tools (generic) — moderate limit to avoid burning remote quotas
-  if (binding) return 10;
+  if (binding) return 6;
   // Local tools: high default. True loop protection is already handled by
   // MAX_IDENTICAL_TOOL_CALLS_PER_TURN (same-signature dedup) and
   // maxFunctionRounds (total round-trip cap). This per-name limit is just
@@ -3652,11 +3664,13 @@ export async function sendChatMessage(
   let pendingActionsFromTooling: ChatPendingAction[] = [];
   let executedFunctionResponses: ExecutedFunctionResponse[] = [];
   const citations = new Map<string, ChatCitation>();
-  const maxFunctionRounds = 8;
+  const maxFunctionRounds = 10;
   const workingMessages: GeminiMessage[] = [...messages];
   const toolCallSignatureCount = new Map<string, number>();
   const toolCallNameCount = new Map<string, number>();
   const blockedToolCallNames = new Set<string>();
+  const consecutiveMcpErrorCount = new Map<string, number>();
+  const MCP_CONSECUTIVE_ERROR_LIMIT = 3;
 
   const requiresThoughtSignatureReplay = /gemini-3/i.test(config.GEMINI_LIVE_MODEL);
   const getThoughtSignature = (call: { thought_signature?: unknown; thoughtSignature?: unknown }): string | undefined => {
@@ -3724,10 +3738,10 @@ export async function sendChatMessage(
           roundResponses.push({
             name: call.name,
             rawResponse: {
-              error: "Skipped tool call after earlier rate-limit response in this turn. Continue with existing results."
+              error: `Tool ${mcpBinding?.remoteToolName ?? call.name} has been disabled for this turn after repeated failures. Do NOT retry it. Tell the user the update could not be completed and suggest they try again.`
             },
             modelResponse: {
-              error: "Skipped tool call after earlier rate-limit response in this turn. Continue with existing results."
+              error: `Tool ${mcpBinding?.remoteToolName ?? call.name} has been disabled for this turn after repeated failures. Do NOT retry it. Tell the user the update could not be completed and suggest they try again.`
             }
           });
           continue;
@@ -3793,6 +3807,18 @@ export async function sendChatMessage(
           console.log(`[tool] ${call.name} → ${resultSummary.length > 300 ? resultSummary.slice(0, 300) + "..." : resultSummary}`);
           if (mcpBinding && isMcpRateLimitedResponse(result.response)) {
             blockedToolCallNames.add(toolLimitKey);
+          }
+          // Track consecutive MCP errors per tool — block after too many failures
+          // to prevent Gemini from burning all rounds retrying with wrong args
+          if (mcpBinding && isMcpErrorResponse(result.response)) {
+            const errCount = (consecutiveMcpErrorCount.get(toolLimitKey) ?? 0) + 1;
+            consecutiveMcpErrorCount.set(toolLimitKey, errCount);
+            if (errCount >= MCP_CONSECUTIVE_ERROR_LIMIT) {
+              blockedToolCallNames.add(toolLimitKey);
+              console.log(`[tool] Blocked ${mcpBinding.remoteToolName} after ${errCount} consecutive errors — stopping retry loop`);
+            }
+          } else if (mcpBinding) {
+            consecutiveMcpErrorCount.set(toolLimitKey, 0);
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : "Tool call failed";
@@ -3942,7 +3968,7 @@ export async function sendChatMessage(
       ? buildToolDataFallbackReply(
           executedFunctionResponses,
           pendingActionsFromTooling,
-          "I pulled this from your connected tools:"
+          "Here's what I found:"
         )
       : pendingActionsFromTooling.length > 0
         ? buildPendingActionFallbackReply(pendingActionsFromTooling)
