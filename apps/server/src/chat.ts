@@ -90,8 +90,10 @@ async function handleListGitHubOrgRepos(
       const body = await res.text().catch(() => "");
       return { error: `GitHub API error ${res.status}: ${body.slice(0, 200)}` };
     }
+    const grantedScopes = res.headers.get("x-oauth-scopes") ?? "";
     const repos = (await res.json()) as Array<{ name: string; full_name: string; private: boolean; description: string | null; updated_at: string; default_branch: string }>;
-    return {
+    const hasPrivate = repos.some((r) => r.private);
+    const result: Record<string, unknown> = {
       org,
       count: repos.length,
       repos: repos.map((r) => ({
@@ -103,6 +105,13 @@ async function handleListGitHubOrgRepos(
         default_branch: r.default_branch
       }))
     };
+    // If all returned repos are public, the org may restrict third-party access
+    if (repos.length > 0 && !hasPrivate) {
+      result.accessHint = "Only public repos were returned. If the user expects private repos, the org may restrict third-party OAuth app access. The user should visit https://github.com/settings/applications, find the Companion OAuth app, and click 'Grant' next to this org.";
+    } else if (repos.length === 0) {
+      result.accessHint = "No repos found. The org may be empty, the name may be wrong, or the org restricts third-party access. Granted scopes: " + grantedScopes;
+    }
+    return result;
   } catch (err) {
     return { error: `Failed to fetch org repos: ${err instanceof Error ? err.message : String(err)}` };
   }
@@ -115,22 +124,32 @@ async function handleListGitHubUserOrgs(
   const token = getGitHubMcpToken(store, userId);
   if (!token) return { error: "GitHub is not connected. Ask the user to connect GitHub in Settings → Integrations." };
 
+  const ghHeaders = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+
   try {
     const res = await fetch(
       "https://api.github.com/user/orgs?per_page=100",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28"
-        }
-      }
+      { headers: ghHeaders }
     );
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       return { error: `GitHub API error ${res.status}: ${body.slice(0, 200)}` };
     }
+    const grantedScopes = res.headers.get("x-oauth-scopes") ?? "";
     const orgs = (await res.json()) as Array<{ login: string; description: string | null }>;
+
+    if (orgs.length === 0) {
+      const hasReadOrg = grantedScopes.split(",").map((s) => s.trim()).includes("read:org");
+      const hint = hasReadOrg
+        ? "The token has read:org scope, but 0 orgs were returned. The user's GitHub organizations may restrict third-party OAuth app access. Ask the user to grant organization access for this app at https://github.com/settings/applications — find the Companion OAuth app and click 'Grant' next to each org."
+        : "The token is MISSING the read:org scope. The user needs to disconnect and reconnect GitHub in Settings → Integrations to get updated permissions. Their current token was created before org-access permissions were added.";
+      return { count: 0, orgs: [], scopeHint: hint, grantedScopes };
+    }
+
     return {
       count: orgs.length,
       orgs: orgs.map((o) => ({ login: o.login, description: o.description }))
@@ -1424,11 +1443,14 @@ function buildFunctionCallingSystemInstruction(
     `- For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.`,
     `- If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.`,
     ...(hasGitHubMcp ? [
-      `- When the user asks about GitHub repos, first call listGitHubUserOrgs to discover which organizations they belong to. Then use listGitHubOrgRepos to list repos in those orgs. This is the ONLY reliable way to discover private org repos.`,
+      `- When the user asks about GitHub repos, first call listGitHubUserOrgs to discover which organizations they belong to. Then use listGitHubOrgRepos to list repos in those orgs.`,
+      `- If listGitHubUserOrgs returns 0 orgs with a scopeHint, relay the hint to the user verbatim — it contains the exact steps to fix permissions. Do NOT guess or make up instructions.`,
+      `- If listGitHubOrgRepos returns an accessHint about only public repos, relay it to the user — private repos require the user to grant org access to the OAuth app.`,
       `- GitHub search_repositories (MCP tool) only finds PUBLIC repos. Private repos (especially course repos inside university organizations) will NOT appear in search results.`,
       `- When the user mentions a specific GitHub repo by name, try get_file_contents directly with the owner/repo path — it works on private repos even when search can't find them.`,
       `- For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.`,
       `- Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.`,
+      `- IMPORTANT: Only use the GitHub MCP tools listed in the Available MCP external tools section below. Do NOT invent tool names like list_org_repos or list_user_repos — they do not exist. For org repo listing, use the native listGitHubOrgRepos tool instead.`,
     ] : []),
     ...(hasGoogleCalendarMcp ? [
       `- Google Calendar is connected as an external integration via MCP tools (list_calendars, list_events, create_event, etc.). Use these MCP tools for requests about the user's Google Calendar.`,

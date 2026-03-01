@@ -140,6 +140,7 @@ describe("handleListGitHubUserOrgs", () => {
     setupGitHubMcp(store, userId);
     fetchSpy.mockResolvedValueOnce({
       ok: true,
+      headers: new Headers({ "x-oauth-scopes": "user:email, read:user, repo, read:org" }),
       json: async () => [
         { login: "dat560-2026", description: "University course org" },
         { login: "my-startup", description: null }
@@ -152,12 +153,43 @@ describe("handleListGitHubUserOrgs", () => {
       { login: "dat560-2026", description: "University course org" },
       { login: "my-startup", description: null }
     ]);
+    expect(result.scopeHint).toBeUndefined();
 
     expect(fetchSpy).toHaveBeenCalledOnce();
     const [url, opts] = fetchSpy.mock.calls[0];
     expect(url).toBe("https://api.github.com/user/orgs?per_page=100");
     expect(opts.headers.Authorization).toBe("Bearer ghp_test_token_123");
     expect(opts.headers.Accept).toBe("application/vnd.github+json");
+  });
+
+  it("returns scopeHint when 0 orgs and missing read:org", async () => {
+    setupGitHubMcp(store, userId);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ "x-oauth-scopes": "user:email, read:user, repo" }),
+      json: async () => []
+    });
+
+    const result = await handleListGitHubUserOrgs(store, userId) as any;
+    expect(result.count).toBe(0);
+    expect(result.orgs).toEqual([]);
+    expect(result.scopeHint).toContain("MISSING the read:org scope");
+    expect(result.scopeHint).toContain("disconnect and reconnect");
+    expect(result.grantedScopes).toBe("user:email, read:user, repo");
+  });
+
+  it("returns scopeHint about org access when 0 orgs but read:org present", async () => {
+    setupGitHubMcp(store, userId);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ "x-oauth-scopes": "user:email, read:user, repo, read:org" }),
+      json: async () => []
+    });
+
+    const result = await handleListGitHubUserOrgs(store, userId) as any;
+    expect(result.count).toBe(0);
+    expect(result.scopeHint).toContain("restrict third-party OAuth app access");
+    expect(result.scopeHint).toContain("github.com/settings/applications");
   });
 
   it("returns error on API failure", async () => {
@@ -216,6 +248,7 @@ describe("handleListGitHubOrgRepos", () => {
     setupGitHubMcp(store, userId);
     fetchSpy.mockResolvedValueOnce({
       ok: true,
+      headers: new Headers({ "x-oauth-scopes": "user:email, read:user, repo, read:org" }),
       json: async () => [
         {
           name: "assignment-1",
@@ -259,16 +292,54 @@ describe("handleListGitHubOrgRepos", () => {
         default_branch: "main"
       }
     ]);
+    expect(result.accessHint).toBeUndefined();
 
     const [url, opts] = fetchSpy.mock.calls[0];
     expect(url).toBe("https://api.github.com/orgs/dat560-2026/repos?type=all&per_page=100&sort=updated");
     expect(opts.headers.Authorization).toBe("Bearer ghp_test_token_123");
   });
 
+  it("returns accessHint when only public repos found", async () => {
+    setupGitHubMcp(store, userId);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ "x-oauth-scopes": "user:email, read:user, repo" }),
+      json: async () => [
+        {
+          name: "info",
+          full_name: "dat560-2026/info",
+          private: false,
+          description: null,
+          updated_at: "2025-09-01T08:00:00Z",
+          default_branch: "main"
+        }
+      ]
+    });
+
+    const result = await handleListGitHubOrgRepos(store, userId, { org: "dat560-2026" }) as any;
+    expect(result.count).toBe(1);
+    expect(result.accessHint).toContain("Only public repos were returned");
+    expect(result.accessHint).toContain("github.com/settings/applications");
+  });
+
+  it("returns accessHint when 0 repos found", async () => {
+    setupGitHubMcp(store, userId);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ "x-oauth-scopes": "user:email, read:user, repo" }),
+      json: async () => []
+    });
+
+    const result = await handleListGitHubOrgRepos(store, userId, { org: "unknown-org" }) as any;
+    expect(result.count).toBe(0);
+    expect(result.accessHint).toContain("No repos found");
+  });
+
   it("passes type parameter to GitHub API", async () => {
     setupGitHubMcp(store, userId);
     fetchSpy.mockResolvedValueOnce({
       ok: true,
+      headers: new Headers({ "x-oauth-scopes": "repo" }),
       json: async () => []
     });
 
@@ -282,6 +353,7 @@ describe("handleListGitHubOrgRepos", () => {
     setupGitHubMcp(store, userId);
     fetchSpy.mockResolvedValueOnce({
       ok: true,
+      headers: new Headers({ "x-oauth-scopes": "repo" }),
       json: async () => []
     });
 
@@ -315,6 +387,7 @@ describe("handleListGitHubOrgRepos", () => {
     setupGitHubMcp(store, userId);
     fetchSpy.mockResolvedValueOnce({
       ok: true,
+      headers: new Headers({ "x-oauth-scopes": "repo" }),
       json: async () => []
     });
 

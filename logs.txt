@@ -1,472 +1,324 @@
-2026-03-01T19:02:15.228429030Z [inf]  Starting Container
-2026-03-01T19:02:17.621800733Z [inf]  [migration] Found 4 table(s) missing userId column — dropping for fresh recreate...
-2026-03-01T19:02:17.621806279Z [inf]  [migration] Tables: push_delivery_metrics, push_delivery_failures, integration_sync_attempts, sync_queue
-2026-03-01T19:02:17.621811335Z [inf]  [migration] Dropped 4 tables. initializeSchema() will recreate them.
-2026-03-01T19:02:17.621815811Z [inf]  [auth] Admin email configured (wathne.sveinung@gmail.com) — will be promoted to admin on OAuth login.
-2026-03-01T19:02:17.640846946Z [inf]  [companion] listening on http://localhost:8080
-2026-03-01T19:02:17.640857510Z [inf]  [companion] storage backend=postgres-snapshot sqlite=/app/companion.db restoredSnapshotAt=2026-03-01T18:56:51.289Z
-2026-03-01T19:02:17.640863324Z [inf]  [push] VAPID keys=configured subject=mailto:wathne.sveinung@gmail.com
-2026-03-01T19:02:17.640868697Z [inf]  [push] subscriptions=16
-2026-03-01T19:02:17.683074407Z [inf]  [orchestrator] started — polling every 30s for due notifications
-2026-03-01T19:02:20.638132439Z [inf]  [push] delivering "Evening check-in" to 10 subscription(s)
-2026-03-01T19:02:21.051500152Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:21.064102707Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:21.069858204Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:21.075501214Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:21.081526986Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:21.093930997Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:21.106638088Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:21.112401608Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:21.124611490Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:21.137007836Z [inf]  [push] result: delivered=true status=n/a attempts=1
-2026-03-01T19:02:41.134784380Z [inf]  [google-cal-oauth] Callback hit: state=xetf8vm9k9r code=present error=none pendingMatch=false
-2026-03-01T19:03:11.089737337Z [inf]  [mcp] Skipping validation for GitHub (read-only repos) (OAuth flow — will validate on first tool call)
-2026-03-01T19:03:11.089743956Z [inf]  [tp-github-sub-agent] scheduled background import for user=user-1771361993528-1 githubServer=github-read-only-repos-f492c062bb
-2026-03-01T19:03:31.092715757Z [inf]  - For factual questions about schedule, deadlines, or connected external systems, use tools before answering.
-2026-03-01T19:03:31.092725983Z [inf]  - Companion has a built-in schedule ("in-app schedule") managed by createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/getSchedule/clearScheduleWindow. This always works — it does not require any external calendar integration.
-2026-03-01T19:03:31.092733531Z [inf]  - For simple greetings/small talk (for example "hi", "hello", "yo"), reply naturally without tool calls.
-2026-03-01T19:03:31.092740953Z [inf]  - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
-2026-03-01T19:03:31.092747844Z [inf]  - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
-2026-03-01T19:03:31.092755967Z [inf]  - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
-2026-03-01T19:03:31.092762748Z [inf]  - Applying a nutrition snapshot sets the default baseline plan for upcoming days.
-2026-03-01T19:03:31.092769938Z [inf]  - Daily meal edits are temporary for that day; a new day resets to the default baseline snapshot automatically.
-2026-03-01T19:03:31.092777433Z [inf]  - Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.
-2026-03-01T19:03:31.092783664Z [inf]  [chat] user message: userId=user-1771361993528-1 text="Do you see dat 560 and dat 520 repos now?"
-2026-03-01T19:03:31.092791256Z [inf]  [gemini] system prompt: userId=user-1771361993528-1 length=13172 tools=58 messages=25
-2026-03-01T19:03:31.092798948Z [inf]  [gemini] system instruction:
-2026-03-01T19:03:31.092806648Z [inf]  You are Companion, a personal AI assistant for Bunnyflake.
-2026-03-01T19:03:31.092814304Z [inf]  
-2026-03-01T19:03:31.092821049Z [inf]  Core behavior:
-2026-03-01T19:03:31.093806218Z [inf]  - When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).
-2026-03-01T19:03:31.093810739Z [inf]  - For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
-2026-03-01T19:03:31.093816841Z [inf]  - For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.
-2026-03-01T19:03:31.093821442Z [inf]  - If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.
-2026-03-01T19:03:31.093825511Z [inf]  - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
-2026-03-01T19:03:31.093829940Z [inf]  - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
-2026-03-01T19:03:31.093835247Z [inf]  - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
-2026-03-01T19:03:31.093840523Z [inf]  - When the user mentions a GitHub repository by name (e.g. "my dat520 repo"), do NOT guess the owner/repo path. Instead, call search_repositories first to find the correct full name (owner/repo), then use that for subsequent calls like get_file_contents or list_branches.
-2026-03-01T19:03:31.093844575Z [inf]  - For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.
-2026-03-01T19:03:31.093848843Z [inf]  - Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.
-2026-03-01T19:03:31.095613246Z [inf]  - If the first notion-update-page call fails with a validation error, do NOT retry with different escaping — tell the user the update couldn't be applied automatically and suggest they edit the page directly in Notion.
-2026-03-01T19:03:31.095623033Z [inf]  - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
-2026-03-01T19:03:31.095630014Z [inf]  - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
-2026-03-01T19:03:31.095635699Z [inf]  - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
-2026-03-01T19:03:31.095643896Z [inf]  - CRITICAL timezone rule for deadlines: All stored dueDate values from getDeadlines are in UTC. The user sees and speaks in LOCAL time (see timezone in runtime context below). When the user says a date/time like "22.02.2026 23:59", that is LOCAL time — convert it to UTC before passing to queueDeadlineAction. For example, 23:59 Europe/Oslo (UTC+1 winter) = 22:59 UTC → newDueDate "2026-02-22T22:59:00.000Z". Similarly, when comparing a stored UTC dueDate against the user's stated local time, apply the timezone offset — a UTC date of 2026-02-22T23:59Z displays as 2026-02-23T00:59 in Europe/Oslo, NOT Feb 22 23:59. Always call queueDeadlineAction if the user's intended local time differs from the current local-time interpretation of the stored UTC dueDate.
-2026-03-01T19:03:31.095716414Z [inf]  - Notion is connected via MCP tools (notion-search, notion-fetch, notion-create-pages, notion-update-page).
-2026-03-01T19:03:31.095720861Z [inf]  - CRITICAL: Before calling notion-update-page, ALWAYS call notion-fetch first to see the page's exact current text content.
-2026-03-01T19:03:31.095725862Z [inf]  - The notion-update-page "selection_with_ellipsis" field uses "..." (three literal dots) as a wildcard between two text anchors. The anchors must be EXACT substrings copied verbatim from the notion-fetch plain text output, long enough to be UNIQUE (match exactly one location). Example: "Meeting notes...action items" matches the region from "Meeting notes" through "action items".
-2026-03-01T19:03:31.095730018Z [inf]  - Use anchors that are full phrases or sentences — short fragments like single words or punctuation will match multiple places and fail.
-2026-03-01T19:03:31.096915220Z [inf]  - CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
-2026-03-01T19:03:31.096932749Z [inf]  - CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
-2026-03-01T19:03:31.096940501Z [inf]  - IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
-2026-03-01T19:03:31.096947678Z [inf]  - When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
-2026-03-01T19:03:31.096954730Z [inf]  - For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
-2026-03-01T19:03:31.096961821Z [inf]  - IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
-2026-03-01T19:03:31.096969808Z [inf]  - To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
-2026-03-01T19:03:31.097005617Z [inf]  - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
-2026-03-01T19:03:31.098720887Z [inf]  - When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
-2026-03-01T19:03:31.098727289Z [inf]  - Never tell the user to use the habits/goals tab for check-ins; handle it in chat.
-2026-03-01T19:03:31.098728562Z [inf]  - Never claim a write action succeeded unless a tool call in this turn returned success.
-2026-03-01T19:03:31.098737001Z [inf]  - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
-2026-03-01T19:03:31.098744044Z [inf]  - If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
-2026-03-01T19:03:31.098750431Z [inf]  - For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
-2026-03-01T19:03:31.098758289Z [inf]  - After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
-2026-03-01T19:03:31.098761931Z [inf]  - For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
-2026-03-01T19:03:31.098769246Z [inf]  - Treat habits/goals as conversation-managed: you should proactively ask lightweight check-in questions during natural pauses instead of directing users to manual check-in buttons.
-2026-03-01T19:03:31.098776826Z [inf]  - If habits/goals are pending today, include one brief check-in prompt in suitable replies (at most one per reply).
-2026-03-01T19:03:31.098784704Z [inf]  - When the user responds with yes/no/not yet/already done for a habit/goal check-in, call updateHabitCheckIn/updateGoalCheckIn immediately with the inferred item.
-2026-03-01T19:03:31.098792923Z [inf]  - If user intent is clear from context, do not ask for extra confirmation before logging a habit/goal check-in.
-2026-03-01T19:03:31.099694927Z [inf]    - plain paragraphs separated by blank lines
-2026-03-01T19:03:31.099704330Z [inf]  - Do not use HTML, tables, headings (#), blockquotes, or code fences.
-2026-03-01T19:03:31.099707207Z [inf]    - be fuller and reflective when the user wants to talk things through
-2026-03-01T19:03:31.099714099Z [inf]  - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
-2026-03-01T19:03:31.099719415Z [inf]  - For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
-2026-03-01T19:03:31.099723707Z [inf]  - Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
-2026-03-01T19:03:31.099728951Z [inf]  - Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
-2026-03-01T19:03:31.099733904Z [inf]  - When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
-2026-03-01T19:03:31.099738900Z [inf]  - Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
-2026-03-01T19:03:31.099739409Z [inf]  - If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
-2026-03-01T19:03:31.099747613Z [inf]  - Keep replies practical and conversational, and adapt response length to user intent:
-2026-03-01T19:03:31.099748964Z [inf]  - Use only lightweight Markdown that the chat UI supports:
-2026-03-01T19:03:31.099756385Z [inf]    - be brief for quick operational questions
-2026-03-01T19:03:31.099758876Z [inf]    - **bold** for key facts and warnings
-2026-03-01T19:03:31.099765744Z [inf]    - *italic* for gentle emphasis
-2026-03-01T19:03:31.099771347Z [inf]    - '-' or '*' bullet lists for schedules and checklists
-2026-03-01T19:03:31.100908301Z [inf]  
-2026-03-01T19:03:31.100909765Z [inf]  
-2026-03-01T19:03:31.100916011Z [inf]  Runtime context for this turn:
-2026-03-01T19:03:31.100921891Z [inf]  Current time reference:
-2026-03-01T19:03:31.100926880Z [inf]  ### Deadlines and dates
-2026-03-01T19:03:31.100929673Z [inf]  - Timezone: Europe/Oslo
-2026-03-01T19:03:31.100935706Z [inf]  - Local date: Sunday, 01 March 2026
-2026-03-01T19:03:31.100940541Z [inf]  - **2026-03-05**: DAT520 Lab 4: Paxos and Multi-Paxos (High priority, 23:59).
-2026-03-01T19:03:31.100941129Z [inf]  - Local time: 20:03:21
-2026-03-01T19:03:31.100947271Z [inf]  - UTC now: 2026-03-01T19:03:21.965Z
-2026-03-01T19:03:31.100950837Z [inf]  - **2026-03-18**: DAT560 Assignment 3 (23:59).
-2026-03-01T19:03:31.100953395Z [inf]  IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
-2026-03-01T19:03:31.100960138Z [inf]  
-2026-03-01T19:03:31.100960766Z [inf]  - **2026-03-19**: DAT520 Lab 5: Multi-Paxos with Gorums (23:59).
-2026-03-01T19:03:31.100965775Z [inf]  Long-term conversation memory (compressed):
-2026-03-01T19:03:31.100969898Z [inf]  Updated: 2026-03-01T18:16:27.693Z
-2026-03-01T19:03:31.100973931Z [inf]  Coverage: 325 compressed messages (total at compression: 349).
-2026-03-01T19:03:31.100977863Z [inf]  Use this as durable context across turns; prefer recent messages when there is conflict.
-2026-03-01T19:03:31.100981683Z [inf]  
-2026-03-01T19:03:31.100985951Z [inf]  ### Active objectives
-2026-03-01T19:03:31.100989850Z [inf]  - Prepare for upcoming exams in May (DAT600, DAT560, DAT520).
-2026-03-01T19:03:31.100993646Z [inf]  - Complete DAT520 Lab 4 (Paxos), estimated at 40 hours of effort.
-2026-03-01T19:03:31.100997587Z [inf]  - Track daily fitness and study habits.
-2026-03-01T19:03:31.102328719Z [inf]  - **2026-04-09**: DAT520 Lab 6: Multi-Paxos with Clients and Evaluation (23:59).
-2026-03-01T19:03:31.102337726Z [inf]  - **2026-04-23**: DAT520 Lab 7: Replicated Bank Application (23:59).
-2026-03-01T19:03:31.102344595Z [inf]  - **2026-04-24**: DAT560 Project + report (23:59).
-2026-03-01T19:03:31.102350549Z [inf]  - **2026-05-13**: DAT600 Algoritmeteori Exam (09:00, 4 hours).
-2026-03-01T19:03:31.102355489Z [inf]  - **2026-05-20**: DAT560 Generativ AI Exam (09:00, 4 hours).
-2026-03-01T19:03:31.102360053Z [inf]  - **2026-05-29**: DAT520 Distribuerte systemer Exam (09:00, 4 hours).
-2026-03-01T19:03:31.102367471Z [inf]  
-2026-03-01T19:03:31.102373693Z [inf]  ### Commitments and habits
-2026-03-01T19:03:31.102380624Z [inf]  - **Gym**: Goal of 4 sessions per week (currently on a 3-day streak as of Feb 28).
-2026-03-01T19:03:31.102385237Z [inf]  - **Deep Work Focus**: Daily habit for uninterrupted study sessions.
-2026-03-01T19:03:31.102389281Z [inf]  - **Nutrition**: Daily targets set to 2200 kcal, 160g protein, 250g carbs, 70g fat.
-2026-03-01T19:03:31.102393346Z [inf]  
-2026-03-01T19:03:31.102397783Z [inf]  ### Preferences and constraints
-2026-03-01T19:03:31.102474529Z [inf]  - **User Profile**: 82 years old, 87 kg, active (trains 4x/week).
-2026-03-01T19:03:31.102486862Z [inf]  - **Location**: University of Stavanger (UiS) / Stavanger area.
-2026-03-01T19:03:31.102494241Z [inf]  - **Communication**: Prefers various "moods" (Fokusert, Oppmuntrende, Empatisk, etc.).
-2026-03-01T19:03:31.102501464Z [inf]  - **Notifications**: Smart nudges and push notifications have been toggled frequently; currently active for specific reminders.
-2026-03-01T19:03:31.102508708Z [inf]  - **Tools**: Uses GitHub for course materials, Notion for documentation (Work/School/Self structure), and Withings (currently disconnected).
-2026-03-01T19:03:31.102515987Z [inf]  
-2026-03-01T19:03:31.102522776Z [inf]  ### Open loops
-2026-03-01T19:03:31.103800114Z [inf]  - **Notion Integration**: Recently restored; user is testing writing to specific files like "Companion notes" and "Invaron".
-2026-03-01T19:03:31.103809786Z [inf]  - **Withings Connection**: Account is not linked; weight data (87kg) is currently a manual baseline.
-2026-03-01T19:03:31.103815407Z [inf]  Goals tracked today: 0; pending check-ins: 0
-2026-03-01T19:03:31.103818285Z [inf]  - **Study Planning**: Assistant suggested creating a study plan for the heavy May exam period and the 40-hour Paxos lab.
-2026-03-01T19:03:31.103826580Z [inf]  
-2026-03-01T19:03:31.103828199Z [inf]  Pending goals: none
-2026-03-01T19:03:31.103835101Z [inf]  Habit/goal context for this conversation:
-2026-03-01T19:03:31.103840277Z [inf]  
-2026-03-01T19:03:31.103844033Z [inf]  Habits tracked today: 0; pending check-ins: 0
-2026-03-01T19:03:31.103849784Z [inf]  Available MCP external tools:
-2026-03-01T19:03:31.103855084Z [inf]  Pending habits: none
-2026-03-01T19:03:31.103858023Z [inf]  Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="nl" dir=ltr><meta charset=utf-8><meta name=viewport conten…) | Notion Workspace: notion-search, notion-fetch, notion-create-pages, notion-update-page | GitHub (read-only repos): get_commit, get_file_contents, get_latest_release, list_branches, list_commits, list_releases, search_repositories
-2026-03-01T19:03:31.103865036Z [inf]  Note: Tools listed above (not marked "unavailable") are verified connected. If a tool call returns empty results, the connection is working — it simply means no matching items were found. Do not claim a connection is broken when a tool call succeeds.
-2026-03-01T19:03:31.103871586Z [inf]  [tool] Round 1/1: mcp_github_read_only_repos_f492c__search_repositories({"query":"user:lucyscript DAT520"})
-2026-03-01T19:03:31.103881166Z [inf]  [tool] mcp_github_read_only_repos_f492c__search_repositories → {"serverId":"github-read-only-repos-f492c062bb","serverLabel":"GitHub (read-only repos)","tool":"search_repositories","result":{"text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","raw":{"content":[{"type":"text","text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]...
-2026-03-01T19:03:31.105015894Z [inf]  [tool] Round 1/2: mcp_github_read_only_repos_f492c__search_repositories({"query":"user:lucyscript DAT560"})
-2026-03-01T19:03:31.105025117Z [inf]  [tool] mcp_github_read_only_repos_f492c__search_repositories → {"serverId":"github-read-only-repos-f492c062bb","serverLabel":"GitHub (read-only repos)","tool":"search_repositories","result":{"text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","raw":{"content":[{"type":"text","text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]...
-2026-03-01T19:03:31.105030869Z [inf]  [tool] Round 1/3: setResponseMood({"mood":"focused"})
-2026-03-01T19:03:31.105036842Z [inf]  [tool] setResponseMood → {"mood":"focused"}
-2026-03-01T19:03:31.105044938Z [inf]  [gemini] Round 1 tool results for next prompt:
-2026-03-01T19:03:31.105051834Z [inf]    mcp_github_read_only_repos_f492c__search_repositories: {"serverLabel":"GitHub (read-only repos)","tool":"search_repositories","isError":false,"statusText":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","contentText":null}
-2026-03-01T19:03:31.105059636Z [inf]    mcp_github_read_only_repos_f492c__search_repositories: {"serverLabel":"GitHub (read-only repos)","tool":"search_repositories","isError":false,"statusText":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","contentText":null}
-2026-03-01T19:03:31.105065809Z [inf]    setResponseMood: {"mood":"focused"}
-2026-03-01T19:03:31.105071621Z [inf]  [tool] Round 2/1: mcp_github_read_only_repos_f492c__search_repositories({"query":"user:lucyscript"})
-2026-03-01T19:03:31.105077685Z [inf]  [tool] mcp_github_read_only_repos_f492c__search_repositories → {"serverId":"github-read-only-repos-f492c062bb","serverLabel":"GitHub (read-only repos)","tool":"search_repositories","result":{"text":"{\"total_count\":17,\"incomplete_results\":false,\"items\":[{\"id\":855011459,\"name\":\"WebprojectDat310\",\"full_name\":\"lucyscript/WebprojectDat310\",\"descript...
-2026-03-01T19:03:31.106345061Z [inf]  [gemini] Round 2 tool results for next prompt:
-2026-03-01T19:03:31.106353449Z [inf]    mcp_github_read_only_repos_f492c__search_repositories: {"serverLabel":"GitHub (read-only repos)","tool":"search_repositories","isError":false,"statusText":"{\"total_count\":17,\"incomplete_results\":false,\"items\":[{\"id\":855011459,\"name\":\"WebprojectDat310\",\"full_name\":\"lucyscript/WebprojectDat310\",\"description\":\"Our finished web-project for the course Dat310 at UIS.\",\"html_url\":\"https://github.com/lucyscript/WebprojectDat310\",\"language\":\"Python\",\"stargazers_count\":2,\"forks_count\":0,\"open_issues_count\":0,\"updated_at\":\"...
-2026-03-01T19:03:31.106359394Z [inf]  [tp-github-sub-agent] user=user-1771361993528-1 server=github-read-only-repos-f492c062bb imported=1 updated=0 skipped=1
-2026-03-01T19:03:32.295879177Z [inf]  [gemini] message complete: userId=user-1771361993528-1 prompt=40216 response=343 total=40559 tools=4 context=
-2026-03-01T19:03:32.295889081Z [inf]  [chat] assistant reply: userId=user-1771361993528-1 text="Jeg har nå søkt grundig gjennom alle de 17 offentlige repoene dine på GitHub-brukeren din, **lucyscript**, men jeg finner verken **DAT520** eller **DAT560** der. 🔍\n\nDe eneste UiS-relaterte repoene jeg ser offentlig er:\n*   `WebprojectDat310`\n*   `TID-Invaron`\n*   `Lucyscript` (profil-repo)\n\nDette betyr sannsynligvis at DAT520- og DAT560-repoene dine er **private**. For at jeg skal kunne se dem, må du enten:\n1.  Gjøre dem **public** (hvis emneansvarlig tillater det).\n2.  Gi Companion-a mood=focused tools=[mcp_github_read_only_repos_f492c__search_repositories, mcp_github_read_only_repos_f492c__search_repositories, setResponseMood, mcp_github_read_only_repos_f492c__search_repositories]
-2026-03-01T19:04:22.569720381Z [inf]  [mcp] Skipping validation for GitHub (read-only repos) (OAuth flow — will validate on first tool call)
-2026-03-01T19:04:22.569725235Z [inf]  [tp-github-sub-agent] scheduled background import for user=user-1771361993528-1 githubServer=github-read-only-repos-f492c062bb
-2026-03-01T19:04:42.476017903Z [inf]  [tp-github-sub-agent] user=user-1771361993528-1 server=github-read-only-repos-f492c062bb imported=0 updated=0 skipped=1
-2026-03-01T19:05:02.480964921Z [inf]  Core behavior:
-2026-03-01T19:05:02.480976400Z [inf]  - For factual questions about schedule, deadlines, or connected external systems, use tools before answering.
-2026-03-01T19:05:02.480982974Z [inf]  - Companion has a built-in schedule ("in-app schedule") managed by createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/getSchedule/clearScheduleWindow. This always works — it does not require any external calendar integration.
-2026-03-01T19:05:02.480988774Z [inf]  - For simple greetings/small talk (for example "hi", "hello", "yo"), reply naturally without tool calls.
-2026-03-01T19:05:02.480993640Z [inf]  [chat] user message: userId=user-1771361993528-1 text="dat560-2026"
-2026-03-01T19:05:02.480996545Z [inf]  - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
-2026-03-01T19:05:02.481003458Z [inf]  - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
-2026-03-01T19:05:02.481005148Z [inf]  [gemini] system prompt: userId=user-1771361993528-1 length=13561 tools=58 messages=25
-2026-03-01T19:05:02.481010322Z [inf]  - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
-2026-03-01T19:05:02.481015998Z [inf]  [gemini] system instruction:
-2026-03-01T19:05:02.481016107Z [inf]  - Applying a nutrition snapshot sets the default baseline plan for upcoming days.
-2026-03-01T19:05:02.481022111Z [inf]  - Daily meal edits are temporary for that day; a new day resets to the default baseline snapshot automatically.
-2026-03-01T19:05:02.481025143Z [inf]  You are Companion, a personal AI assistant for Bunnyflake.
-2026-03-01T19:05:02.481028719Z [inf]  - Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.
-2026-03-01T19:05:02.481033392Z [inf]  
-2026-03-01T19:05:02.482026445Z [inf]  - When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).
-2026-03-01T19:05:02.482032014Z [inf]  - For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
-2026-03-01T19:05:02.482036226Z [inf]  - For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.
-2026-03-01T19:05:02.482040119Z [inf]  - If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.
-2026-03-01T19:05:02.482043887Z [inf]  - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
-2026-03-01T19:05:02.482047666Z [inf]  - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
-2026-03-01T19:05:02.482052308Z [inf]  - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
-2026-03-01T19:05:02.482056806Z [inf]  - When the user mentions a GitHub repository by name (e.g. "my dat520 repo"), do NOT guess the owner/repo path. Instead, call search_repositories first to find the correct full name (owner/repo), then use that for subsequent calls like get_file_contents or list_branches.
-2026-03-01T19:05:02.482060724Z [inf]  - For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.
-2026-03-01T19:05:02.482064737Z [inf]  - Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.
-2026-03-01T19:05:02.483410658Z [inf]  - Notion is connected via MCP tools (notion-search, notion-fetch, notion-create-pages, notion-update-page).
-2026-03-01T19:05:02.483416079Z [inf]  - CRITICAL: Before calling notion-update-page, ALWAYS call notion-fetch first to see the page's exact current text content.
-2026-03-01T19:05:02.483420102Z [inf]  - The notion-update-page "selection_with_ellipsis" field uses "..." (three literal dots) as a wildcard between two text anchors. The anchors must be EXACT substrings copied verbatim from the notion-fetch plain text output, long enough to be UNIQUE (match exactly one location). Example: "Meeting notes...action items" matches the region from "Meeting notes" through "action items".
-2026-03-01T19:05:02.483424493Z [inf]  - Use anchors that are full phrases or sentences — short fragments like single words or punctuation will match multiple places and fail.
-2026-03-01T19:05:02.483428988Z [inf]  - If the first notion-update-page call fails with a validation error, do NOT retry with different escaping — tell the user the update couldn't be applied automatically and suggest they edit the page directly in Notion.
-2026-03-01T19:05:02.483433154Z [inf]  - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
-2026-03-01T19:05:02.483438850Z [inf]  - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
-2026-03-01T19:05:02.483442941Z [inf]  - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
-2026-03-01T19:05:02.483447379Z [inf]  - CRITICAL timezone rule for deadlines: All stored dueDate values from getDeadlines are in UTC. The user sees and speaks in LOCAL time (see timezone in runtime context below). When the user says a date/time like "22.02.2026 23:59", that is LOCAL time — convert it to UTC before passing to queueDeadlineAction. For example, 23:59 Europe/Oslo (UTC+1 winter) = 22:59 UTC → newDueDate "2026-02-22T22:59:00.000Z". Similarly, when comparing a stored UTC dueDate against the user's stated local time, apply the timezone offset — a UTC date of 2026-02-22T23:59Z displays as 2026-02-23T00:59 in Europe/Oslo, NOT Feb 22 23:59. Always call queueDeadlineAction if the user's intended local time differs from the current local-time interpretation of the stored UTC dueDate.
-2026-03-01T19:05:02.484731829Z [inf]  - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
-2026-03-01T19:05:02.484742057Z [inf]  - CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
-2026-03-01T19:05:02.484747349Z [inf]  - CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
-2026-03-01T19:05:02.484752231Z [inf]  - IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
-2026-03-01T19:05:02.484756616Z [inf]  - When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
-2026-03-01T19:05:02.484761997Z [inf]  - For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
-2026-03-01T19:05:02.484766712Z [inf]  - IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
-2026-03-01T19:05:02.484872497Z [inf]  - To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
-2026-03-01T19:05:02.486264062Z [inf]  - For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
-2026-03-01T19:05:02.486271079Z [inf]  - Treat habits/goals as conversation-managed: you should proactively ask lightweight check-in questions during natural pauses instead of directing users to manual check-in buttons.
-2026-03-01T19:05:02.486276399Z [inf]  - If habits/goals are pending today, include one brief check-in prompt in suitable replies (at most one per reply).
-2026-03-01T19:05:02.486281081Z [inf]  - When the user responds with yes/no/not yet/already done for a habit/goal check-in, call updateHabitCheckIn/updateGoalCheckIn immediately with the inferred item.
-2026-03-01T19:05:02.486285522Z [inf]  - If user intent is clear from context, do not ask for extra confirmation before logging a habit/goal check-in.
-2026-03-01T19:05:02.486290282Z [inf]  - Never tell the user to use the habits/goals tab for check-ins; handle it in chat.
-2026-03-01T19:05:02.486294356Z [inf]  - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
-2026-03-01T19:05:02.486299233Z [inf]  - If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
-2026-03-01T19:05:02.486306345Z [inf]  - For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
-2026-03-01T19:05:02.486311320Z [inf]  - After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
-2026-03-01T19:05:02.486316458Z [inf]  - When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
-2026-03-01T19:05:02.486322247Z [inf]  - Never claim a write action succeeded unless a tool call in this turn returned success.
-2026-03-01T19:05:02.487664246Z [inf]  - Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
-2026-03-01T19:05:02.487673121Z [inf]  - If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
-2026-03-01T19:05:02.487673550Z [inf]  - When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
-2026-03-01T19:05:02.487687953Z [inf]  - Keep replies practical and conversational, and adapt response length to user intent:
-2026-03-01T19:05:02.487694749Z [inf]    - be brief for quick operational questions
-2026-03-01T19:05:02.487700943Z [inf]    - be fuller and reflective when the user wants to talk things through
-2026-03-01T19:05:02.487707637Z [inf]  - For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
-2026-03-01T19:05:02.487714182Z [inf]  - Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
-2026-03-01T19:05:02.487719538Z [inf]  - Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
-2026-03-01T19:05:02.487725363Z [inf]  - Use only lightweight Markdown that the chat UI supports:
-2026-03-01T19:05:02.487731398Z [inf]    - **bold** for key facts and warnings
-2026-03-01T19:05:02.487737419Z [inf]    - *italic* for gentle emphasis
-2026-03-01T19:05:02.487744065Z [inf]    - '-' or '*' bullet lists for schedules and checklists
-2026-03-01T19:05:02.487750433Z [inf]    - plain paragraphs separated by blank lines
-2026-03-01T19:05:02.487756493Z [inf]  - Do not use HTML, tables, headings (#), blockquotes, or code fences.
-2026-03-01T19:05:02.487762491Z [inf]  - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
-2026-03-01T19:05:02.488766680Z [inf]  - **2026-03-18**: DAT560 Assignment 3 (23:59).
-2026-03-01T19:05:02.488768539Z [inf]  
-2026-03-01T19:05:02.488778100Z [inf]  - **2026-03-19**: DAT520 Lab 5: Multi-Paxos with Gorums (23:59).
-2026-03-01T19:05:02.488778505Z [inf]  Runtime context for this turn:
-2026-03-01T19:05:02.488785770Z [inf]  Current time reference:
-2026-03-01T19:05:02.488790809Z [inf]  - Timezone: Europe/Oslo
-2026-03-01T19:05:02.488795197Z [inf]  - Local date: Sunday, 01 March 2026
-2026-03-01T19:05:02.488800161Z [inf]  - Local time: 20:04:52
-2026-03-01T19:05:02.488806691Z [inf]  - UTC now: 2026-03-01T19:04:52.677Z
-2026-03-01T19:05:02.488811184Z [inf]  IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
-2026-03-01T19:05:02.488815362Z [inf]  
-2026-03-01T19:05:02.488819631Z [inf]  Long-term conversation memory (compressed):
-2026-03-01T19:05:02.488823972Z [inf]  Updated: 2026-03-01T19:04:58.128Z
-2026-03-01T19:05:02.488828314Z [inf]  Coverage: 335 compressed messages (total at compression: 359).
-2026-03-01T19:05:02.488832486Z [inf]  Use this as durable context across turns; prefer recent messages when there is conflict.
-2026-03-01T19:05:02.488836472Z [inf]  
-2026-03-01T19:05:02.488840653Z [inf]  ### Active objectives
-2026-03-01T19:05:02.488844666Z [inf]  - Prepare for upcoming examinations (DAT600, DAT560, DAT520) in May 2026.
-2026-03-01T19:05:02.488849385Z [inf]  - Complete DAT520 Lab 4 (Paxos), estimated at 40 hours of effort.
-2026-03-01T19:05:02.488853472Z [inf]  - Monitor nutrition relative to targets (2200 kcal, 160g protein, 250g carbs, 70g fat).
-2026-03-01T19:05:02.488857351Z [inf]  
-2026-03-01T19:05:02.488861225Z [inf]  ### Deadlines and dates
-2026-03-01T19:05:02.488864981Z [inf]  - **2026-03-05**: DAT520 Lab 4: Paxos and Multi-Paxos (High Priority, 23:59).
-2026-03-01T19:05:02.490109875Z [inf]  - **Mood Settings**: User frequently requests mood shifts (e.g., focused, relaxed, encouraging, empathetic); currently set to **focused**.
-2026-03-01T19:05:02.490115899Z [inf]  - **2026-04-09**: DAT520 Lab 6: Multi-Paxos with Clients and Evaluation (23:59).
-2026-03-01T19:05:02.490118969Z [inf]  - **Gym**: Target of 4 sessions per week (currently tracking streaks).
-2026-03-01T19:05:02.490127667Z [inf]  - **2026-04-24**: DAT560 Project + report (23:59).
-2026-03-01T19:05:02.490131294Z [inf]  - **University Schedule (Recurring)**: 
-2026-03-01T19:05:02.490135962Z [inf]      - Thursdays: DAT600 (08:15–10:00), DAT520 Lab (10:15–12:00), DAT600 Supervision (12:15–14:00).
-2026-03-01T19:05:02.490138445Z [inf]  - **2026-04-30**: DAT520 Lab 7: Replicated Bank Application (23:59).
-2026-03-01T19:05:02.490140719Z [inf]      - Mondays: DAT520 Lecture (12:15–14:00).
-2026-03-01T19:05:02.490147476Z [inf]  - **2026-05-13**: DAT600 Algoritmeteori Exam (09:00, 4 hours).
-2026-03-01T19:05:02.490147520Z [inf]  
-2026-03-01T19:05:02.490150567Z [inf]      - Tuesdays: DAT520 Lab (10:15–12:00), DAT520 Lecture (12:15–14:00).
-2026-03-01T19:05:02.490158074Z [inf]  - **2026-05-20**: DAT560 Generativ AI Exam (09:00, 4 hours).
-2026-03-01T19:05:02.490160876Z [inf]  ### Preferences and constraints
-2026-03-01T19:05:02.490161047Z [inf]      - Wednesdays: DAT600 (08:15–10:00), DAT560 Lecture (10:15–12:00), DAT560 Lab (12:15–14:00).
-2026-03-01T19:05:02.490166299Z [inf]  - **2026-05-29**: DAT520 Distribuerte systemer Exam (09:00, 4 hours).
-2026-03-01T19:05:02.490172311Z [inf]  - **Weight Baseline**: 87 kg (used for nutrition calculations).
-2026-03-01T19:05:02.490173665Z [inf]  
-2026-03-01T19:05:02.490179616Z [inf]  - **Location**: Stavanger / University of Stavanger (UiS).
-2026-03-01T19:05:02.490180599Z [inf]  ### Commitments and habits
-2026-03-01T19:05:02.490185652Z [inf]  - **Notification Preference**: Push notifications and smart nudges are currently disabled/muted by request.
-2026-03-01T19:05:02.491220244Z [inf]  - **Notion Structure**: Uses a folder hierarchy (📁 Self, 📁 Work, 📁 School, 📁 Companion).
-2026-03-01T19:05:02.491224030Z [inf]  Note: Tools listed above (not marked "unavailable") are verified connected. If a tool call returns empty results, the connection is working — it simply means no matching items were found. Do not claim a connection is broken when a tool call succeeds.
-2026-03-01T19:05:02.491229477Z [inf]  - **Exam Requirements**: Must bring own PC and physical ID for all exams; arrival 30 minutes before start (08:30).
-2026-03-01T19:05:02.491235299Z [inf]  
-2026-03-01T19:05:02.491240310Z [inf]  ### Open loops
-2026-03-01T19:05:02.491245362Z [inf]  - **Notion Integration**: Recently restored; user is verifying the ability to write to specific files like "Companion notes" under specific headers (Dany, Gemini, etc.).
-2026-03-01T19:05:02.491250446Z [inf]  - **Withings Integration**: Not yet connected; currently relying on manual weight entry (87 kg).
-2026-03-01T19:05:02.491255846Z [inf]  - **Study Sessions**: User frequently adds and removes ad-hoc study blocks for Paxos; no permanent study routine established yet.
-2026-03-01T19:05:02.491261259Z [inf]  
-2026-03-01T19:05:02.491265836Z [inf]  Habit/goal context for this conversation:
-2026-03-01T19:05:02.491270701Z [inf]  Habits tracked today: 0; pending check-ins: 0
-2026-03-01T19:05:02.491275434Z [inf]  Pending habits: none
-2026-03-01T19:05:02.491280598Z [inf]  Goals tracked today: 0; pending check-ins: 0
-2026-03-01T19:05:02.491285345Z [inf]  Pending goals: none
-2026-03-01T19:05:02.491289939Z [inf]  
-2026-03-01T19:05:02.491294137Z [inf]  Available MCP external tools:
-2026-03-01T19:05:02.491299433Z [inf]  Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="nl" dir=ltr><meta charset=utf-8><meta name=viewport conten…) | Notion Workspace: notion-search, notion-fetch, notion-create-pages, notion-update-page | GitHub (read-only repos): get_commit, get_file_contents, get_latest_release, list_branches, list_commits, list_releases, search_repositories
-2026-03-01T19:05:02.492324610Z [inf]  [tool] Round 1/1: mcp_github_read_only_repos_f492c__search_repositories({"query":"org:dat560-2026 lucyscript"})
-2026-03-01T19:05:02.492338190Z [inf]  [tool] mcp_github_read_only_repos_f492c__search_repositories → {"serverId":"github-read-only-repos-f492c062bb","serverLabel":"GitHub (read-only repos)","tool":"search_repositories","result":{"text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","raw":{"content":[{"type":"text","text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]...
-2026-03-01T19:05:02.492346163Z [inf]  [tool] Round 1/2: setResponseMood({"mood":"focused"})
-2026-03-01T19:05:02.492354312Z [inf]  [tool] setResponseMood → {"mood":"focused"}
-2026-03-01T19:05:02.492360819Z [inf]  [gemini] Round 1 tool results for next prompt:
-2026-03-01T19:05:02.492368073Z [inf]    mcp_github_read_only_repos_f492c__search_repositories: {"serverLabel":"GitHub (read-only repos)","tool":"search_repositories","isError":false,"statusText":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","contentText":null}
-2026-03-01T19:05:02.492375443Z [inf]    setResponseMood: {"mood":"focused"}
-2026-03-01T19:05:02.946929626Z [inf]  [tool] Round 2/1: mcp_github_read_only_repos_f492c__search_repositories({"query":"org:dat560-2026"})
-2026-03-01T19:05:03.375063653Z [inf]  [tool] mcp_github_read_only_repos_f492c__search_repositories → {"serverId":"github-read-only-repos-f492c062bb","serverLabel":"GitHub (read-only repos)","tool":"search_repositories","result":{"text":"{\"total_count\":1,\"incomplete_results\":false,\"items\":[{\"id\":1116988976,\"name\":\"info\",\"full_name\":\"dat560-2026/info\",\"html_url\":\"https://github.com...
-2026-03-01T19:05:03.375075473Z [inf]  [gemini] Round 2 tool results for next prompt:
-2026-03-01T19:05:03.375083403Z [inf]    mcp_github_read_only_repos_f492c__search_repositories: {"serverLabel":"GitHub (read-only repos)","tool":"search_repositories","isError":false,"statusText":"{\"total_count\":1,\"incomplete_results\":false,\"items\":[{\"id\":1116988976,\"name\":\"info\",\"full_name\":\"dat560-2026/info\",\"html_url\":\"https://github.com/dat560-2026/info\",\"language\":\"Jupyter Notebook\",\"stargazers_count\":5,\"forks_count\":0,\"open_issues_count\":0,\"updated_at\":\"2026-02-26T17:37:56Z\",\"created_at\":\"2025-12-15T17:03:43Z\",\"private\":false,\"fork\":false,\"a...
-2026-03-01T19:05:06.429808731Z [inf]  [gemini] message complete: userId=user-1771361993528-1 prompt=40904 response=314 total=41218 tools=3 context=
-2026-03-01T19:05:06.429817633Z [inf]  [chat] assistant reply: userId=user-1771361993528-1 text="Jeg har sjekket organisasjonen **dat560-2026**, men det eneste offentlige repoet jeg finner der er `dat560-2026/info`. 🔍\n\nDette tyder på at ditt personlige kursrepo (som sannsynligvis heter noe sånt som `dat560-2026/lucyscript` eller `dat560-2026/assignment-X-lucyscript`) er **privat**. \n\nSiden jeg kun har **read-only** tilgang til offentlige repoer akkurat nå, kan jeg ikke se innholdet i private skole-repoer før du enten:\n1.  Gjør dem **public** (hvis emneansvarlig tillater det).\n2.  De mood=focused tools=[mcp_github_read_only_repos_f492c__search_repositories, setResponseMood, mcp_github_read_only_repos_f492c__search_repositories]
-2026-03-01T19:06:16.939005197Z [inf]  [google-cal-oauth] Callback hit: state=9ndwoszeoo code=present error=none pendingMatch=false
-2026-03-01T19:06:23.693807923Z [inf]  [google-cal-oauth] Callback hit: state=wo57etaejti code=present error=none pendingMatch=false
-2026-03-01T19:06:43.690022161Z [inf]  - Safe-for-work
-2026-03-01T19:06:43.690031680Z [inf]  - Portrait-friendly composition.
-2026-03-01T19:06:43.690036644Z [inf]  [growth-visual] generating image: alt="Daily growth reflection illustration" prompt_length=1039
-2026-03-01T19:06:43.690042754Z [inf]  [growth-visual] prompt:
-2026-03-01T19:06:43.690048504Z [inf]  Create a vibrant digital illustration of a person's day as a growth journey.
-2026-03-01T19:06:43.690054332Z [inf]  Tone: hopeful, focused, grounded.
-2026-03-01T19:06:43.690060478Z [inf]  Style: modern editorial art, expressive lighting, rich colors, clean composition.
-2026-03-01T19:06:43.690067810Z [inf]  Scene cues:
-2026-03-01T19:06:43.690074748Z [inf]  - Reflection summary: You navigated a day of significant technical friction with grit, focusing heavily on recalibrating your systems for the new month. While digital tools gave you some trouble, your persistence in re-establishing your fitness targets shows a clear commitment to starting March with a clean slate.
-2026-03-01T19:06:43.690080546Z [inf]  - Key highlights:
-2026-03-01T19:06:43.690087042Z [inf]  - Don't let technical glitches with Notion or GitHub derail your momentum; focus on the habits you can control manually.
-2026-03-01T19:06:43.690092824Z [inf]  - Re-establishing your gym goal immediately after deleting it shows a strong internal drive to stay accountable—keep that fire lit.
-2026-03-01T19:06:43.690098137Z [inf]  - Use this evening to map out a simple fuel strategy for the week so your nutrition doesn't get sidelined by your heavy lab schedule.
-2026-03-01T19:06:43.690103605Z [inf]  
-2026-03-01T19:06:43.690109866Z [inf]  Output requirements:
-2026-03-01T19:06:43.690115602Z [inf]  - No text overlays
-2026-03-01T19:06:43.690122134Z [inf]  - No logos or UI chrome
-2026-03-01T19:07:03.517041617Z [inf]  [growth-visual] success: alt="Daily growth reflection illustration" model=gemini-3-pro-image-preview mime=image/png dataUrl_length=2406986
-2026-03-01T19:09:14.058836166Z [inf]  [chat] user message: userId=user-1771361993528-1 text="Tell me all gh repos i have"
-2026-03-01T19:09:14.058846603Z [inf]  [gemini] system prompt: userId=user-1771361993528-1 length=13561 tools=58 messages=25
-2026-03-01T19:09:14.058853339Z [inf]  [gemini] system instruction:
-2026-03-01T19:09:14.058859514Z [inf]  You are Companion, a personal AI assistant for Bunnyflake.
-2026-03-01T19:09:14.058863916Z [inf]  
-2026-03-01T19:09:14.058869370Z [inf]  Core behavior:
-2026-03-01T19:09:14.058874640Z [inf]  - For factual questions about schedule, deadlines, or connected external systems, use tools before answering.
-2026-03-01T19:09:14.058878878Z [inf]  - Companion has a built-in schedule ("in-app schedule") managed by createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/getSchedule/clearScheduleWindow. This always works — it does not require any external calendar integration.
-2026-03-01T19:09:14.058883627Z [inf]  - For simple greetings/small talk (for example "hi", "hello", "yo"), reply naturally without tool calls.
-2026-03-01T19:09:14.058888641Z [inf]  - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
-2026-03-01T19:09:14.058894101Z [inf]  - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
-2026-03-01T19:09:14.058899078Z [inf]  - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
-2026-03-01T19:09:14.058903989Z [inf]  - Applying a nutrition snapshot sets the default baseline plan for upcoming days.
-2026-03-01T19:09:14.058908658Z [inf]  - Daily meal edits are temporary for that day; a new day resets to the default baseline snapshot automatically.
-2026-03-01T19:09:14.058913563Z [inf]  - Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.
-2026-03-01T19:09:14.060234012Z [inf]  - When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).
-2026-03-01T19:09:14.060242185Z [inf]  - For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
-2026-03-01T19:09:14.060248679Z [inf]  - For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.
-2026-03-01T19:09:14.060254052Z [inf]  - If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.
-2026-03-01T19:09:14.060259909Z [inf]  - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
-2026-03-01T19:09:14.060270769Z [inf]  - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
-2026-03-01T19:09:14.060276435Z [inf]  - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
-2026-03-01T19:09:14.060281985Z [inf]  - When the user mentions a GitHub repository by name (e.g. "my dat520 repo"), do NOT guess the owner/repo path. Instead, call search_repositories first to find the correct full name (owner/repo), then use that for subsequent calls like get_file_contents or list_branches.
-2026-03-01T19:09:14.060286989Z [inf]  - For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.
-2026-03-01T19:09:14.060292208Z [inf]  - Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.
-2026-03-01T19:09:14.061431835Z [inf]  - Notion is connected via MCP tools (notion-search, notion-fetch, notion-create-pages, notion-update-page).
-2026-03-01T19:09:14.061443021Z [inf]  - CRITICAL: Before calling notion-update-page, ALWAYS call notion-fetch first to see the page's exact current text content.
-2026-03-01T19:09:14.061450493Z [inf]  - The notion-update-page "selection_with_ellipsis" field uses "..." (three literal dots) as a wildcard between two text anchors. The anchors must be EXACT substrings copied verbatim from the notion-fetch plain text output, long enough to be UNIQUE (match exactly one location). Example: "Meeting notes...action items" matches the region from "Meeting notes" through "action items".
-2026-03-01T19:09:14.061460415Z [inf]  - Use anchors that are full phrases or sentences — short fragments like single words or punctuation will match multiple places and fail.
-2026-03-01T19:09:14.061467759Z [inf]  - If the first notion-update-page call fails with a validation error, do NOT retry with different escaping — tell the user the update couldn't be applied automatically and suggest they edit the page directly in Notion.
-2026-03-01T19:09:14.061474323Z [inf]  - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
-2026-03-01T19:09:14.061481329Z [inf]  - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
-2026-03-01T19:09:14.061487385Z [inf]  - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
-2026-03-01T19:09:14.061493468Z [inf]  - CRITICAL timezone rule for deadlines: All stored dueDate values from getDeadlines are in UTC. The user sees and speaks in LOCAL time (see timezone in runtime context below). When the user says a date/time like "22.02.2026 23:59", that is LOCAL time — convert it to UTC before passing to queueDeadlineAction. For example, 23:59 Europe/Oslo (UTC+1 winter) = 22:59 UTC → newDueDate "2026-02-22T22:59:00.000Z". Similarly, when comparing a stored UTC dueDate against the user's stated local time, apply the timezone offset — a UTC date of 2026-02-22T23:59Z displays as 2026-02-23T00:59 in Europe/Oslo, NOT Feb 22 23:59. Always call queueDeadlineAction if the user's intended local time differs from the current local-time interpretation of the stored UTC dueDate.
-2026-03-01T19:09:14.062769870Z [inf]  - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
-2026-03-01T19:09:14.062784937Z [inf]  - CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
-2026-03-01T19:09:14.062792985Z [inf]  - CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
-2026-03-01T19:09:14.062800433Z [inf]  - IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
-2026-03-01T19:09:14.062807333Z [inf]  - When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
-2026-03-01T19:09:14.062814022Z [inf]  - For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
-2026-03-01T19:09:14.062820993Z [inf]  - IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
-2026-03-01T19:09:14.062827538Z [inf]  - To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
-2026-03-01T19:09:14.064133260Z [inf]  - For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
-2026-03-01T19:09:14.064142871Z [inf]  - Treat habits/goals as conversation-managed: you should proactively ask lightweight check-in questions during natural pauses instead of directing users to manual check-in buttons.
-2026-03-01T19:09:14.064149316Z [inf]  - If habits/goals are pending today, include one brief check-in prompt in suitable replies (at most one per reply).
-2026-03-01T19:09:14.064155650Z [inf]  - When the user responds with yes/no/not yet/already done for a habit/goal check-in, call updateHabitCheckIn/updateGoalCheckIn immediately with the inferred item.
-2026-03-01T19:09:14.064161956Z [inf]  - If user intent is clear from context, do not ask for extra confirmation before logging a habit/goal check-in.
-2026-03-01T19:09:14.064167551Z [inf]  - Never tell the user to use the habits/goals tab for check-ins; handle it in chat.
-2026-03-01T19:09:14.064172776Z [inf]  - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
-2026-03-01T19:09:14.064178035Z [inf]  - If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
-2026-03-01T19:09:14.064183266Z [inf]  - For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
-2026-03-01T19:09:14.064188245Z [inf]  - After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
-2026-03-01T19:09:14.064193419Z [inf]  - When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
-2026-03-01T19:09:14.064198410Z [inf]  - Never claim a write action succeeded unless a tool call in this turn returned success.
-2026-03-01T19:09:14.065550023Z [inf]  - Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
-2026-03-01T19:09:14.065553205Z [inf]  - For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
-2026-03-01T19:09:14.065561977Z [inf]  - When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
-2026-03-01T19:09:14.065563575Z [inf]  - Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
-2026-03-01T19:09:14.065569289Z [inf]  - Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
-2026-03-01T19:09:14.065574316Z [inf]  - Use only lightweight Markdown that the chat UI supports:
-2026-03-01T19:09:14.065579430Z [inf]  - If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
-2026-03-01T19:09:14.065581486Z [inf]    - **bold** for key facts and warnings
-2026-03-01T19:09:14.065587531Z [inf]  - Keep replies practical and conversational, and adapt response length to user intent:
-2026-03-01T19:09:14.065588033Z [inf]    - *italic* for gentle emphasis
-2026-03-01T19:09:14.065594529Z [inf]    - '-' or '*' bullet lists for schedules and checklists
-2026-03-01T19:09:14.065596671Z [inf]    - be brief for quick operational questions
-2026-03-01T19:09:14.065600360Z [inf]    - plain paragraphs separated by blank lines
-2026-03-01T19:09:14.065606207Z [inf]    - be fuller and reflective when the user wants to talk things through
-2026-03-01T19:09:14.065608796Z [inf]  - Do not use HTML, tables, headings (#), blockquotes, or code fences.
-2026-03-01T19:09:14.065613999Z [inf]  - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
-2026-03-01T19:09:14.067043994Z [inf]  - Monitor nutrition relative to targets (2200 kcal, 160g protein, 250g carbs, 70g fat).
-2026-03-01T19:09:14.067052087Z [inf]  
-2026-03-01T19:09:14.067055436Z [inf]  
-2026-03-01T19:09:14.067060471Z [inf]  Runtime context for this turn:
-2026-03-01T19:09:14.067064816Z [inf]  ### Deadlines and dates
-2026-03-01T19:09:14.067067686Z [inf]  Current time reference:
-2026-03-01T19:09:14.067071814Z [inf]  - **2026-03-05**: DAT520 Lab 4: Paxos and Multi-Paxos (High Priority, 23:59).
-2026-03-01T19:09:14.067074669Z [inf]  - Timezone: Europe/Oslo
-2026-03-01T19:09:14.067078863Z [inf]  - **2026-03-18**: DAT560 Assignment 3 (23:59).
-2026-03-01T19:09:14.067081583Z [inf]  - Local date: Sunday, 01 March 2026
-2026-03-01T19:09:14.067086039Z [inf]  - **2026-03-19**: DAT520 Lab 5: Multi-Paxos with Gorums (23:59).
-2026-03-01T19:09:14.067088789Z [inf]  - Local time: 20:09:07
-2026-03-01T19:09:14.067093805Z [inf]  - UTC now: 2026-03-01T19:09:07.142Z
-2026-03-01T19:09:14.067098106Z [inf]  IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
-2026-03-01T19:09:14.067102348Z [inf]  
-2026-03-01T19:09:14.067106913Z [inf]  Long-term conversation memory (compressed):
-2026-03-01T19:09:14.067110943Z [inf]  Updated: 2026-03-01T19:04:58.128Z
-2026-03-01T19:09:14.067114821Z [inf]  Coverage: 335 compressed messages (total at compression: 359).
-2026-03-01T19:09:14.067119603Z [inf]  Use this as durable context across turns; prefer recent messages when there is conflict.
-2026-03-01T19:09:14.067123886Z [inf]  
-2026-03-01T19:09:14.067127675Z [inf]  ### Active objectives
-2026-03-01T19:09:14.067132331Z [inf]  - Prepare for upcoming examinations (DAT600, DAT560, DAT520) in May 2026.
-2026-03-01T19:09:14.067136223Z [inf]  - Complete DAT520 Lab 4 (Paxos), estimated at 40 hours of effort.
-2026-03-01T19:09:14.068422290Z [inf]  - **2026-04-09**: DAT520 Lab 6: Multi-Paxos with Clients and Evaluation (23:59).
-2026-03-01T19:09:14.068427411Z [inf]  
-2026-03-01T19:09:14.068430946Z [inf]  - **2026-04-24**: DAT560 Project + report (23:59).
-2026-03-01T19:09:14.068438213Z [inf]  - **2026-04-30**: DAT520 Lab 7: Replicated Bank Application (23:59).
-2026-03-01T19:09:14.068439383Z [inf]  ### Preferences and constraints
-2026-03-01T19:09:14.068443543Z [inf]  - **2026-05-13**: DAT600 Algoritmeteori Exam (09:00, 4 hours).
-2026-03-01T19:09:14.068449425Z [inf]  - **2026-05-20**: DAT560 Generativ AI Exam (09:00, 4 hours).
-2026-03-01T19:09:14.068450037Z [inf]  - **Weight Baseline**: 87 kg (used for nutrition calculations).
-2026-03-01T19:09:14.068456174Z [inf]  - **Location**: Stavanger / University of Stavanger (UiS).
-2026-03-01T19:09:14.068456319Z [inf]  - **2026-05-29**: DAT520 Distribuerte systemer Exam (09:00, 4 hours).
-2026-03-01T19:09:14.068462302Z [inf]  - **Notification Preference**: Push notifications and smart nudges are currently disabled/muted by request.
-2026-03-01T19:09:14.068462419Z [inf]  
-2026-03-01T19:09:14.068468146Z [inf]  ### Commitments and habits
-2026-03-01T19:09:14.068469152Z [inf]  - **Mood Settings**: User frequently requests mood shifts (e.g., focused, relaxed, encouraging, empathetic); currently set to **focused**.
-2026-03-01T19:09:14.068473694Z [inf]  - **Gym**: Target of 4 sessions per week (currently tracking streaks).
-2026-03-01T19:09:14.068479071Z [inf]  - **University Schedule (Recurring)**: 
-2026-03-01T19:09:14.068484817Z [inf]      - Mondays: DAT520 Lecture (12:15–14:00).
-2026-03-01T19:09:14.068490581Z [inf]      - Tuesdays: DAT520 Lab (10:15–12:00), DAT520 Lecture (12:15–14:00).
-2026-03-01T19:09:14.068496739Z [inf]      - Wednesdays: DAT600 (08:15–10:00), DAT560 Lecture (10:15–12:00), DAT560 Lab (12:15–14:00).
-2026-03-01T19:09:14.068503971Z [inf]      - Thursdays: DAT600 (08:15–10:00), DAT520 Lab (10:15–12:00), DAT600 Supervision (12:15–14:00).
-2026-03-01T19:09:14.070047688Z [inf]  - **Notion Structure**: Uses a folder hierarchy (📁 Self, 📁 Work, 📁 School, 📁 Companion).
-2026-03-01T19:09:14.070058090Z [inf]  - **Exam Requirements**: Must bring own PC and physical ID for all exams; arrival 30 minutes before start (08:30).
-2026-03-01T19:09:14.070065090Z [inf]  
-2026-03-01T19:09:14.070071556Z [inf]  ### Open loops
-2026-03-01T19:09:14.070078506Z [inf]  - **Notion Integration**: Recently restored; user is verifying the ability to write to specific files like "Companion notes" under specific headers (Dany, Gemini, etc.).
-2026-03-01T19:09:14.070086651Z [inf]  - **Withings Integration**: Not yet connected; currently relying on manual weight entry (87 kg).
-2026-03-01T19:09:14.070093435Z [inf]  - **Study Sessions**: User frequently adds and removes ad-hoc study blocks for Paxos; no permanent study routine established yet.
-2026-03-01T19:09:14.070100419Z [inf]  
-2026-03-01T19:09:14.070106326Z [inf]  Habit/goal context for this conversation:
-2026-03-01T19:09:14.070112906Z [inf]  Habits tracked today: 0; pending check-ins: 0
-2026-03-01T19:09:14.070119669Z [inf]  Pending habits: none
-2026-03-01T19:09:14.070125766Z [inf]  Goals tracked today: 0; pending check-ins: 0
-2026-03-01T19:09:14.070133651Z [inf]  Pending goals: none
-2026-03-01T19:09:14.070139231Z [inf]  
-2026-03-01T19:09:14.070146284Z [inf]  Available MCP external tools:
-2026-03-01T19:09:14.070153333Z [inf]  Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="nl" dir=ltr><meta charset=utf-8><meta name=viewport conten…) | Notion Workspace: notion-search, notion-fetch, notion-create-pages, notion-update-page | GitHub (read-only repos): get_commit, get_file_contents, get_latest_release, list_branches, list_commits, list_releases, search_repositories
-2026-03-01T19:09:14.070160917Z [inf]  Note: Tools listed above (not marked "unavailable") are verified connected. If a tool call returns empty results, the connection is working — it simply means no matching items were found. Do not claim a connection is broken when a tool call succeeds.
-2026-03-01T19:09:14.071207499Z [inf]  [tool] Round 1/1: mcp_github_read_only_repos_f492c__search_repositories({"query":"user:lucyscript"})
-2026-03-01T19:09:14.071216547Z [inf]  [tool] mcp_github_read_only_repos_f492c__search_repositories → {"serverId":"github-read-only-repos-f492c062bb","serverLabel":"GitHub (read-only repos)","tool":"search_repositories","result":{"text":"{\"total_count\":17,\"incomplete_results\":false,\"items\":[{\"id\":855011459,\"name\":\"WebprojectDat310\",\"full_name\":\"lucyscript/WebprojectDat310\",\"descript...
-2026-03-01T19:09:14.071223184Z [inf]  [tool] Round 1/2: setResponseMood({"mood":"focused"})
-2026-03-01T19:09:14.071228004Z [inf]  [tool] setResponseMood → {"mood":"focused"}
-2026-03-01T19:09:14.071233477Z [inf]  [gemini] Round 1 tool results for next prompt:
-2026-03-01T19:09:14.071238973Z [inf]    mcp_github_read_only_repos_f492c__search_repositories: {"serverLabel":"GitHub (read-only repos)","tool":"search_repositories","isError":false,"statusText":"{\"total_count\":17,\"incomplete_results\":false,\"items\":[{\"id\":855011459,\"name\":\"WebprojectDat310\",\"full_name\":\"lucyscript/WebprojectDat310\",\"description\":\"Our finished web-project for the course Dat310 at UIS.\",\"html_url\":\"https://github.com/lucyscript/WebprojectDat310\",\"language\":\"Python\",\"stargazers_count\":2,\"forks_count\":0,\"open_issues_count\":0,\"updated_at\":\"...
-2026-03-01T19:09:14.071245097Z [inf]    setResponseMood: {"mood":"focused"}
-2026-03-01T19:09:15.101271673Z [inf]  [gemini] message complete: userId=user-1771361993528-1 prompt=27480 response=338 total=27818 tools=2 context=
-2026-03-01T19:09:15.101286264Z [inf]  [chat] assistant reply: userId=user-1771361993528-1 text="Jeg har funnet totalt **17 offentlige repoer** på GitHub-brukeren din, **lucyscript**. Her er listen over de mest relevante (sortert etter sist oppdatert):\n\n*   **WebprojectDat310**: Sluttprosjektet deres i Dat310 ved UiS (Python). 🐍\n*   **TID-Invaron**: Invaron-relatert prosjekt.\n*   **Lucyscript**: Profil-repoet ditt.\n*   **dat320-v24**: Operativsystemer-kurs (Go).\n*   **Dat310**: Nettverksprogrammering.\n*   **DAT520-Project**: Distribuerte systemer (Go).\n*   **AdventOfCode23**: Dine mood=focused tools=[mcp_github_read_only_repos_f492c__search_repositories, setResponseMood]
+2026-03-01T19:48:53.572731275Z [inf]  Starting Container
+2026-03-01T19:48:55.349510053Z [inf]  [migration] Found 4 table(s) missing userId column — dropping for fresh recreate...
+2026-03-01T19:48:55.349513133Z [inf]  [migration] Tables: push_delivery_metrics, push_delivery_failures, integration_sync_attempts, sync_queue
+2026-03-01T19:48:55.349516553Z [inf]  [migration] Dropped 4 tables. initializeSchema() will recreate them.
+2026-03-01T19:48:55.349520342Z [inf]  [auth] Admin email configured (wathne.sveinung@gmail.com) — will be promoted to admin on OAuth login.
+2026-03-01T19:48:55.349523962Z [inf]  [companion] listening on http://localhost:8080
+2026-03-01T19:48:55.349527242Z [inf]  [companion] storage backend=postgres-snapshot sqlite=/app/companion.db restoredSnapshotAt=2026-03-01T19:32:09.535Z
+2026-03-01T19:48:55.349530592Z [inf]  [push] VAPID keys=configured subject=mailto:wathne.sveinung@gmail.com
+2026-03-01T19:48:55.349533862Z [inf]  [push] subscriptions=16
+2026-03-01T19:48:55.349538192Z [inf]  [orchestrator] started — polling every 30s for due notifications
+2026-03-01T19:48:56.867192465Z [inf]  [push] delivering "Evening check-in" to 10 subscription(s)
+2026-03-01T19:48:57.386852714Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:48:57.386864034Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:48:57.386886554Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:48:57.386891644Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:48:57.386896364Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:48:57.386910414Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:48:57.386920484Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:48:57.386929084Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:48:57.386933874Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:48:57.386939014Z [inf]  [push] result: delivered=true status=n/a attempts=1
+2026-03-01T19:52:07.363271829Z [inf]  [google-cal-oauth] Callback hit: state=v8j2i102f5 code=present error=none pendingMatch=false
+2026-03-01T19:52:16.934956044Z [inf]  [canvas] sync start: userId=user-1771361993528-1 override=true courseFilter=all
+2026-03-01T19:52:22.475164864Z [inf]  [canvas] sync success: userId=user-1771361993528-1 courses=9 assignments=0 modules=25 announcements=3 deadlines_created=0
+2026-03-01T19:52:22.723864925Z [inf]  [notion-mcp-oauth] Token refresh success (expires_in=3600s)
+2026-03-01T19:52:24.562579582Z [inf]  [chat] user message: userId=user-1771361993528-1 text="What about now?"
+2026-03-01T19:52:24.562582252Z [inf]  [gemini] system prompt: userId=user-1771361993528-1 length=13873 tools=60 messages=25
+2026-03-01T19:52:24.562586392Z [inf]  [gemini] system instruction:
+2026-03-01T19:52:24.562589762Z [inf]  You are Companion, a personal AI assistant for Bunnyflake.
+2026-03-01T19:52:24.562592822Z [inf]  
+2026-03-01T19:52:24.562596082Z [inf]  Core behavior:
+2026-03-01T19:52:24.562599732Z [inf]  - For factual questions about schedule, deadlines, or connected external systems, use tools before answering.
+2026-03-01T19:52:24.562602562Z [inf]  - Companion has a built-in schedule ("in-app schedule") managed by createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/getSchedule/clearScheduleWindow. This always works — it does not require any external calendar integration.
+2026-03-01T19:52:24.562605542Z [inf]  - For simple greetings/small talk (for example "hi", "hello", "yo"), reply naturally without tool calls.
+2026-03-01T19:52:24.562609692Z [inf]  - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
+2026-03-01T19:52:24.562612002Z [inf]  - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
+2026-03-01T19:52:24.562614532Z [inf]  - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
+2026-03-01T19:52:24.562618362Z [inf]  - Applying a nutrition snapshot sets the default baseline plan for upcoming days.
+2026-03-01T19:52:24.562622002Z [inf]  - Daily meal edits are temporary for that day; a new day resets to the default baseline snapshot automatically.
+2026-03-01T19:52:24.562624652Z [inf]  - Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.
+2026-03-01T19:52:24.563285169Z [inf]  - When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).
+2026-03-01T19:52:24.563288329Z [inf]  - For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
+2026-03-01T19:52:24.563291329Z [inf]  - For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.
+2026-03-01T19:52:24.563293949Z [inf]  - If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.
+2026-03-01T19:52:24.563296889Z [inf]  - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
+2026-03-01T19:52:24.563300749Z [inf]  - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
+2026-03-01T19:52:24.563303199Z [inf]  - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
+2026-03-01T19:52:24.563305689Z [inf]  - When the user asks about GitHub repos, first call listGitHubUserOrgs to discover which organizations they belong to. Then use listGitHubOrgRepos to list repos in those orgs. This is the ONLY reliable way to discover private org repos.
+2026-03-01T19:52:24.563307989Z [inf]  - GitHub search_repositories (MCP tool) only finds PUBLIC repos. Private repos (especially course repos inside university organizations) will NOT appear in search results.
+2026-03-01T19:52:24.563310759Z [inf]  - When the user mentions a specific GitHub repo by name, try get_file_contents directly with the owner/repo path — it works on private repos even when search can't find them.
+2026-03-01T19:52:24.564694255Z [inf]  - For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.
+2026-03-01T19:52:24.564697625Z [inf]  - Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.
+2026-03-01T19:52:24.564700555Z [inf]  - Notion is connected via MCP tools (notion-search, notion-fetch, notion-create-pages, notion-update-page).
+2026-03-01T19:52:24.564703325Z [inf]  - CRITICAL: Before calling notion-update-page, ALWAYS call notion-fetch first to see the page's exact current text content.
+2026-03-01T19:52:24.564706265Z [inf]  - The notion-update-page "selection_with_ellipsis" field uses "..." (three literal dots) as a wildcard between two text anchors. The anchors must be EXACT substrings copied verbatim from the notion-fetch plain text output, long enough to be UNIQUE (match exactly one location). Example: "Meeting notes...action items" matches the region from "Meeting notes" through "action items".
+2026-03-01T19:52:24.564709625Z [inf]  - Use anchors that are full phrases or sentences — short fragments like single words or punctuation will match multiple places and fail.
+2026-03-01T19:52:24.564712265Z [inf]  - If the first notion-update-page call fails with a validation error, do NOT retry with different escaping — tell the user the update couldn't be applied automatically and suggest they edit the page directly in Notion.
+2026-03-01T19:52:24.564714965Z [inf]  - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
+2026-03-01T19:52:24.564717455Z [inf]  - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
+2026-03-01T19:52:24.564720275Z [inf]  - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
+2026-03-01T19:52:24.565539192Z [inf]  - CRITICAL timezone rule for deadlines: All stored dueDate values from getDeadlines are in UTC. The user sees and speaks in LOCAL time (see timezone in runtime context below). When the user says a date/time like "22.02.2026 23:59", that is LOCAL time — convert it to UTC before passing to queueDeadlineAction. For example, 23:59 Europe/Oslo (UTC+1 winter) = 22:59 UTC → newDueDate "2026-02-22T22:59:00.000Z". Similarly, when comparing a stored UTC dueDate against the user's stated local time, apply the timezone offset — a UTC date of 2026-02-22T23:59Z displays as 2026-02-23T00:59 in Europe/Oslo, NOT Feb 22 23:59. Always call queueDeadlineAction if the user's intended local time differs from the current local-time interpretation of the stored UTC dueDate.
+2026-03-01T19:52:24.565543382Z [inf]  - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
+2026-03-01T19:52:24.565547642Z [inf]  - CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
+2026-03-01T19:52:24.565550452Z [inf]  - CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
+2026-03-01T19:52:24.565553462Z [inf]  - IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
+2026-03-01T19:52:24.565556282Z [inf]  - When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
+2026-03-01T19:52:24.566545238Z [inf]  - For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
+2026-03-01T19:52:24.566556598Z [inf]  - IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
+2026-03-01T19:52:24.566561048Z [inf]  - To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
+2026-03-01T19:52:24.566564488Z [inf]  - For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
+2026-03-01T19:52:24.566568198Z [inf]  - Treat habits/goals as conversation-managed: you should proactively ask lightweight check-in questions during natural pauses instead of directing users to manual check-in buttons.
+2026-03-01T19:52:24.566572368Z [inf]  - If habits/goals are pending today, include one brief check-in prompt in suitable replies (at most one per reply).
+2026-03-01T19:52:24.566576308Z [inf]  - When the user responds with yes/no/not yet/already done for a habit/goal check-in, call updateHabitCheckIn/updateGoalCheckIn immediately with the inferred item.
+2026-03-01T19:52:24.566579358Z [inf]  - If user intent is clear from context, do not ask for extra confirmation before logging a habit/goal check-in.
+2026-03-01T19:52:24.566582428Z [inf]  - Never tell the user to use the habits/goals tab for check-ins; handle it in chat.
+2026-03-01T19:52:24.566587218Z [inf]  - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
+2026-03-01T19:52:24.566591608Z [inf]  - If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
+2026-03-01T19:52:24.567730535Z [inf]  - For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
+2026-03-01T19:52:24.567741925Z [inf]  - After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
+2026-03-01T19:52:24.567747095Z [inf]  - When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
+2026-03-01T19:52:24.567752175Z [inf]  - Never claim a write action succeeded unless a tool call in this turn returned success.
+2026-03-01T19:52:24.567757455Z [inf]  - If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
+2026-03-01T19:52:24.567762665Z [inf]  - Keep replies practical and conversational, and adapt response length to user intent:
+2026-03-01T19:52:24.567768215Z [inf]    - be brief for quick operational questions
+2026-03-01T19:52:24.567773665Z [inf]    - be fuller and reflective when the user wants to talk things through
+2026-03-01T19:52:24.567778305Z [inf]  - For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
+2026-03-01T19:52:24.567784095Z [inf]  - Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
+2026-03-01T19:52:24.567788905Z [inf]  - Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
+2026-03-01T19:52:24.567794335Z [inf]  - Use only lightweight Markdown that the chat UI supports:
+2026-03-01T19:52:24.567799055Z [inf]    - **bold** for key facts and warnings
+2026-03-01T19:52:24.567803715Z [inf]    - *italic* for gentle emphasis
+2026-03-01T19:52:24.567807875Z [inf]    - '-' or '*' bullet lists for schedules and checklists
+2026-03-01T19:52:24.568770041Z [inf]  IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
+2026-03-01T19:52:24.568779591Z [inf]    - plain paragraphs separated by blank lines
+2026-03-01T19:52:24.568779931Z [inf]  
+2026-03-01T19:52:24.568786101Z [inf]  Long-term conversation memory (compressed):
+2026-03-01T19:52:24.568792861Z [inf]  - Do not use HTML, tables, headings (#), blockquotes, or code fences.
+2026-03-01T19:52:24.568794791Z [inf]  Updated: 2026-03-01T19:04:58.128Z
+2026-03-01T19:52:24.568803101Z [inf]  Coverage: 335 compressed messages (total at compression: 359).
+2026-03-01T19:52:24.568807461Z [inf]  - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
+2026-03-01T19:52:24.568810371Z [inf]  Use this as durable context across turns; prefer recent messages when there is conflict.
+2026-03-01T19:52:24.568817071Z [inf]  - Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
+2026-03-01T19:52:24.568819891Z [inf]  
+2026-03-01T19:52:24.568825831Z [inf]  - When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
+2026-03-01T19:52:24.568828761Z [inf]  ### Active objectives
+2026-03-01T19:52:24.568833651Z [inf]  
+2026-03-01T19:52:24.568837741Z [inf]  Runtime context for this turn:
+2026-03-01T19:52:24.568841131Z [inf]  Current time reference:
+2026-03-01T19:52:24.568845071Z [inf]  - Timezone: Europe/Oslo
+2026-03-01T19:52:24.568848191Z [inf]  - Local date: Sunday, 01 March 2026
+2026-03-01T19:52:24.568852121Z [inf]  - Local time: 20:52:22
+2026-03-01T19:52:24.568855511Z [inf]  - UTC now: 2026-03-01T19:52:22.474Z
+2026-03-01T19:52:24.569914588Z [inf]  - Prepare for upcoming examinations (DAT600, DAT560, DAT520) in May 2026.
+2026-03-01T19:52:24.569915418Z [inf]  - **University Schedule (Recurring)**: 
+2026-03-01T19:52:24.569925668Z [inf]  - Complete DAT520 Lab 4 (Paxos), estimated at 40 hours of effort.
+2026-03-01T19:52:24.569926078Z [inf]      - Mondays: DAT520 Lecture (12:15–14:00).
+2026-03-01T19:52:24.569932108Z [inf]  - Monitor nutrition relative to targets (2200 kcal, 160g protein, 250g carbs, 70g fat).
+2026-03-01T19:52:24.569939688Z [inf]      - Tuesdays: DAT520 Lab (10:15–12:00), DAT520 Lecture (12:15–14:00).
+2026-03-01T19:52:24.569939818Z [inf]  
+2026-03-01T19:52:24.569941988Z [inf]  - **2026-05-13**: DAT600 Algoritmeteori Exam (09:00, 4 hours).
+2026-03-01T19:52:24.569947468Z [inf]  ### Deadlines and dates
+2026-03-01T19:52:24.569950548Z [inf]      - Wednesdays: DAT600 (08:15–10:00), DAT560 Lecture (10:15–12:00), DAT560 Lab (12:15–14:00).
+2026-03-01T19:52:24.569954278Z [inf]  - **2026-05-20**: DAT560 Generativ AI Exam (09:00, 4 hours).
+2026-03-01T19:52:24.569954698Z [inf]  - **2026-03-05**: DAT520 Lab 4: Paxos and Multi-Paxos (High Priority, 23:59).
+2026-03-01T19:52:24.569959658Z [inf]  - **2026-03-18**: DAT560 Assignment 3 (23:59).
+2026-03-01T19:52:24.569960008Z [inf]  - **2026-05-29**: DAT520 Distribuerte systemer Exam (09:00, 4 hours).
+2026-03-01T19:52:24.569964478Z [inf]  - **2026-03-19**: DAT520 Lab 5: Multi-Paxos with Gorums (23:59).
+2026-03-01T19:52:24.569965358Z [inf]  
+2026-03-01T19:52:24.569968888Z [inf]  - **2026-04-09**: DAT520 Lab 6: Multi-Paxos with Clients and Evaluation (23:59).
+2026-03-01T19:52:24.569970658Z [inf]  ### Commitments and habits
+2026-03-01T19:52:24.569973258Z [inf]  - **2026-04-24**: DAT560 Project + report (23:59).
+2026-03-01T19:52:24.569977258Z [inf]  - **Gym**: Target of 4 sessions per week (currently tracking streaks).
+2026-03-01T19:52:24.569977448Z [inf]  - **2026-04-30**: DAT520 Lab 7: Replicated Bank Application (23:59).
+2026-03-01T19:52:24.570802915Z [inf]  Habits tracked today: 0; pending check-ins: 0
+2026-03-01T19:52:24.570804715Z [inf]      - Thursdays: DAT600 (08:15–10:00), DAT520 Lab (10:15–12:00), DAT600 Supervision (12:15–14:00).
+2026-03-01T19:52:24.570810745Z [inf]  Pending habits: none
+2026-03-01T19:52:24.570815075Z [inf]  
+2026-03-01T19:52:24.570821015Z [inf]  - **Notion Integration**: Recently restored; user is verifying the ability to write to specific files like "Companion notes" under specific headers (Dany, Gemini, etc.).
+2026-03-01T19:52:24.570821445Z [inf]  Goals tracked today: 0; pending check-ins: 0
+2026-03-01T19:52:24.570824265Z [inf]  ### Preferences and constraints
+2026-03-01T19:52:24.570828585Z [inf]  - **Weight Baseline**: 87 kg (used for nutrition calculations).
+2026-03-01T19:52:24.570829985Z [inf]  - **Withings Integration**: Not yet connected; currently relying on manual weight entry (87 kg).
+2026-03-01T19:52:24.570833145Z [inf]  - **Location**: Stavanger / University of Stavanger (UiS).
+2026-03-01T19:52:24.570834185Z [inf]  - **Study Sessions**: User frequently adds and removes ad-hoc study blocks for Paxos; no permanent study routine established yet.
+2026-03-01T19:52:24.570838735Z [inf]  - **Notification Preference**: Push notifications and smart nudges are currently disabled/muted by request.
+2026-03-01T19:52:24.570838945Z [inf]  
+2026-03-01T19:52:24.570842915Z [inf]  Habit/goal context for this conversation:
+2026-03-01T19:52:24.570843215Z [inf]  - **Mood Settings**: User frequently requests mood shifts (e.g., focused, relaxed, encouraging, empathetic); currently set to **focused**.
+2026-03-01T19:52:24.570847585Z [inf]  - **Notion Structure**: Uses a folder hierarchy (📁 Self, 📁 Work, 📁 School, 📁 Companion).
+2026-03-01T19:52:24.570854335Z [inf]  - **Exam Requirements**: Must bring own PC and physical ID for all exams; arrival 30 minutes before start (08:30).
+2026-03-01T19:52:24.570858085Z [inf]  
+2026-03-01T19:52:24.570861985Z [inf]  ### Open loops
+2026-03-01T19:52:24.571373233Z [inf]  Pending goals: none
+2026-03-01T19:52:24.571377493Z [inf]  
+2026-03-01T19:52:24.571382193Z [inf]  Available MCP external tools:
+2026-03-01T19:52:24.571386463Z [inf]  Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="en" dir=ltr><meta charset=utf-8><meta name=viewport conten…) | Notion Workspace: notion-search, notion-fetch, notion-create-pages, notion-update-page | GitHub (read-only repos): get_commit, get_file_contents, get_latest_release, list_branches, list_commits, list_releases, search_repositories
+2026-03-01T19:52:24.571389663Z [inf]  Note: Tools listed above (not marked "unavailable") are verified connected. If a tool call returns empty results, the connection is working — it simply means no matching items were found. Do not claim a connection is broken when a tool call succeeds.
+2026-03-01T19:52:26.357365082Z [inf]  [tool] Round 1/1: listGitHubUserOrgs({})
+2026-03-01T19:52:26.421121194Z [inf]  [tool] listGitHubUserOrgs → {"count":0,"orgs":[]}
+2026-03-01T19:52:26.421126874Z [inf]  [tool] Round 1/2: setResponseMood({"mood":"focused"})
+2026-03-01T19:52:26.421132114Z [inf]  [tool] setResponseMood → {"mood":"focused"}
+2026-03-01T19:52:26.421136754Z [inf]  [gemini] Round 1 tool results for next prompt:
+2026-03-01T19:52:26.421142524Z [inf]    listGitHubUserOrgs: {"count":0,"orgs":[]}
+2026-03-01T19:52:26.421146854Z [inf]    setResponseMood: {"mood":"focused"}
+2026-03-01T19:52:28.645206417Z [inf]  [tool] Round 2/1: mcp_github_read_only_repos_f492c__search_repositories({"query":"user:lucyscript DAT560"})
+2026-03-01T19:52:29.736263697Z [inf]  [tool] mcp_github_read_only_repos_f492c__search_repositories → {"serverId":"github-read-only-repos-f492c062bb","serverLabel":"GitHub (read-only repos)","tool":"search_repositories","result":{"text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","raw":{"content":[{"type":"text","text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]...
+2026-03-01T19:52:29.736276997Z [inf]  [tool] Round 2/2: mcp_github_read_only_repos_f492c__search_repositories({"query":"user:lucyscript DAT520"})
+2026-03-01T19:52:30.388253766Z [inf]    mcp_github_read_only_repos_f492c__list_org_repos: {"error":"Tool \"mcp_github_read_only_repos_f492c__list_org_repos\" is not available on your current plan. Upgrade to access this feature."}
+2026-03-01T19:52:30.388277106Z [inf]  [tool] mcp_github_read_only_repos_f492c__search_repositories → {"serverId":"github-read-only-repos-f492c062bb","serverLabel":"GitHub (read-only repos)","tool":"search_repositories","result":{"text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","raw":{"content":[{"type":"text","text":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]...
+2026-03-01T19:52:30.388283776Z [inf]    mcp_github_read_only_repos_f492c__search_repositories: {"serverLabel":"GitHub (read-only repos)","tool":"search_repositories","isError":false,"statusText":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","contentText":null}
+2026-03-01T19:52:30.388288716Z [inf]    mcp_github_read_only_repos_f492c__search_repositories: {"serverLabel":"GitHub (read-only repos)","tool":"search_repositories","isError":false,"statusText":"{\"total_count\":0,\"incomplete_results\":false,\"items\":[]}","contentText":null}
+2026-03-01T19:52:30.388293265Z [inf]    mcp_github_read_only_repos_f492c__list_org_repos: {"error":"Tool \"mcp_github_read_only_repos_f492c__list_org_repos\" is not available on your current plan. Upgrade to access this feature."}
+2026-03-01T19:52:30.388317935Z [inf]  [tool] Round 2/3: mcp_github_read_only_repos_f492c__list_org_repos({"org":"dat560-2026"})
+2026-03-01T19:52:30.388322805Z [inf]  [tool] BLOCKED mcp_github_read_only_repos_f492c__list_org_repos — not allowed on plan pro
+2026-03-01T19:52:30.388327485Z [inf]  [tool] BLOCKED mcp_github_read_only_repos_f492c__list_org_repos — not allowed on plan pro
+2026-03-01T19:52:30.388328995Z [inf]  [tool] Round 2/4: mcp_github_read_only_repos_f492c__list_org_repos({"org":"uis-dat520-2026"})
+2026-03-01T19:52:30.388345785Z [inf]  [gemini] Round 2 tool results for next prompt:
+2026-03-01T19:52:31.797538461Z [inf]  [tool] Round 3/1: listGitHubOrgRepos({"org":"dat560-2026"})
+2026-03-01T19:52:32.352101096Z [inf]  [tool] listGitHubOrgRepos → {"org":"dat560-2026","count":1,"repos":[{"name":"info","full_name":"dat560-2026/info","private":false,"description":null,"updated_at":"2026-02-26T17:37:56Z","default_branch":"main"}]}
+2026-03-01T19:52:32.352106306Z [inf]  [tool] Round 3/2: listGitHubOrgRepos({"org":"uis-dat520-2026"})
+2026-03-01T19:52:32.359010434Z [inf]  [tool] listGitHubOrgRepos → {"error":"GitHub API error 404: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/repos/repos#list-organization-repositories\",\"status\":\"404\"}"}
+2026-03-01T19:52:32.359013714Z [inf]  [gemini] Round 3 tool results for next prompt:
+2026-03-01T19:52:32.359016954Z [inf]    listGitHubOrgRepos: {"org":"dat560-2026","count":1,"repos":[{"name":"info","full_name":"dat560-2026/info","private":false,"description":null,"updated_at":"2026-02-26T17:37:56Z","default_branch":"main"}]}
+2026-03-01T19:52:32.359020724Z [inf]    listGitHubOrgRepos: {"error":"GitHub API error 404: {\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/repos/repos#list-organization-repositories\",\"status\":\"404\"}"}
+2026-03-01T19:52:36.439370300Z [inf]  [gemini] message complete: userId=user-1771361993528-1 prompt=56687 response=517 total=57204 tools=8 context=
+2026-03-01T19:52:36.439373510Z [inf]  [chat] assistant reply: userId=user-1771361993528-1 text="Jeg ser fortsatt bare de **17 offentlige repoene** dine, og kun `dat560-2026/info` i kurs-organisasjonen. 🔍\n\nHer er det som skjer:\nGitHub-integrasjonen min kan bare se **offentlige** (public) repoer akkurat nå. Siden jeg ikke finner verken **DAT520** eller **DAT560** i listene, betyr det at de er satt til **private**.\n\nI GitHub Classroom (som UiS bruker) blir student-repoene nesten alltid opprettet som private i kurs-organisasjonen. Selv om jeg ser organisasjonen `dat560-2026`, har jeg ik mood=focused tools=[listGitHubUserOrgs, setResponseMood, mcp_github_read_only_repos_f492c__search_repositories, mcp_github_read_only_repos_f492c__search_repositories, mcp_github_read_only_repos_f492c__list_org_repos, mcp_github_read_only_repos_f492c__list_org_repos, listGitHubOrgRepos, listGitHubOrgRepos]
+2026-03-01T19:53:16.599324099Z [inf]  [chat] user message: userId=user-1771361993528-1 text="Nei, bruk listhithubuserorgs"
+2026-03-01T19:53:16.599327079Z [inf]  [gemini] system prompt: userId=user-1771361993528-1 length=13873 tools=60 messages=25
+2026-03-01T19:53:16.599330129Z [inf]  [gemini] system instruction:
+2026-03-01T19:53:16.599333169Z [inf]  You are Companion, a personal AI assistant for Bunnyflake.
+2026-03-01T19:53:16.599336459Z [inf]  
+2026-03-01T19:53:16.599339459Z [inf]  Core behavior:
+2026-03-01T19:53:16.599342659Z [inf]  - For factual questions about schedule, deadlines, or connected external systems, use tools before answering.
+2026-03-01T19:53:16.599345449Z [inf]  - Companion has a built-in schedule ("in-app schedule") managed by createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/getSchedule/clearScheduleWindow. This always works — it does not require any external calendar integration.
+2026-03-01T19:53:16.599348059Z [inf]  - For simple greetings/small talk (for example "hi", "hello", "yo"), reply naturally without tool calls.
+2026-03-01T19:53:16.599351019Z [inf]  - For habits and goals questions, call getHabitsGoalsStatus first. For create/delete requests, use createHabit/deleteHabit/createGoal/deleteGoal. For check-ins, use updateHabitCheckIn/updateGoalCheckIn.
+2026-03-01T19:53:16.599354149Z [inf]  - For nutrition requests, use nutrition tools and focus on macro tracking only: calories, protein, carbs, and fat.
+2026-03-01T19:53:16.599356839Z [inf]  - You can control the full Food tab via tools: nutrition targets, meals, meal items, and custom foods.
+2026-03-01T19:53:16.599359419Z [inf]  - Applying a nutrition snapshot sets the default baseline plan for upcoming days.
+2026-03-01T19:53:16.599362249Z [inf]  - Daily meal edits are temporary for that day; a new day resets to the default baseline snapshot automatically.
+2026-03-01T19:53:16.599365289Z [inf]  - Treat loaded meal-plan snapshots as planned meals, not automatically eaten meals.
+2026-03-01T19:53:16.599846487Z [inf]  - When the user mentions a specific GitHub repo by name, try get_file_contents directly with the owner/repo path — it works on private repos even when search can't find them.
+2026-03-01T19:53:16.599898747Z [inf]  - When user says they consumed a meal, mark that meal completed and set consumedAt to the actual time (or now if not provided).
+2026-03-01T19:53:16.599903768Z [inf]  - For image-based meal logging, prefer createNutritionMeal with detailed items (one item per visible food component).
+2026-03-01T19:53:16.599908958Z [inf]  - For each item in image-based meal logs, include a realistic quantity and per-item macro values so totals are traceable item-by-item. Use the appropriate unit: grams (g) for solid foods, ml for liquids, ea (each) for countable items like eggs or rolls.
+2026-03-01T19:53:16.599913138Z [inf]  - If the image clearly shows only one food item, log it as a single meal item (not a generic meal name). Still include quantity and per-item macros.
+2026-03-01T19:53:16.599917198Z [inf]  - For body metrics, weight trends, or sleep questions, call getWithingsHealthSummary.
+2026-03-01T19:53:16.599921388Z [inf]  - For external systems such as docs, project tools, productivity apps, and provider APIs, call available MCP tools when relevant.
+2026-03-01T19:53:16.599925498Z [inf]  - If the user asks to import/migrate external deadlines or schedule entries into Companion, read the source via MCP tools and then write the concrete items with createDeadline/createScheduleBlock tools.
+2026-03-01T19:53:16.599929268Z [inf]  - When the user asks about GitHub repos, first call listGitHubUserOrgs to discover which organizations they belong to. Then use listGitHubOrgRepos to list repos in those orgs. This is the ONLY reliable way to discover private org repos.
+2026-03-01T19:53:16.599933998Z [inf]  - GitHub search_repositories (MCP tool) only finds PUBLIC repos. Private repos (especially course repos inside university organizations) will NOT appear in search results.
+2026-03-01T19:53:16.601144854Z [inf]  - For GitHub repository ingestion tasks, prefer direct file reads via get_file_contents on known files (for example README.md) before using search_code.
+2026-03-01T19:53:16.601152294Z [inf]  - Avoid brute-force search_code loops. If a search_code call returns rate-limit errors, stop further search_code calls in this turn and continue with already retrieved content.
+2026-03-01T19:53:16.601157024Z [inf]  - Notion is connected via MCP tools (notion-search, notion-fetch, notion-create-pages, notion-update-page).
+2026-03-01T19:53:16.601162624Z [inf]  - CRITICAL: Before calling notion-update-page, ALWAYS call notion-fetch first to see the page's exact current text content.
+2026-03-01T19:53:16.601168064Z [inf]  - The notion-update-page "selection_with_ellipsis" field uses "..." (three literal dots) as a wildcard between two text anchors. The anchors must be EXACT substrings copied verbatim from the notion-fetch plain text output, long enough to be UNIQUE (match exactly one location). Example: "Meeting notes...action items" matches the region from "Meeting notes" through "action items".
+2026-03-01T19:53:16.601173794Z [inf]  - Use anchors that are full phrases or sentences — short fragments like single words or punctuation will match multiple places and fail.
+2026-03-01T19:53:16.601178554Z [inf]  - If the first notion-update-page call fails with a validation error, do NOT retry with different escaping — tell the user the update couldn't be applied automatically and suggest they edit the page directly in Notion.
+2026-03-01T19:53:16.601182924Z [inf]  - Do not hallucinate user-specific data. If data is unavailable, say so explicitly and suggest the next sync step.
+2026-03-01T19:53:16.601187144Z [inf]  - For deadline completion or rescheduling/extension requests, use queueDeadlineAction with action 'complete' or 'reschedule' (with newDueDate in ISO 8601 UTC). Apply immediately (no confirmation step).
+2026-03-01T19:53:16.601190964Z [inf]  - For manual deadline entry/removal requests, use createDeadline/deleteDeadline.
+2026-03-01T19:53:16.603800815Z [inf]  - CRITICAL timezone rule for deadlines: All stored dueDate values from getDeadlines are in UTC. The user sees and speaks in LOCAL time (see timezone in runtime context below). When the user says a date/time like "22.02.2026 23:59", that is LOCAL time — convert it to UTC before passing to queueDeadlineAction. For example, 23:59 Europe/Oslo (UTC+1 winter) = 22:59 UTC → newDueDate "2026-02-22T22:59:00.000Z". Similarly, when comparing a stored UTC dueDate against the user's stated local time, apply the timezone offset — a UTC date of 2026-02-22T23:59Z displays as 2026-02-23T00:59 in Europe/Oslo, NOT Feb 22 23:59. Always call queueDeadlineAction if the user's intended local time differs from the current local-time interpretation of the stored UTC dueDate.
+2026-03-01T19:53:16.603806515Z [inf]  - For schedule mutations, execute immediately with createScheduleBlock/updateScheduleBlock/deleteScheduleBlock/clearScheduleWindow.
+2026-03-01T19:53:16.603810805Z [inf]  - CRITICAL timezone rule for schedule blocks: When calling createScheduleBlock or updateScheduleBlock, pass startTime as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "add gym at 18:00", pass startTime "2026-02-26T18:00:00" (no Z). The system converts local time to UTC automatically. Do NOT append Z to schedule startTime values.
+2026-03-01T19:53:16.603817865Z [inf]  - CRITICAL timezone rule for reminders: When calling scheduleReminder, pass scheduledFor as LOCAL time (the user's timezone) without a Z suffix. For example, if user says "remind me at 15:00", pass scheduledFor "2026-02-26T15:00:00" (no Z). The system converts to UTC automatically. Do NOT append Z to scheduledFor values.
+2026-03-01T19:53:16.603821325Z [inf]  - IMPORTANT: Only create/modify the specific schedule items the user asks for. Never auto-fill the rest of the day with extra blocks unless explicitly asked (e.g. "plan my whole day").
+2026-03-01T19:53:16.603825565Z [inf]  - When the user asks to be reminded about something at a specific time, use scheduleReminder. Pick a fitting emoji icon for the reminder (e.g. 📚 for study, 💊 for meds, 🏋️ for gym, 📧 for emails). If the user doesn't specify a time, infer a reasonable one from context.
+2026-03-01T19:53:16.605938738Z [inf]  - For recurring reminders ("remind me every day at 09:00"), set the recurrence field to 'daily', 'weekly', or 'monthly'. The system auto-reschedules after each delivery.
+2026-03-01T19:53:16.605946238Z [inf]  - IMPORTANT: Always present times to the user in 24-hour format (e.g. 09:00, 14:30, 22:00), never AM/PM.
+2026-03-01T19:53:16.605951678Z [inf]  - To list or cancel existing reminders, use getReminders and cancelReminder. When cancelling, call getReminders first to find the correct ID unless the user specifies clearly.
+2026-03-01T19:53:16.605955518Z [inf]  - For recurring routine preferences from conversation (for example "I go gym every day at 07:00"), create or update routine presets immediately with queueCreateRoutinePreset/queueUpdateRoutinePreset.
+2026-03-01T19:53:16.605959808Z [inf]  - Treat habits/goals as conversation-managed: you should proactively ask lightweight check-in questions during natural pauses instead of directing users to manual check-in buttons.
+2026-03-01T19:53:16.605963608Z [inf]  - If habits/goals are pending today, include one brief check-in prompt in suitable replies (at most one per reply).
+2026-03-01T19:53:16.605967158Z [inf]  - When the user responds with yes/no/not yet/already done for a habit/goal check-in, call updateHabitCheckIn/updateGoalCheckIn immediately with the inferred item.
+2026-03-01T19:53:16.605970518Z [inf]  - If user intent is clear from context, do not ask for extra confirmation before logging a habit/goal check-in.
+2026-03-01T19:53:16.605974608Z [inf]  - Never tell the user to use the habits/goals tab for check-ins; handle it in chat.
+2026-03-01T19:53:16.605978328Z [inf]  - If user asks to "clear", "free up", or remove the rest of today's plan, prefer clearScheduleWindow.
+2026-03-01T19:53:16.605981448Z [inf]  - If the user asks to save/update a meal plan, persist it via nutrition tools (targets/meals/items/custom foods).
+2026-03-01T19:53:16.607715903Z [inf]  - Keep replies practical and conversational, and adapt response length to user intent:
+2026-03-01T19:53:16.607717193Z [inf]  - Use only lightweight Markdown that the chat UI supports:
+2026-03-01T19:53:16.607720683Z [inf]    - be brief for quick operational questions
+2026-03-01T19:53:16.607722103Z [inf]    - **bold** for key facts and warnings
+2026-03-01T19:53:16.607725093Z [inf]    - be fuller and reflective when the user wants to talk things through
+2026-03-01T19:53:16.607728013Z [inf]    - *italic* for gentle emphasis
+2026-03-01T19:53:16.607729523Z [inf]  - For emotional or personal check-ins, respond with empathy first, then offer one helpful next question or step.
+2026-03-01T19:53:16.607732733Z [inf]    - '-' or '*' bullet lists for schedules and checklists
+2026-03-01T19:53:16.607735893Z [inf]  - Mention priority only when it is high or critical. Do not explicitly call out medium priority unless the user asks.
+2026-03-01T19:53:16.607738553Z [inf]  - For explicit meal ordering requests, prefer setNutritionMealOrder with the full desired sequence (one call) instead of multiple moveNutritionMeal calls.
+2026-03-01T19:53:16.607741003Z [inf]  - Always use the runtime time reference provided below as the source of truth for "now", "today", "tomorrow", and all relative date/time language.
+2026-03-01T19:53:16.607741953Z [inf]  - After saving a meal-plan snapshot, verify it by calling getNutritionPlanSnapshots with a name query before claiming it is saved.
+2026-03-01T19:53:16.607746173Z [inf]  - When user intent to mutate data is clear, execute the available mutation tool directly instead of asking for extra permission.
+2026-03-01T19:53:16.607749883Z [inf]  - Never claim a write action succeeded unless a tool call in this turn returned success.
+2026-03-01T19:53:16.607754033Z [inf]  - If a tool call is needed, emit tool calls only first and wait to write user-facing text until tool results are available.
+2026-03-01T19:53:16.609947075Z [inf]  
+2026-03-01T19:53:16.609951055Z [inf]    - plain paragraphs separated by blank lines
+2026-03-01T19:53:16.609953255Z [inf]  - Tool routing is model-driven: decide what tools to call based on the user request and tool descriptions.
+2026-03-01T19:53:16.609954825Z [inf]  Long-term conversation memory (compressed):
+2026-03-01T19:53:16.609958475Z [inf]  - Do not use HTML, tables, headings (#), blockquotes, or code fences.
+2026-03-01T19:53:16.609962155Z [inf]  Updated: 2026-03-01T19:04:58.128Z
+2026-03-01T19:53:16.609963045Z [inf]  
+2026-03-01T19:53:16.609963765Z [inf]  - When calling tools, also call setResponseMood to convey the emotional tone of your response. Only batch it alongside other tool calls — never call it alone.
+2026-03-01T19:53:16.609967305Z [inf]  - Local time: 20:53:15
+2026-03-01T19:53:16.609970385Z [inf]  - If multiple intents are present, choose the smallest useful set of tools and then synthesize one clear answer.
+2026-03-01T19:53:16.609971205Z [inf]  Coverage: 335 compressed messages (total at compression: 359).
+2026-03-01T19:53:16.609974555Z [inf]  Runtime context for this turn:
+2026-03-01T19:53:16.609977095Z [inf]  - UTC now: 2026-03-01T19:53:15.373Z
+2026-03-01T19:53:16.609979935Z [inf]  Use this as durable context across turns; prefer recent messages when there is conflict.
+2026-03-01T19:53:16.609985395Z [inf]  Current time reference:
+2026-03-01T19:53:16.609987655Z [inf]  
+2026-03-01T19:53:16.609988645Z [inf]  IMPORTANT: The user is in Europe/Oslo. All times you mention in conversation MUST be in Europe/Oslo local time. Never show UTC or offset-adjusted times to the user. When you read schedule event times from tool results, those are already converted to local time.
+2026-03-01T19:53:16.609994594Z [inf]  ### Active objectives
+2026-03-01T19:53:16.609997854Z [inf]  - Timezone: Europe/Oslo
+2026-03-01T19:53:16.610003344Z [inf]  - Local date: Sunday, 01 March 2026
+2026-03-01T19:53:16.611474130Z [inf]  - Prepare for upcoming examinations (DAT600, DAT560, DAT520) in May 2026.
+2026-03-01T19:53:16.611474850Z [inf]      - Tuesdays: DAT520 Lab (10:15–12:00), DAT520 Lecture (12:15–14:00).
+2026-03-01T19:53:16.611481990Z [inf]      - Wednesdays: DAT600 (08:15–10:00), DAT560 Lecture (10:15–12:00), DAT560 Lab (12:15–14:00).
+2026-03-01T19:53:16.611485240Z [inf]  - Complete DAT520 Lab 4 (Paxos), estimated at 40 hours of effort.
+2026-03-01T19:53:16.611486950Z [inf]  - **2026-05-20**: DAT560 Generativ AI Exam (09:00, 4 hours).
+2026-03-01T19:53:16.611490050Z [inf]  - Monitor nutrition relative to targets (2200 kcal, 160g protein, 250g carbs, 70g fat).
+2026-03-01T19:53:16.611493450Z [inf]  - **2026-05-29**: DAT520 Distribuerte systemer Exam (09:00, 4 hours).
+2026-03-01T19:53:16.611495580Z [inf]  
+2026-03-01T19:53:16.611498510Z [inf]  
+2026-03-01T19:53:16.611500340Z [inf]  ### Deadlines and dates
+2026-03-01T19:53:16.611503090Z [inf]  ### Commitments and habits
+2026-03-01T19:53:16.611505370Z [inf]  - **2026-03-05**: DAT520 Lab 4: Paxos and Multi-Paxos (High Priority, 23:59).
+2026-03-01T19:53:16.611507670Z [inf]  - **Gym**: Target of 4 sessions per week (currently tracking streaks).
+2026-03-01T19:53:16.611510430Z [inf]  - **2026-03-18**: DAT560 Assignment 3 (23:59).
+2026-03-01T19:53:16.611512300Z [inf]  - **University Schedule (Recurring)**: 
+2026-03-01T19:53:16.611514630Z [inf]  - **2026-03-19**: DAT520 Lab 5: Multi-Paxos with Gorums (23:59).
+2026-03-01T19:53:16.611516550Z [inf]      - Mondays: DAT520 Lecture (12:15–14:00).
+2026-03-01T19:53:16.611518550Z [inf]  - **2026-04-09**: DAT520 Lab 6: Multi-Paxos with Clients and Evaluation (23:59).
+2026-03-01T19:53:16.611522270Z [inf]  - **2026-04-24**: DAT560 Project + report (23:59).
+2026-03-01T19:53:16.611525960Z [inf]  - **2026-04-30**: DAT520 Lab 7: Replicated Bank Application (23:59).
+2026-03-01T19:53:16.611529700Z [inf]  - **2026-05-13**: DAT600 Algoritmeteori Exam (09:00, 4 hours).
+2026-03-01T19:53:16.612916436Z [inf]      - Thursdays: DAT600 (08:15–10:00), DAT520 Lab (10:15–12:00), DAT600 Supervision (12:15–14:00).
+2026-03-01T19:53:16.612919536Z [inf]  Habit/goal context for this conversation:
+2026-03-01T19:53:16.612920826Z [inf]  
+2026-03-01T19:53:16.612924776Z [inf]  Habits tracked today: 0; pending check-ins: 0
+2026-03-01T19:53:16.612924816Z [inf]  ### Preferences and constraints
+2026-03-01T19:53:16.612928256Z [inf]  - **Weight Baseline**: 87 kg (used for nutrition calculations).
+2026-03-01T19:53:16.612929236Z [inf]  Pending habits: none
+2026-03-01T19:53:16.612932186Z [inf]  - **Location**: Stavanger / University of Stavanger (UiS).
+2026-03-01T19:53:16.612932856Z [inf]  Goals tracked today: 0; pending check-ins: 0
+2026-03-01T19:53:16.612937296Z [inf]  - **Notification Preference**: Push notifications and smart nudges are currently disabled/muted by request.
+2026-03-01T19:53:16.612938606Z [inf]  - **Notion Structure**: Uses a folder hierarchy (📁 Self, 📁 Work, 📁 School, 📁 Companion).
+2026-03-01T19:53:16.612941356Z [inf]  - **Mood Settings**: User frequently requests mood shifts (e.g., focused, relaxed, encouraging, empathetic); currently set to **focused**.
+2026-03-01T19:53:16.612942376Z [inf]  - **Exam Requirements**: Must bring own PC and physical ID for all exams; arrival 30 minutes before start (08:30).
+2026-03-01T19:53:16.612955046Z [inf]  
+2026-03-01T19:53:16.612958546Z [inf]  ### Open loops
+2026-03-01T19:53:16.612962246Z [inf]  - **Notion Integration**: Recently restored; user is verifying the ability to write to specific files like "Companion notes" under specific headers (Dany, Gemini, etc.).
+2026-03-01T19:53:16.612965756Z [inf]  - **Withings Integration**: Not yet connected; currently relying on manual weight entry (87 kg).
+2026-03-01T19:53:16.612968806Z [inf]  - **Study Sessions**: User frequently adds and removes ad-hoc study blocks for Paxos; no permanent study routine established yet.
+2026-03-01T19:53:16.612971386Z [inf]  
+2026-03-01T19:53:16.614923269Z [inf]  Pending goals: none
+2026-03-01T19:53:16.614927639Z [inf]  
+2026-03-01T19:53:16.614931648Z [inf]  Available MCP external tools:
+2026-03-01T19:53:16.614935218Z [inf]  Google Calendar: unavailable (Streamable HTTP error: Error POSTing to endpoint: <html lang="en" dir=ltr><meta charset=utf-8><meta name=viewport conten…) | Notion Workspace: notion-search, notion-fetch, notion-create-pages, notion-update-page | GitHub (read-only repos): get_commit, get_file_contents, get_latest_release, list_branches, list_commits, list_releases, search_repositories
+2026-03-01T19:53:16.614938458Z [inf]  Note: Tools listed above (not marked "unavailable") are verified connected. If a tool call returns empty results, the connection is working — it simply means no matching items were found. Do not claim a connection is broken when a tool call succeeds.
+2026-03-01T19:53:16.779795903Z [inf]  [tool] Round 1/1: listGitHubUserOrgs({})
+2026-03-01T19:53:16.975361508Z [inf]  [tool] listGitHubUserOrgs → {"count":0,"orgs":[]}
+2026-03-01T19:53:16.975367217Z [inf]  [gemini] Round 1 tool results for next prompt:
+2026-03-01T19:53:16.975372207Z [inf]    listGitHubUserOrgs: {"count":0,"orgs":[]}
+2026-03-01T19:53:20.689814825Z [inf]  [gemini] message complete: userId=user-1771361993528-1 prompt=28124 response=401 total=28525 tools=1 context=
+2026-03-01T19:53:20.689818805Z [inf]  [chat] assistant reply: userId=user-1771361993528-1 text="Jeg har nå forsøkt å liste opp alle organisasjonene du er medlem av på GitHub ved å bruke `listGitHubUserOrgs`, men resultatet kom tilbake tomt. 🔍\n\nDette betyr at GitHub-tilkoblingen min akkurat nå ikke har tilgang til å se medlemskapene dine i organisasjoner (som for eksempel **dat560-2026** eller **uis-dat520**). Dette skjer ofte hvis:\n\n1.  **Organisasjons-tilgang ikke er godkjent**: Du må kanskje gå inn i GitHub-innstillingene dine (under *Applications* -> *Authorized OAuth Apps* -> *Co mood=none tools=[listGitHubUserOrgs]
