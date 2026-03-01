@@ -377,7 +377,7 @@ body.chat-tab-active {
     max(100px, calc(100px + env(safe-area-inset-bottom)))
     max(20px, calc(20px + env(safe-area-inset-left)));
   min-height: var(--app-viewport-height);
-  transition: background 1.2s ease, filter 0.18s ease, transform 0.18s ease;
+  transition: background 1.2s ease, filter 0s, transform 0.18s ease;
 }
 
 .app-shell-chat-active {

@@ -297,7 +297,11 @@ export default function App(): JSX.Element {
         baselineViewportHeight = Math.max(baselineViewportHeight, viewportHeight);
       }
 
-      const effectiveAppViewportHeight = mobileChatInputFocused ? baselineViewportHeight : viewportHeight;
+      // Always use the baseline (max-ever) height for the app shell so the
+      // layout never shrinks when an external overlay (SFSafariViewController,
+      // OAuth sheets) reduces the visual viewport.  The baseline is reset on
+      // orientation change and only grows during normal browsing.
+      const effectiveAppViewportHeight = baselineViewportHeight;
       root.style.setProperty("--app-viewport-height", `${effectiveAppViewportHeight}px`);
       root.style.setProperty("--app-viewport-offset-top", `${viewportOffsetTop}px`);
       // Keep raw visual viewport metrics for keyboard-aware overlays.
